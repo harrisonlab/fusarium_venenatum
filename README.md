@@ -100,23 +100,133 @@ Assembly was performed using: Velvet / Abyss / Spades
   qsub $ProgDir/submit_SPAdes.sh $F_Read $R_Read $Outdir correct
 ```
 
-Assemblies were summarised to allow the best assembly to be determined by eye.
-
-** Assembly stats are:
-  * Assembly size:
-  * N50:
-  * N80:
-  * N20:
-  * Longest contig:
-  **
-
-The assembled contigs were filtered to remove all contigs shorter than 1kb from
-the assembly. This was done using the following commands:
-
+```bash
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+  Assembly=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp.fasta
+  OutDir=assembly/spades/F.venenatum/strain1/filtered_contigs
+  qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 ```
 
-```  
+As SPADes was run with the option to autodetect a minimum coverage the assembly
+was assessed to identify the coverage of assembled contigs. This was done using
+the following command:
 
+```
+  BestAss=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp.fasta
+  cat $BestAss | grep '>' | cut -f6 -d'_' | sort -n | cut -f1 -d '.' | sort -n | uniq -c | less
+```
+
+This returned the following results:
+```
+  633 2
+   85 3
+    4 4
+    2 5
+    2 6
+    2 7
+    1 8
+    1 11
+    2 13
+    1 14
+    3 15
+    2 16
+    2 18
+    1 19
+    1 20
+    2 23
+    1 27
+    1 28
+    2 33
+    3 36
+    2 38
+    1 39
+    4 40
+    3 41
+    7 42
+    6 43
+   21 44
+   46 45
+   50 46
+   14 47
+    1 48
+    2 49
+    1 53
+    1 54
+    1 55
+    1 57
+    1 58
+    1 60
+    1 63
+    1 68
+    1 80
+    1 87
+    1 92
+    1 104
+    1 105
+    1 108
+    1 109
+    1 137
+    1 170
+    1 354
+    1 503
+    1 506
+    1 566
+    1 791
+    1 903
+    1 987
+    1 1025
+    1 1028
+    1 1119
+    1 1136
+    1 1179
+    1 1263
+    1 1484
+    1 1553
+    1 4306
+    1 5188
+```
+From this it was determined that SPades could not be trusted to set its own
+minimum threshold for coverage.
+
+In future an option will be be used to set a coverage for spades.
+
+in the meantime contigs with a coverage lowere than 10 were filtered out using
+the following commands:
+
+```
+  Headers=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x_headers.txt
+  FastaMinCov=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
+  cat $BestAss | grep '>' | grep -E -v 'cov_.\..*_' > $Headers
+
+  cat $BestAss | sed -e 's/\(^>.*$\)/#\1#/' | tr -d "\r" | tr -d "\n" | sed -e 's/$/#/' | tr "#" "\n" | sed -e '/^$/d' | grep -A1 -f $Headers | grep -v -E '^\-\-' > $FastaMinCov
+```
+
+```bash
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+  Assembly=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
+  OutDir=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x
+  qsub $ProgDir/sub_quast.sh $Assembly $OutDir
+```
+
+Results were as follows:
+```
+  All statistics are based on contigs of size >= 500 bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).
+
+  Assembly                   contigs_min_500bp_10x  contigs_min_500bp_10x broken
+  # contigs (>= 0 bp)        213                    213
+  # contigs (>= 1000 bp)     196                    196
+  Total length (>= 0 bp)     37650527               37650527
+  Total length (>= 1000 bp)  37638009               37638009
+  # contigs                  212                    212
+  Largest contig             1154964                1154964
+  Total length               37650028               37650028
+  GC (%)                     47.62                  47.62
+  N50                        392022                 392022
+  N75                        233930                 233930
+  L50                        32                     32
+  L75                        62                     62
+  # N's per 100 kbp          0.00                   0.00                        
+```
 
 
 # Repeatmasking
@@ -126,11 +236,12 @@ Repeat masking was performed and used the following programs: Repeatmasker Repea
 The best assembly was used to perform repeatmasking
 
 ```bash
-  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/repeat_masking
-  BestAss=<PATH_TO_BEST_ASSEMBLY.fa>
+  ProgDir=/home/gomeza/git_repos/emr_repos/tools/seq_tools/repeat_masking
+  BestAss=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
   qsub $ProgDir/rep_modeling.sh $BestAss
   qsub $ProgDir/transposonPSI.sh $BestAss
-```
+```  
+
 
 ** % bases maked by repeatmasker: **
 
@@ -140,7 +251,7 @@ The best assembly was used to perform repeatmasking
 # Gene Prediction
 Gene prediction followed two steps:
 Pre-gene prediction - Quality of genome assemblies were assessed using Cegma to see how many core eukaryotic genes can be identified.
-Gene models were used to predict genes in the Neonectria genome. This used results from CEGMA as hints for gene models.
+Gene models were used to predict genes in the Fusarium genome. This used results from CEGMA as hints for gene models.
 
 ## Pre-gene prediction
 Quality of genome assemblies was assessed by looking for the gene space in the assemblies.
@@ -215,3 +326,18 @@ Top BLAST hits were used to annotate gene models.
 
 following blasting PHIbase to the genome, the hits were filtered by effect on
 virulence.
+
+## Identification of potential CrisprCas sites.
+
+The script optimus was used to identify potential CrisprCas sites Within
+predicted proteins.
+
+The commands to do this were:
+
+```bash
+  mkdir -p analysis/protospacers/$Organism/$Strain
+  ProgDir=~/git_repos/emr_repos/scripts/fusarium_venenatum/OPTIMus
+  # GeneSeq=gene_pred/augustus/neonectria_galligena/NG-R0905_EMR/NG-R0905_EMR_aug_out.codingseq
+  GeneSeq=gene_pred/augustus/$Organism/$Strain/*_aug_out.codingseq
+  $ProgDir/journal.pone.0133085.s004.pl $GeneSeq "threshold" 1 > analysis/protospacers/$Organism/$Strain/protospacer_sites.fasta
+```
