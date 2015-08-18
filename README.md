@@ -339,7 +339,9 @@ The commands to do this were:
   Organism=F.venenatum
   Strain=strain1
   ProgDir=~/git_repos/emr_repos/scripts/fusarium_venenatum/OPTIMus
+  OutDir=analysis/protospacers/$Organism/$Strain
   GeneSeq=$(ls gene_pred/augustus/$Organism/$Strain/*_aug_out.codingseq)
-  mkdir -p analysis/protospacers/$Organism/$Strain
-  $ProgDir/journal.pone.0133085.s004.pl $GeneSeq "threshold" 1 > analysis/protospacers/$Organism/$Strain/"$Strain"_protospacer_sites.txt
+  mkdir -p $OutDir
+  $ProgDir/journal.pone.0133085.s004.pl $GeneSeq "threshold" 1 > $OutDir/"$Strain"_protospacer_sites.txt
+  $ProgDir/Optimus2csv.py --inp $OutDir/"$Strain"_protospacer_sites.txt  --out $OutDir/"$Strain"_protospacer_by_gene.csv
 ```
