@@ -225,7 +225,7 @@ Results were as follows:
   N75                        233930                 233930
   L50                        32                     32
   L75                        62                     62
-  # N's per 100 kbp          0.00                   0.00                        
+  # N's per 100 kbp          0.00                   0.00
 ```
 
 
@@ -243,9 +243,9 @@ The best assembly was used to perform repeatmasking
 ```  
 
 
-** % bases maked by repeatmasker: **
+** % bases maked by repeatmasker: 4.75%**
 
-** % bases masked by transposon psi: **
+** % bases masked by transposon psi: 4.19% **
 
 
 # Gene Prediction
@@ -257,32 +257,32 @@ Gene models were used to predict genes in the Fusarium genome. This used results
 Quality of genome assemblies was assessed by looking for the gene space in the assemblies.
 
 ```bash
-
+  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/cegma
+  Assembly=repeat_masked/F.venenatum/strain1/filtered_contigs_repmask/strain1_contigs_unmasked.fa
+  qsub $ProgDir/sub_cegma.sh $Assembly dna
 ```
 The cegma completeness report gave an indication of the number of genes core
 eukaryotic genes were present:
-** Number of cegma genes present and complete: **
-** Number of cegma genes present and partial: **
+** Number of cegma genes present and complete: 237 (95.56%) **
+** Number of cegma genes present and partial: 241 (97.18%) **
 
 ##Gene prediction
 
 Gene prediction was performed for the neonectria genome.
 CEGMA genes could be used as hints for the location of CDS.
 
-For the moment we shall just use the gene model trained to F. gramminearum.
+For the moment we shall just use the gene model trained to Fusarium.
 This model is from a closely related organism that is also plant pathogen.
 
 ```bash
-
+  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/augustus
+  Assembly=repeat_masked/F.venenatum/strain1/filtered_contigs_repmask/strain1_contigs_unmasked.fa
+  GeneModel=fusarium
+  qsub $ProgDir/submit_augustus.sh $GeneModel $Assembly false
 ```
 
-** Number of genes predicted: **
-The difference in drunning conditions between ERM and Nz script were assessed by
-running assembly on the longest assembled contig.
+** Number of genes predicted: 11837 **
 
-```bash
-
-```
 
 #Functional annotation
 
@@ -335,9 +335,11 @@ predicted proteins.
 The commands to do this were:
 
 ```bash
-  mkdir -p analysis/protospacers/$Organism/$Strain
-  ProgDir=~/git_repos/emr_repos/scripts/fusarium_venenatum/OPTIMus
   # GeneSeq=gene_pred/augustus/neonectria_galligena/NG-R0905_EMR/NG-R0905_EMR_aug_out.codingseq
-  GeneSeq=gene_pred/augustus/$Organism/$Strain/*_aug_out.codingseq
-  $ProgDir/journal.pone.0133085.s004.pl $GeneSeq "threshold" 1 > analysis/protospacers/$Organism/$Strain/protospacer_sites.fasta
+  Organism=F.venenatum
+  Strain=strain1
+  ProgDir=~/git_repos/emr_repos/scripts/fusarium_venenatum/OPTIMus
+  GeneSeq=$(ls gene_pred/augustus/$Organism/$Strain/*_aug_out.codingseq)
+  mkdir -p analysis/protospacers/$Organism/$Strain
+  $ProgDir/journal.pone.0133085.s004.pl $GeneSeq "threshold" 1 > analysis/protospacers/$Organism/$Strain/"$Strain"_protospacer_sites.txt
 ```
