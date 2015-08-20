@@ -3,7 +3,6 @@ Bioinformatic analysis of fusarium venenatum genomes
 
 All work was carried out in the directory:
 
-Commands used during analysis of the neonectria_galligena genome. Note - all this work was performed in the directory:
 ```bash
 cd /home/groups/harrisonlab/raw_data/raw_seq/fusarium/fusarium_venenatum
 ```
@@ -344,4 +343,21 @@ The commands to do this were:
   mkdir -p $OutDir
   $ProgDir/journal.pone.0133085.s004.pl $GeneSeq "threshold" 1 > $OutDir/"$Strain"_protospacer_sites.txt
   $ProgDir/Optimus2csv.py --inp $OutDir/"$Strain"_protospacer_sites.txt  --out $OutDir/"$Strain"_protospacer_by_gene.csv
+```
+
+It was realised that intron-exon boundaries would interfere with the prediction
+of protospacers from cds. For this reason a new protospacer prediction program
+was written.
+
+```bash
+  Organism=F.venenatum
+  Strain=strain1
+  ProgDir=~/git_repos/emr_repos/scripts/phytophthora/pathogen/merge_gff
+  Aug_Gff=gene_pred/augustus/$Organism/$Strain/"$Strain"_augustus_preds.gtf
+  OutDir=analysis/protospacers/$Organism/$Strain
+  AugDB=$OutDir/"$Strain"_Aug.db
+  $ProgDir/make_gff_database.py --inp $Aug_Gff --db $AugDB
+  ProgDir=~/git_repos/emr_repos/scripts/fusarium_venenatum/OPTIMus
+  ProtospacerCSV=OutDir/"$Strain"_protospacer_by_gene.csv
+  $ProgDir/protospacer_finder.py --inp $AugDB --out $OutDir/"$Strain"_protospacer_by_gene.csv
 ```
