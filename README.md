@@ -83,7 +83,7 @@ This allowed estimation of sequencing depth and total genome size:
 ** Esimated Coverage is: **
 
 #Assembly
-Assembly was performed using: Velvet / Abyss / Spades
+Assembly was performed using: Spades
 ```bash
   qsub /home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/velvet/submit_velvet_range.sh 35 65 2 qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq 60 exp_cov min_cov 600
   gzip qc_dna/paired/F.venenatum/strain1/*/*.gz
@@ -227,6 +227,19 @@ Results were as follows:
   # N's per 100 kbp          0.00                   0.00
 ```
 
+Contigs were renamed in accordance with ncbi recomendations.
+
+```bash
+  ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+  touch tmp.csv
+  for Assembly in $(ls assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
+    OutDir=assembly/spades/$Organism/$Strain/filtered_contigs
+    $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/contigs_min_500bp_renamed.fasta --coord_file tmp.csv
+  done
+  rm tmp.csv
+```
 
 # Repeatmasking
 
@@ -236,7 +249,7 @@ The best assembly was used to perform repeatmasking
 
 ```bash
   ProgDir=/home/gomeza/git_repos/emr_repos/tools/seq_tools/repeat_masking
-  BestAss=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
+  BestAss=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_renamed.fasta
   qsub $ProgDir/rep_modeling.sh $BestAss
   qsub $ProgDir/transposonPSI.sh $BestAss
 ```  
