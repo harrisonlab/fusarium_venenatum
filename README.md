@@ -20,28 +20,187 @@ Genome analysis
   * Homology between predicted genes & published effectors
 
 
-#Data organisation
+# Data organisation
 
-Data was copied from the raw_data repository to a local directory for assembly
-and annotation.
 
+## Building of directory structure
+```bash
+	RawDatDir=
+	ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+	mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/strain1/F
+	mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/strain1/R
+  RawDatDir=/home/groups/harrisonlab/raw_data/raw_seq/raw_reads/160401_M004465_0007-AGKF2
+  ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C4/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C4/R
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C6/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C6/R
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/WT/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/WT/R
 ```
+Sequence data was moved into the appropriate directories
 
+```bash
+  RawDatDir=/home/groups/harrisonlab/raw_data/raw_seq/raw_reads/160401_M004465_0007-AGKF2
+  ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+	cp $RawDatDir/FvenC4_S3_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C4/F/.
+	cp $RawDatDir/FvenC4_S3_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C4/R/.
+  cp $RawDatDir/FvenC6_S4_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C6/F/.
+  cp $RawDatDir/FvenC6_S4_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C6/R/.
+  cp $RawDatDir/FvenWT_S2_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/F/.
+  cp $RawDatDir/FvenWT_S2_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/R/.
+  RawDatDir=/home/groups/harrisonlab/raw_data/raw_seq/raw_reads/160415_M004465_00011-AMLCL
+  ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum  
+  cp $RawDatDir/FvenWT_S3_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/F/.
+  cp $RawDatDir/FvenWT_S3_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/R/.
 ```
 
 
 #Data qc
 
-programs: fastqc fastq-mcf kmc
+programs:
+  fastqc
+  fastq-mcf
+  kmc
 
 Data quality was visualised using fastqc:
-
 ```bash
-
+  for RawData in $(ls raw_dna/paired/*/*/*/*.fastq.gz | grep -v 'strain1' | grep 'WT'); do
+  	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+  	echo $RawData;
+  	qsub $ProgDir/run_fastqc.sh $RawData
+  done
 ```
 
-Trimming was performed on data to trim adapters from sequences and remove poor quality data.
-This was done with fastq-mcf
+Trimming was performed on data to trim adapters from
+sequences and remove poor quality data. This was done with fastq-mcf
+
+Firstly, those strains with more than one run were identified:
+
+```bash
+for Strain in $(ls -d raw_dna/paired/*/*); do
+NumReads=$(ls $Strain/F/*.gz | wc -l);
+if [ $NumReads -gt 1 ]; then
+echo "$Strain";
+echo "$NumReads";
+fi;
+done
+```
+
+```
+raw_dna/paired/F.venenatum/strain1
+3
+raw_dna/paired/F.venenatum/WT
+2
+```
+
+Trimming was first performed on all strains that had a single run of data:
+
+```bash
+	for StrainPath in $(ls -d raw_dna/paired/*/* | grep -v -e 'strain1'); do
+		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/rna_qc
+		IlluminaAdapters=/home/armita/git_repos/emr_repos/tools/seq_tools/ncbi_adapters.fa
+		ReadsF=$(ls $StrainPath/F/*.fastq*)
+		ReadsR=$(ls $StrainPath/R/*.fastq*)
+		echo $ReadsF
+		echo $ReadsR
+		qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
+	done
+```
+
+
+Trimming was then performed for strains with multiple runs of data
+
+```bash
+	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/rna_qc
+	IlluminaAdapters=/home/armita/git_repos/emr_repos/tools/seq_tools/ncbi_adapters.fa
+	echo "WT"
+	StrainPath=raw_dna/paired/F.venenatum/WT
+	ReadsF=$(ls $StrainPath/F/FvenWT_S2_L001_R1_001.fastq.gz)
+	ReadsR=$(ls $StrainPath/R/FvenWT_S2_L001_R2_001.fastq.gz)
+	qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
+	StrainPath=raw_dna/paired/F.venenatum/WT
+	ReadsF=$(ls $StrainPath/F/FvenWT_S3_L001_R1_001.fastq.gz)
+	ReadsR=$(ls $StrainPath/R/FvenWT_S3_L001_R2_001.fastq.gz)
+	qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
+```
+
+
+Data quality was visualised once again following trimming:
+```bash
+  for RawData in $(ls qc_dna/paired/*/*/*/*.fq.gz | grep -v 'strain1'); do
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+    echo $RawData;
+    qsub $ProgDir/run_fastqc.sh $RawData
+  done
+```
+
+kmer counting was performed using kmc
+This allowed estimation of sequencing depth and total genome size
+
+This was performed for strains with single runs of data
+
+```bash
+	for TrimPath in $(ls -d raw_dna/paired/*/* | grep -v -e 'WT' -e 'strain1'); do
+		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+		TrimF=$(ls $TrimPath/F/*.fastq*)
+		TrimR=$(ls $TrimPath/R/*.fastq*)
+		echo $TrimF
+		echo $TrimR
+		qsub $ProgDir/kmc_kmer_counting.sh $TrimF $TrimR
+	done
+```
+
+and for strains with muiltiple runs of data:
+
+```bash
+	for TrimPath in $(ls -d raw_dna/paired/*/strain1); do
+		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+		TrimF1=$(ls $TrimPath/F/fungus1_S1_L001_R1_001.fastq.gz)
+		TrimR1=$(ls $TrimPath/R/fungus1_S1_L001_R2_001.fastq.gz)
+		echo $TrimF1
+		echo $TrimR1
+		TrimF2=$(ls $TrimPath/F/fungus2_S1_L001_R1_001.fastq.gz)
+		TrimR2=$(ls $TrimPath/R/fungus2_S1_L001_R2_001.fastq.gz)
+		echo $TrimF2
+		echo $TrimR2
+		qsub $ProgDir/kmc_kmer_counting.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2
+	done
+	for TrimPath in $(ls -d raw_dna/paired/*/WT); do
+		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+		TrimF1=$(ls $TrimPath/F/FvenWT_S2_L001_R1_001.fastq.gz)
+		TrimR1=$(ls $TrimPath/R/FvenWT_S2_L001_R2_001.fastq.gz)
+		echo $TrimF1
+		echo $TrimR1
+		TrimF2=$(ls $TrimPath/F/FvenWT_S3_L001_R1_001.fastq.gz)
+		TrimR2=$(ls $TrimPath/R/FvenWT_S3_L001_R2_001.fastq.gz)
+		echo $TrimF2
+		echo $TrimR2
+		qsub $ProgDir/kmc_kmer_counting.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2
+	done
+```
+
+mode kmer abundance prior to error correction was reported using the following
+commands:
+
+```bash
+  for File in $(ls qc_dna/kmc/*/*/*_true_kmer_summary.txt); do
+    basename $File;
+    tail -n3 $File | head -n1 ;
+  done
+```
+
+<!--
+kmer counting was performed using kmc.
+This allowed estimation of sequencing depth and total genome size:
+
+```bash
+  qsub /home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc/kmer_counting.sh qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq qc_dna/paired/F.venenatum/strain1/kmer_count
+```
+
+** Estimated Genome Size is: **
+
+** Esimated Coverage is: **
 
 
 ```bash
@@ -63,27 +222,79 @@ This was done with fastq-mcf
   Total results:
   There are a total of 5092055969 nucleotides in this file.
   This equates to an estimated genome coverage of 84.87 .
-
-Data quality was visualised once again following trimming:
-
-```bash
-
-```
+ -->
 
 
-kmer counting was performed using kmc.
-This allowed estimation of sequencing depth and total genome size:
+ #Assembly
 
-```bash
-  qsub /home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc/kmer_counting.sh qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq qc_dna/paired/F.venenatum/strain1/kmer_count
-```
+ Assembly was performed with:
+ * Spades
 
-** Estimated Genome Size is: **
+ ## Spades Assembly
 
-** Esimated Coverage is: **
 
-#Assembly
-Assembly was performed using: Spades
+
+ ```bash
+ 	for StrainPath in $(ls -d qc_dna/paired/*/* | grep -v -e 'strain1' -e 'WT'); do
+ 		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/spades
+ 		Strain=$(echo $StrainPath | rev | cut -f1 -d '/' | rev)
+ 		Organism=$(echo $StrainPath | rev | cut -f2 -d '/' | rev)
+ 		F_Read=$(ls $StrainPath/F/*.fq.gz)
+ 		R_Read=$(ls $StrainPath/R/*.fq.gz)
+ 		OutDir=assembly/spades/$Organism/$Strain
+ 		Jobs=$(qstat | grep 'submit_SPA' | grep 'qw' | wc -l)
+ 		while [ $Jobs -gt 1 ]; do
+ 			sleep 5m
+ 			printf "."
+ 			Jobs=$(qstat | grep 'submit_SPA' | grep 'qw' | wc -l)
+ 		done		
+ 		printf "\n"
+ 		echo $F_Read
+ 		echo $R_Read
+ 		qsub $ProgDir/submit_SPAdes.sh $F_Read $R_Read $OutDir correct 20
+ 	done
+ ```
+
+ Assembly for PG8, FOP1 and FOP5 failed due to a lack of memory, as such the assembly was
+ resubmitted with more RAM.
+
+ ```bash
+ 	for StrainPath in $(ls -d qc_dna/paired/*/* | grep -v -e 'strain1' -e 'WT'); do
+ 		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/spades
+ 		Strain=$(echo $StrainPath | rev | cut -f1 -d '/' | rev)
+ 		Organism=$(echo $StrainPath | rev | cut -f2 -d '/' | rev)
+ 		F_Read=$(ls $StrainPath/F/*.fq.gz)
+ 		R_Read=$(ls $StrainPath/R/*.fq.gz)
+ 		OutDir=assembly/spades/$Organism/$Strain
+ 		echo $F_Read
+ 		echo $R_Read
+ 		qsub $ProgDir/submit_SPAdes_HiMem.sh $F_Read $R_Read $OutDir correct 20
+ 	done
+ ```
+
+ Assemblies were submitted for genomes with data from multiple sequencing runs:
+
+ ```bash
+  for StrainPath in $(ls -d qc_dna/paired/F.*/WT); do
+    echo $StrainPath
+    ProgDir=/home/ransoe/git_repos/tools/seq_tools/assemblers/spades/multiple_libraries
+    Strain=$(echo $StrainPath | rev | cut -f1 -d '/' | rev)
+    Organism=$(echo $StrainPath | rev | cut -f2 -d '/' | rev)
+    echo $Strain
+    echo $Organism
+    TrimF1=$(ls $TrimPath/F/FvenWT_S2_L001_R1_001.fastq.gz)
+    TrimR1=$(ls $TrimPath/R/FvenWT_S2_L001_R2_001.fastq.gz)
+    echo $TrimF1
+    echo $TrimR1
+    TrimF2=$(ls $TrimPath/F/FvenWT_S3_L001_R1_001.fastq.gz)
+    TrimR2=$(ls $TrimPath/R/FvenWT_S3_L001_R2_001.fastq.gz)
+    echo $TrimF2
+    echo $TrimR2
+    OutDir=assembly/spades/$Organism/$Strain
+    qsub $ProgDir/subSpades_2lib.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2 $OutDir correct 30
+  done
+ ```
+<!--
 ```bash
   qsub /home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/velvet/submit_velvet_range.sh 35 65 2 qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq 60 exp_cov min_cov 600
   gzip qc_dna/paired/F.venenatum/strain1/*/*.gz
@@ -239,7 +450,7 @@ Contigs were renamed in accordance with ncbi recomendations.
     $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/contigs_min_500bp_renamed.fasta --coord_file tmp.csv
   done
   rm tmp.csv
-```
+``` -->
 
 # Repeatmasking
 
@@ -321,7 +532,7 @@ done
 Additional genes were added to Braker gene predictions, using CodingQuary in
 pathogen mode to predict additional regions.
 
-Fistly, aligned RNAseq data was assembled into transcripts using Cufflinks.
+Firstly, aligned RNAseq data was assembled into transcripts using Cufflinks.
 
 Note - cufflinks doesn't always predict direction of a transcript and
 therefore features can not be restricted by strand when they are intersected.
