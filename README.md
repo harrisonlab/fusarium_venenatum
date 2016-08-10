@@ -508,20 +508,20 @@ Braker and CodingQuary.
 #### Braker prediction
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa); do
-Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
-Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-echo "$Organism - $Strain"
-mkdir -p alignment/$Organism/$Strain/concatenated
-# samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam \
-# ../quorn/tophat/WTCHG_25*/accepted_hits.bam
-OutDir=gene_pred/braker/$Organism/"$Strain"_braker
-AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
-GeneModelName="$Organism"_"$Strain"_braker
-rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
-ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
-qsub $ProgDir/sub_braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
-done
+  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    mkdir -p alignment/$Organism/$Strain/concatenated
+    # samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam \
+    # ../quorn/tophat/WTCHG_25*/accepted_hits.bam
+    OutDir=gene_pred/braker/$Organism/"$Strain"_braker
+    AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
+    GeneModelName="$Organism"_"$Strain"_braker
+    rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
+    ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
+    qsub $ProgDir/sub_braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
+  done
 ```
 
 ** Number of genes predicted:  **
@@ -553,7 +553,7 @@ therefore features can not be restricted by strand when they are intersected.
 Secondly, genes were predicted using CodingQuary:
 
 ```bash
-	for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -e 'FOP1'); do
+	for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -e 'strain1'); do
 		Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 		Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 		echo "$Organism - $Strain"
@@ -638,13 +638,53 @@ redirected to a temporary output file named interproscan_submission.log .
 
 
 ```bash
-
+	screen -a
+	cd /home/groups/harrisonlab/project_files/fusarium_venenatum
+	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
+	for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_Braker.pep.fasta); do
+  	echo $Genes
+  	$ProgDir/sub_interproscan.sh $Genes
+	done 2>&1 | tee -a interproscan_submisison.log
 ```
 
-Following interproscan annotation split files were combined using the following commands:
+Following interproscan annotation split files were combined using the following
+commands:
 
 ```bash
+	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
+	for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_Braker.pep.fasta); do
+		Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
+		Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
+		echo "$Organism - $Strain"
+		echo $Strain
+		InterProRaw=gene_pred/interproscan/$Organism/$Strain/raw
+		$ProgDir/append_interpro.sh $Proteins $InterProRaw
+	done
+```
 
+## B) SwissProt
+
+```bash
+  for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_Braker.pep.fasta); do
+    Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
+    OutDir=gene_pred/swissprot/$Organism/$Strain
+    SwissDbDir=../../uniprot/swissprot
+    SwissDbName=uniprot_sprot
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/swissprot
+    qsub $ProgDir/sub_swissprot.sh $Proteome $OutDir $SwissDbDir $SwissDbName
+  done
+```
+
+```bash
+  for SwissTable in $(ls gene_pred/swissprot/*/*/swissprot_v2015_10_hits.tbl); do
+    Strain=$(echo $SwissTable | rev | cut -f2 -d '/' | rev)
+    Organism=$(echo $SwissTable | rev | cut -f3 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutTable=gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/swissprot
+    $ProgDir/swissprot_parser.py --blast_tbl $SwissTable --blast_db_fasta ../../uniprot/swissprot/uniprot_sprot.fasta > $OutTable
+  done
 ```
 
 #Genomic analysis
