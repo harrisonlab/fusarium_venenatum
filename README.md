@@ -4,7 +4,9 @@ Bioinformatic analysis of fusarium venenatum genomes
 All work was carried out in the directory:
 
 ```bash
-cd /home/groups/harrisonlab/raw_data/raw_seq/fusarium/fusarium_venenatum
+cd /home/groups/harrisonlab/project_files
+mkdir -p fusarium_venenatum
+ls /home/groups/harrisonlab/project_files/fusarium_venenatum
 ```
 
 The following is a summary of the work presented in this Readme:
