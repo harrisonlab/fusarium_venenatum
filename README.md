@@ -25,14 +25,21 @@ Genome analysis
 
 ## Building of directory structure
 ```bash
-	RawDatDir=
 	ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
 	mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/strain1/F
 	mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/strain1/R
   RawDatDir=/home/groups/harrisonlab/raw_data/raw_seq/raw_reads/160401_M004465_0007-AGKF2
   ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C1/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C1/R
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C2/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C2/R
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C3/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C3/R
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C4/F
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C4/R
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C5/F
+  mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C5/R
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C6/F
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/C6/R
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/WT/F
@@ -41,6 +48,18 @@ Genome analysis
 Sequence data was moved into the appropriate directories
 
 ```bash
+RawDatDir=/home/miseq_data/.tmp_nas_data/miseq_data/miseq_data/RAW/2016/160304_M04465_0005_000000000-AKTC6/Data/Intensities/BaseCalls
+ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+cp $RawDatDir/C1_S2_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C1/F/.
+cp $RawDatDir/C1_S2_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C1/R/.
+cp $RawDatDir/C2_S3_L001_R1_001.fastq.gz  $ProjectDir/raw_dna/paired/F.venenatum/C2/F/.
+cp $RawDatDir/C2_S3_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C2/R/.
+cp $RawDatDir/C3_S4_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C3/F/.
+cp $RawDatDir/C3_S4_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C3/R/.
+cp $RawDatDir/C5_S5_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C5/F/.
+cp $RawDatDir/C5_S5_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C5/R/.
+cp $RawDatDir/FvenWT_S1_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/F/.
+cp $RawDatDir/FvenWT_S1_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/R/.
   RawDatDir=/home/groups/harrisonlab/raw_data/raw_seq/raw_reads/160401_M004465_0007-AGKF2
   ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
 	cp $RawDatDir/FvenC4_S3_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/C4/F/.
@@ -50,7 +69,7 @@ Sequence data was moved into the appropriate directories
   cp $RawDatDir/FvenWT_S2_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/F/.
   cp $RawDatDir/FvenWT_S2_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/R/.
   RawDatDir=/home/groups/harrisonlab/raw_data/raw_seq/raw_reads/160415_M004465_00011-AMLCL
-  ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum  
+  ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
   cp $RawDatDir/FvenWT_S3_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/F/.
   cp $RawDatDir/FvenWT_S3_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/R/.
 ```
@@ -65,7 +84,7 @@ programs:
 
 Data quality was visualised using fastqc:
 ```bash
-  for RawData in $(ls raw_dna/paired/*/*/*/*.fastq.gz | grep -v 'strain1' | grep 'WT'); do
+  for RawData in $(ls raw_dna/paired/*/*/*/*.fastq.gz | grep -v 'strain1'); do
   	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
   	echo $RawData;
   	qsub $ProgDir/run_fastqc.sh $RawData
@@ -89,23 +108,23 @@ done
 
 ```
 raw_dna/paired/F.venenatum/strain1
-3
-raw_dna/paired/F.venenatum/WT
 2
+raw_dna/paired/F.venenatum/WT
+3
 ```
 
 Trimming was first performed on all strains that had a single run of data:
 
 ```bash
-	for StrainPath in $(ls -d raw_dna/paired/*/* | grep -v -e 'strain1'); do
-		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/rna_qc
-		IlluminaAdapters=/home/armita/git_repos/emr_repos/tools/seq_tools/ncbi_adapters.fa
-		ReadsF=$(ls $StrainPath/F/*.fastq*)
-		ReadsR=$(ls $StrainPath/R/*.fastq*)
-		echo $ReadsF
-		echo $ReadsR
-		qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
-	done
+for StrainPath in $(ls -d raw_dna/paired/*/* | grep -v -e 'strain1' -e 'WT'); do
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/rna_qc
+IlluminaAdapters=/home/armita/git_repos/emr_repos/tools/seq_tools/ncbi_adapters.fa
+ReadsF=$(ls $StrainPath/F/*.fastq*)
+ReadsR=$(ls $StrainPath/R/*.fastq*)
+echo $ReadsF
+echo $ReadsR
+qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
+done
 ```
 
 
@@ -114,7 +133,20 @@ Trimming was then performed for strains with multiple runs of data
 ```bash
 	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/rna_qc
 	IlluminaAdapters=/home/armita/git_repos/emr_repos/tools/seq_tools/ncbi_adapters.fa
+  echo "strain1"
+  StrainPath=raw_dna/paired/F.venenatum/strain1
+  ReadsF=$(ls $StrainPath/F/fungus1_S1_L001_R1_001.fastq.gz)
+  ReadsR=$(ls $StrainPath/R/fungus1_S1_L001_R2_001.fastq.gz)
+  qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
+	StrainPath=raw_dna/paired/F.venenatum/strain1
+	ReadsF=$(ls $StrainPath/F/fungus2_S1_L001_R1_001.fastq.gz)
+	ReadsR=$(ls $StrainPath/R/fungus2_S1_L001_R2_001.fastq.gz)
+	qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
 	echo "WT"
+  StrainPath=raw_dna/paired/F.venenatum/WT
+  ReadsF=$(ls $StrainPath/F/FvenWT_S1_L001_R1_001.fastq.gz)
+  ReadsR=$(ls $StrainPath/R/FvenWT_S1_L001_R2_001.fastq.gz)
+  qsub $ProgDir/rna_qc_fastq-mcf.sh $ReadsF $ReadsR $IlluminaAdapters DNA
 	StrainPath=raw_dna/paired/F.venenatum/WT
 	ReadsF=$(ls $StrainPath/F/FvenWT_S2_L001_R1_001.fastq.gz)
 	ReadsR=$(ls $StrainPath/R/FvenWT_S2_L001_R2_001.fastq.gz)
@@ -128,7 +160,7 @@ Trimming was then performed for strains with multiple runs of data
 
 Data quality was visualised once again following trimming:
 ```bash
-  for RawData in $(ls qc_dna/paired/*/*/*/*.fq.gz | grep -v 'strain1'); do
+  for RawData in $(ls qc_dna/paired/*/*/*/*.fq.gz); do
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
     echo $RawData;
     qsub $ProgDir/run_fastqc.sh $RawData
@@ -141,39 +173,39 @@ This allowed estimation of sequencing depth and total genome size
 This was performed for strains with single runs of data
 
 ```bash
-	for TrimPath in $(ls -d raw_dna/paired/*/* | grep -v -e 'WT' -e 'strain1'); do
+	for TrimPath in $(ls -d qc_dna/paired/*/* | grep -v -e 'WT' -e 'strain1'); do
 		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
-		TrimF=$(ls $TrimPath/F/*.fastq*)
-		TrimR=$(ls $TrimPath/R/*.fastq*)
+		TrimF=$(ls $TrimPath/F/*.fq.gz)
+		TrimR=$(ls $TrimPath/R/*.fq.gz)
 		echo $TrimF
 		echo $TrimR
 		qsub $ProgDir/kmc_kmer_counting.sh $TrimF $TrimR
 	done
 ```
 
-and for strains with muiltiple runs of data:
+and for strains with multiple runs of data:
 
 ```bash
-	for TrimPath in $(ls -d raw_dna/paired/*/strain1); do
+	for TrimPath in $(ls -d qc_dna/paired/*/strain1); do
 		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
-		TrimF1=$(ls $TrimPath/F/fungus1_S1_L001_R1_001.fastq.gz)
-		TrimR1=$(ls $TrimPath/R/fungus1_S1_L001_R2_001.fastq.gz)
+		TrimF1=$(ls $TrimPath/F/fungus1_S1_L001_R1_001.fq.gz)
+		TrimR1=$(ls $TrimPath/R/fungus1_S1_L001_R2_001.fq.gz)
 		echo $TrimF1
 		echo $TrimR1
-		TrimF2=$(ls $TrimPath/F/fungus2_S1_L001_R1_001.fastq.gz)
-		TrimR2=$(ls $TrimPath/R/fungus2_S1_L001_R2_001.fastq.gz)
+		TrimF2=$(ls $TrimPath/F/fungus2_S1_L001_R1_001.fq.gz)
+		TrimR2=$(ls $TrimPath/R/fungus2_S1_L001_R2_001.fq.gz)
 		echo $TrimF2
 		echo $TrimR2
 		qsub $ProgDir/kmc_kmer_counting.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2
 	done
-	for TrimPath in $(ls -d raw_dna/paired/*/WT); do
+	for TrimPath in $(ls -d qc_dna/paired/*/WT); do
 		ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
-		TrimF1=$(ls $TrimPath/F/FvenWT_S2_L001_R1_001.fastq.gz)
-		TrimR1=$(ls $TrimPath/R/FvenWT_S2_L001_R2_001.fastq.gz)
+		TrimF1=$(ls $TrimPath/F/FvenWT_S2_L001_R1_001.fq.gz)
+		TrimR1=$(ls $TrimPath/R/FvenWT_S2_L001_R2_001.fq.gz)
 		echo $TrimF1
 		echo $TrimR1
-		TrimF2=$(ls $TrimPath/F/FvenWT_S3_L001_R1_001.fastq.gz)
-		TrimR2=$(ls $TrimPath/R/FvenWT_S3_L001_R2_001.fastq.gz)
+		TrimF2=$(ls $TrimPath/F/FvenWT_S3_L001_R1_001.fq.gz)
+		TrimR2=$(ls $TrimPath/R/FvenWT_S3_L001_R2_001.fq.gz)
 		echo $TrimF2
 		echo $TrimR2
 		qsub $ProgDir/kmc_kmer_counting.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2
@@ -255,7 +287,7 @@ This allowed estimation of sequencing depth and total genome size:
  	done
  ```
 
- Assembly for PG8, FOP1 and FOP5 failed due to a lack of memory, as such the assembly was
+ Assembly for strains failed due to a lack of memory, as such the assembly was
  resubmitted with more RAM.
 
  ```bash
@@ -538,16 +570,16 @@ Note - cufflinks doesn't always predict direction of a transcript and
 therefore features can not be restricted by strand when they are intersected.
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
-    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-    echo "$Organism - $Strain"
-    OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
-    mkdir -p $OutDir
-    AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
-    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
-    qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
-  done
+for Assembly in $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
+mkdir -p $OutDir
+AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
+qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
+done
 ```
 
 Secondly, genes were predicted using CodingQuary:
