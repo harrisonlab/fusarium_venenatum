@@ -733,16 +733,22 @@ commands:
   done
 ```
 
+## C) Summarising annotation in annotation table
+
 ```bash
-  for SwissTable in $(ls gene_pred/swissprot/*/*/swissprot_v2015_10_hits.tbl); do
-    Strain=$(echo $SwissTable | rev | cut -f2 -d '/' | rev)
-    Organism=$(echo $SwissTable | rev | cut -f3 -d '/' | rev)
-    echo "$Organism - $Strain"
-    OutTable=gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl
-    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/swissprot
-    $ProgDir/swissprot_parser.py --blast_tbl $SwissTable --blast_db_fasta ../../uniprot/swissprot/uniprot_sprot.fasta > $OutTable
+  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended.gff3); do
+    Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
+    Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa)
+    InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
+    SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl)
+    OutDir=gene_pred/annotation/$Organism/$Strain
+    mkdir -p $OutDir
+    ProgDir=/home/armita/git_repos/emr_repos/tools/pathogen/annotation_tables
+    $ProgDir/build_annot_tab.py --genome $Assembly --genes_gff $GeneGff --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation.tsv
   done
 ```
+
 
 #Genomic analysis
 <!-- The first analysis was based upon BLAST searches for genes known to be involved in toxin production -->
