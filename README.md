@@ -504,6 +504,29 @@ The best assembly was used to perform repeatmasking
 
 ** % bases masked by transposon psi: 4.19% **
 
+The TransposonPSI masked bases were used to mask additional bases from the
+repeatmasker / repeatmodeller softmasked and hardmasked files.
+
+```bash
+
+for File in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa); do
+OutDir=$(dirname $File)
+TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
+OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
+echo "$OutFile"
+bedtools maskfasta -soft -fi $File -bed $TPSI -fo $OutFile
+echo "Number of masked bases:"
+cat $OutFile | grep -v '>' | tr -d '\n' | awk '{print $0, gsub("[a-z]", ".")}' | cut -f2 -d ' '
+done
+# The number of N's in hardmasked sequence are not counted as some may be present within the assembly and were therefore not repeatmasked.
+for File in $(ls repeat_masked/*/*/*/*_contigs_hardmasked.fa); do
+OutDir=$(dirname $File)
+TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
+OutFile=$(echo $File | sed 's/_contigs_hardmasked.fa/_contigs_hardmasked_repeatmasker_TPSI_appended.fa/g')
+echo "$OutFile"
+bedtools maskfasta -fi $File -bed $TPSI -fo $OutFile
+done
+```
 
 # Gene Prediction
 
@@ -722,7 +745,67 @@ commands:
 ```
 
 #Genomic analysis
-The first analysis was based upon BLAST searches for genes known to be involved in toxin production
+<!-- The first analysis was based upon BLAST searches for genes known to be involved in toxin production -->
+
+
+## D) AntiSMASH
+
+Antismash was run to identify clusters of secondary metabolite genes within
+the genome. Antismash was run using the weserver at:
+http://antismash.secondarymetabolites.org
+
+
+Results of web-annotation of gene clusters within the assembly were downloaded to
+the following directories:
+
+```bash
+  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa | grep 'strain1'); do
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    OutDir=analysis/antismash/$Organism/$Strain
+    mkdir -p $OutDir
+  done
+```
+
+```bash
+  for Zip in $(ls analysis/antismash/*/*/*.zip); do
+    OutDir=$(dirname $Zip)
+    unzip -d $OutDir $Zip
+  done
+```
+
+```bash
+  for AntiSmash in $(ls analysis/antismash/*/*/*/*.final.gbk); do
+    Organism=$(echo $AntiSmash | rev | cut -f4 -d '/' | rev)
+    Strain=$(echo $AntiSmash | rev | cut -f3 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=analysis/antismash/$Organism/$Strain
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+    $ProgDir/antismash2gff.py --inp_antismash $AntiSmash > $OutDir/"$Strain"_secondary_metabolite_regions.gff
+    printf "Number of clusters detected:\t"
+    cat $OutDir/"$Strain"_secondary_metabolite_regions.gff | grep 'antismash_cluster' | wc -l
+    # GeneGff=gene_pred/final_genes/F.oxysporum_fsp_cepae/Fus2_canu_new/final/final_genes_appended.gff3
+    GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended.gff3
+    bedtools intersect -u -a $GeneGff -b $OutDir/"$Strain"_secondary_metabolite_regions.gff > $OutDir/metabolite_cluster_genes.gff
+    cat $OutDir/metabolite_cluster_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > $OutDir/metabolite_cluster_gene_headers.txt
+    printf "Number of predicted proteins in clusters:\t"
+    cat $OutDir/metabolite_cluster_gene_headers.txt | wc -l
+    printf "Number of predicted genes in clusters:\t"
+    cat $OutDir/metabolite_cluster_genes.gff | grep -w 'gene' | wc -l
+  done
+```
+
+```
+  F.venenatum - strain1
+  Number of clusters detected:    38
+  Number of predicted proteins in clusters:       585
+  Number of predicted genes in clusters:  562
+```
+
+These clusters represented the following genes. Note that these numbers just
+show the number of intersected genes with gff clusters and are not confirmed by
+function
+
 
 
 ##Genes with homology to PHIbase
