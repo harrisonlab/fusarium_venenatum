@@ -754,7 +754,7 @@ commands:
 <!-- The first analysis was based upon BLAST searches for genes known to be involved in toxin production -->
 
 
-## D) AntiSMASH
+## D) Secondary metabolites (Antismash and SMURF)
 
 Antismash was run to identify clusters of secondary metabolite genes within
 the genome. Antismash was run using the weserver at:
@@ -801,6 +801,10 @@ the following directories:
   done
 ```
 
+These clusters represented the following genes. Note that these numbers just
+show the number of intersected genes with gff clusters and are not confirmed by
+function
+
 ```
   F.venenatum - strain1
   Number of clusters detected:    38
@@ -808,10 +812,31 @@ the following directories:
   Number of predicted genes in clusters:  562
 ```
 
-These clusters represented the following genes. Note that these numbers just
-show the number of intersected genes with gff clusters and are not confirmed by
-function
+SMURF was also run to identify secondary metabolite gene clusters.
 
+Genes needed to be parsed into a specific tsv format prior to submission on the
+SMURF webserver.
+
+```bash
+  Gff=gene_pred/final/F.venenatum/strain1/final/final_genes_appended.gff3
+  OutDir=analysis/secondary_metabolites/smurf/F.venenatum/strain1
+  mkdir -p $OutDir
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+  $ProgDir/gff2smurf.py --gff $Gff > $OutDir/strain1_genes_smurf.tsv
+```
+
+SMURF output was received by email and downloaded to the cluster in the output
+directory above.
+
+Output files were parsed into gff format:
+
+```bash
+  OutDir=analysis/secondary_metabolites/smurf/F.venenatum/strain1
+  SmurfClusters=$OutDir/Secondary-Metabolite-Clusters.txt
+  SmurfBackbone=$OutDir/Backbone-genes.txt
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+  $ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
+```
 
 
 ##Genes with homology to PHIbase
