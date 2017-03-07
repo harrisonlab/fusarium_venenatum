@@ -26,6 +26,9 @@ Genome analysis
 
 
 ## Building of directory structure
+
+MiSeq data was organised using:
+
 ```bash
 	ProjectDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
 	mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/strain1/F
@@ -47,6 +50,7 @@ Genome analysis
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/WT/F
   mkdir -p $ProjectDir/raw_dna/paired/F.venenatum/WT/R
 ```
+
 Sequence data was moved into the appropriate directories
 
 ```bash
@@ -75,6 +79,10 @@ cp $RawDatDir/FvenWT_S1_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venena
   cp $RawDatDir/FvenWT_S3_L001_R1_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/F/.
   cp $RawDatDir/FvenWT_S3_L001_R2_001.fastq.gz $ProjectDir/raw_dna/paired/F.venenatum/WT/R/.
 ```
+
+Minion Seqeuncing data was extracted using commands documented in
+Fv_minion_assembly.md, documented in this repository.
+
 
 
 #Data qc
@@ -167,6 +175,43 @@ Data quality was visualised once again following trimming:
     echo $RawData;
     qsub $ProgDir/run_fastqc.sh $RawData
   done
+```
+
+
+Find predicted coverage for these isolates:
+
+```bash
+for RawData in $(ls qc_dna/paired/*/*/*/*q.gz); do
+echo $RawData;
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc;
+qsub $ProgDir/run_fastqc.sh $RawData;
+GenomeSz=38
+OutDir=$(dirname $RawData)
+qsub $ProgDir/sub_count_nuc.sh $GenomeSz $RawData $OutDir
+done
+```
+
+
+```bash
+  for StrainDir in $(ls -d qc_dna/paired/*/*); do
+    Strain=$(basename $StrainDir)
+    printf "$Strain\t"
+    for File in $(ls qc_dna/paired/*/"$Strain"/*/*.txt); do
+      echo $(basename $File);
+      cat $File | tail -n1 | rev | cut -f2 -d ' ' | rev;
+    done | grep -v '.txt' | awk '{ SUM += $1} END { print SUM }'
+  done
+```
+
+```
+C1	66.97
+C2	45.69
+C3	94.41
+C4	125.6
+C5	62
+C6	79.56
+WT	149.37
+strain1	199.46
 ```
 
 kmer counting was performed using kmc
@@ -328,123 +373,55 @@ This allowed estimation of sequencing depth and total genome size:
     qsub $ProgDir/subSpades_2lib.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2 $OutDir correct 30
   done
  ```
+
+ Assemblies were submitted for genomes with data from multiple sequencing runs:
+
+ ```bash
+  for StrainPath in $(ls -d qc_dna/paired/F.*/strain1); do
+    echo $StrainPath
+    ProgDir=/home/ransoe/git_repos/tools/seq_tools/assemblers/spades/multiple_libraries
+    Strain=$(echo $StrainPath | rev | cut -f1 -d '/' | rev)
+    Organism=$(echo $StrainPath | rev | cut -f2 -d '/' | rev)
+    echo $Strain
+    echo $Organism
+    TrimF1=$(ls $StrainPath/F/*q.gz | head -n1 | tail -n1)
+    TrimR1=$(ls $StrainPath/R/*q.gz | head -n1 | tail -n1)
+    echo $TrimF1
+    echo $TrimR1
+    TrimF2=$(ls $StrainPath/F/*q.gz | head -n2 | tail -n1)
+    TrimR2=$(ls $StrainPath/R/*q.gz | head -n2 | tail -n1)
+    echo $TrimF2
+    echo $TrimR2
+    OutDir=assembly/spades/$Organism/"$Strain"_2
+    qsub $ProgDir/subSpades_2lib.sh $TrimF1 $TrimR1 $TrimF2 $TrimR2 $OutDir correct
+  done
+ ```
+
+
+ Quast
+
+```bash
+for Strain in $(ls -d assembly/spades/*/* | rev | cut -f1 -d'/' | rev); do
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+Assembly=$(ls -d assembly/spades/*/$Strain/filtered_contigs/contigs_min_500bp.fasta)
+Species=$(echo $Assembly | rev | cut -f4 -d'/' | rev)
+OutDir=$(ls -d assembly/spades/*/$Strain/filtered_contigs)
+qsub $ProgDir/sub_quast.sh $Assembly $OutDir
+done
+```
+
+ Assemblies were summarised to allow the best assembly to be determined by eye.
+
+ ** Assembly stats are:
+   * Assembly size:
+   * N50:153669
+   * N80:
+   * N20:
+   * Longest contig:687738
+   **
+
+
 <!--
-```bash
-  qsub /home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/velvet/submit_velvet_range.sh 35 65 2 qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq 60 exp_cov min_cov 600
-  gzip qc_dna/paired/F.venenatum/strain1/*/*.gz
-  mv qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq.gz
-  mv qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq.gz
-```
-
-```bash
-  F_Read=qc_dna/paired/F.venenatum/strain1/F/strain1_qc_F.fastq
-  R_Read=qc_dna/paired/F.venenatum/strain1/R/strain1_qc_R.fastq
-  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/spades
-  Outdir=assembly/spades/F.venenatum/strain1
-  qsub $ProgDir/submit_SPAdes.sh $F_Read $R_Read $Outdir correct
-```
-
-```bash
-  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-  Assembly=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp.fasta
-  OutDir=assembly/spades/F.venenatum/strain1/filtered_contigs
-  qsub $ProgDir/sub_quast.sh $Assembly $OutDir
-```
-
-As SPADes was run with the option to autodetect a minimum coverage the assembly
-was assessed to identify the coverage of assembled contigs. This was done using
-the following command:
-
-```
-  BestAss=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp.fasta
-  cat $BestAss | grep '>' | cut -f6 -d'_' | sort -n | cut -f1 -d '.' | sort -n | uniq -c | less
-```
-
-This returned the following results:
-```
-  633 2
-   85 3
-    4 4
-    2 5
-    2 6
-    2 7
-    1 8
-    1 11
-    2 13
-    1 14
-    3 15
-    2 16
-    2 18
-    1 19
-    1 20
-    2 23
-    1 27
-    1 28
-    2 33
-    3 36
-    2 38
-    1 39
-    4 40
-    3 41
-    7 42
-    6 43
-   21 44
-   46 45
-   50 46
-   14 47
-    1 48
-    2 49
-    1 53
-    1 54
-    1 55
-    1 57
-    1 58
-    1 60
-    1 63
-    1 68
-    1 80
-    1 87
-    1 92
-    1 104
-    1 105
-    1 108
-    1 109
-    1 137
-    1 170
-    1 354
-    1 503
-    1 506
-    1 566
-    1 791
-    1 903
-    1 987
-    1 1025
-    1 1028
-    1 1119
-    1 1136
-    1 1179
-    1 1263
-    1 1484
-    1 1553
-    1 4306
-    1 5188
-```
-From this it was determined that SPades could not be trusted to set its own
-minimum threshold for coverage.
-
-In future an option will be be used to set a coverage for spades.
-
-in the meantime contigs with a coverage lowere than 10 were filtered out using
-the following commands:
-
-```
-  Headers=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x_headers.txt
-  FastaMinCov=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
-  cat $BestAss | grep '>' | grep -E -v 'cov_.\..*_' > $Headers
-
-  cat $BestAss | sed -e 's/\(^>.*$\)/#\1#/' | tr -d "\r" | tr -d "\n" | sed -e 's/$/#/' | tr "#" "\n" | sed -e '/^$/d' | grep -A1 -f $Headers | grep -v -E '^\-\-' > $FastaMinCov
-```
-
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
   Assembly=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
