@@ -246,9 +246,24 @@ Contigs were renamed in accordance with ncbi recomendations
   rm tmp.csv
 ```
 
+Contigs were renamed in accordance with ncbi suggestions for exclusion of
+contigs. The Cpontamination screen report was downloaded to location in NCBI_report
+below and renamed to StrainName_ncbi_report.txt
+
+```bash
+  ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+  for Assembly in $(ls assembly/merged_canu_spades/*/*/polished/*_contigs_renamed.fasta); do
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | cut -f1 -d '_')
+    NCBI_report=$(ls assembly/merged_canu_spades/$Organism/$Strain*/ncbi_report1/*report.txt)
+    OutDir=$(dirname $NCBI_report)
+    $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/"$Strain"_contigs_renamed.fasta --coord_file $NCBI_report
+  done
+```
+
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/merged_canu_spades/*/*/polished/*_contigs_renamed.fasta); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*/ncbi_report1/*_contigs_renamed.fasta); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
 OutDir=$(dirname $Assembly)
@@ -285,6 +300,36 @@ OutDir=$InDir/aligned_MiSeq
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/genome_alignment
 qsub $ProgDir/bowtie/sub_bowtie_3lib.sh $Assembly $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir
 done
+```
+
+## Identifying low coverage regions
+
+ ```bash
+  Assembly=$(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/pilon.fasta)
+  Reads=$(ls raw_dna/minion/*/*/*_pass.fastq.gz)
+  AssemblyDir=$(dirname $Assembly)
+  OutDir=$AssemblyDir/aligned_minion
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/genome_alignment/bwa
+  qsub $ProgDir/sub_bwa_pacbio.sh $Assembly $Reads $OutDir
+```
+
+```bash
+qlogin
+cd /home/groups/harrisonlab/project_files/fusarium_venenatum
+Assembly=$(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/pilon.fasta)
+AssemblyDir=$(dirname $Assembly)
+AlignedBam=$(ls $AssemblyDir/aligned_MiSeq/pilon.fasta_aligned_sorted.bam)
+CoverageTxt=$AssemblyDir/aligned_MiSeq/pilon.fasta_coverage.txt
+bedtools genomecov -max 10 -d -ibam $AlignedBam -g $Assembly > $CoverageTxt
+Threshold=10
+FlaggedRegions=$AssemblyDir/aligned_MiSeq/pilon.fasta_flagged_regions.txt
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/genome_alignment/bwa
+$ProgDir/flag_low_coverage.py --genomecov $CoverageTxt --min $Threshold > $FlaggedRegions
+# Re-run with a lower Threshold
+Threshold=5
+FlaggedRegions=$AssemblyDir/aligned_MiSeq/pilon.fasta_flagged_regions_5x.txt
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/genome_alignment/bwa
+$ProgDir/flag_low_coverage.py --genomecov $CoverageTxt --min $Threshold > $FlaggedRegions
 ```
 
 # Repeatmasking
