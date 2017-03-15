@@ -352,30 +352,34 @@ qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 done
 ```
 
-<!-- Contigs were renamed in accordance with ncbi suggestions for exclusion of
+Contigs were renamed in accordance with ncbi suggestions for exclusion of
 contigs. The Cpontamination screen report was downloaded to location in NCBI_report
 below and renamed to StrainName_ncbi_report.txt
 
 ```bash
   ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
-  for Assembly in $(ls assembly/merged_canu_spades/*/*/polished/*_contigs_renamed.fasta); do
-    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
-    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | cut -f1 -d '_')
-    NCBI_report=$(ls assembly/merged_canu_spades/$Organism/$Strain*/ncbi_report1/*report.txt)
-    OutDir=$(dirname $NCBI_report)
-    $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/"$Strain"_contigs_renamed.fasta --coord_file $NCBI_report
+  for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/split_contigs/*_contigs_renamed.fasta); do
+    Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)  
+    Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev | cut -f1 -d '_')
+    # NCBI_report=$(ls assembly/merged_canu_spades/$Organism/$Strain*/ncbi_report1/*report.txt)
+    NCBI_report=report.txt
+    # OutDir=$(dirname $NCBI_report)
+    OutDir=assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/ncbi_report1
+    mkdir -p $OutDir
+    printf "Exclude:\nSequence name, length, apparent source\ncontig_8\t5513\tvector/etc" > $NCBI_report
+    $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/"$Strain"_ncbi_contigs_renamed.fasta --coord_file $NCBI_report
   done
 ```
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/merged_canu_spades/*/*/ncbi_report1/*_contigs_renamed.fasta); do
-Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
-Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
+for Assembly in $(ls assembly/merged_canu_spades/*/*/polished/ncbi_report1/*_contigs_renamed.fasta); do
+Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)  
 OutDir=$(dirname $Assembly)
 qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 done
-``` -->
+```
 
 # Repeatmasking
 
@@ -387,7 +391,7 @@ The best assemblies were used to perform repeatmasking
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/repeat_masking
-for BestAss in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/split_contigs/*_contigs_renamed.fasta); do
+for BestAss in $(ls assembly/merged_canu_spades/*/*/polished/ncbi_report1/*_contigs_renamed.fasta); do
 Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
 Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev | cut -f1 -d '_')
 OutDir=repeat_masked/$Organism/"$Strain"_ncbi/ncbi_submission
