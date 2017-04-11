@@ -470,10 +470,11 @@ Repeat masking was performed and used the following programs: Repeatmasker Repea
 The best assembly was used to perform repeatmasking
 
 ```bash
-  ProgDir=/home/gomeza/git_repos/emr_repos/tools/seq_tools/repeat_masking
-  BestAss=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_renamed.fasta
-  qsub $ProgDir/rep_modeling.sh $BestAss
-  qsub $ProgDir/transposonPSI.sh $BestAss
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/repeat_masking
+  BestAss=assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta
+  OutDir=repeat_masked/F.venenatum/WT/illumina_assembly
+  qsub $ProgDir/rep_modeling.sh $BestAss $OutDir
+  qsub $ProgDir/transposonPSI.sh $BestAss $OutDir
 ```  
 
 
@@ -486,7 +487,7 @@ repeatmasker / repeatmodeller softmasked and hardmasked files.
 
 ```bash
 
-for File in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa); do
+for File in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -w 'WT'); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
@@ -496,12 +497,29 @@ echo "Number of masked bases:"
 cat $OutFile | grep -v '>' | tr -d '\n' | awk '{print $0, gsub("[a-z]", ".")}' | cut -f2 -d ' '
 done
 # The number of N's in hardmasked sequence are not counted as some may be present within the assembly and were therefore not repeatmasked.
-for File in $(ls repeat_masked/*/*/*/*_contigs_hardmasked.fa); do
+for File in $(ls repeat_masked/*/*/*/*_contigs_hardmasked.fa | grep -w 'WT'); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_hardmasked.fa/_contigs_hardmasked_repeatmasker_TPSI_appended.fa/g')
 echo "$OutFile"
 bedtools maskfasta -fi $File -bed $TPSI -fo $OutFile
+done
+```
+
+```bash
+for RepDir in $(ls -d repeat_masked/F.*/*/* | grep -w 'WT'); do
+Strain=$(echo $RepDir | rev | cut -f2 -d '/' | rev)
+Organism=$(echo $RepDir | rev | cut -f3 -d '/' | rev)  
+RepMaskGff=$(ls $RepDir/*_contigs_hardmasked.gff)
+TransPSIGff=$(ls $RepDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
+printf "$Organism\t$Strain\n"
+# printf "The number of bases masked by RepeatMasker:\t"
+sortBed -i $RepMaskGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+# printf "The number of bases masked by TransposonPSI:\t"
+sortBed -i $TransPSIGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+# printf "The total number of masked bases are:\t"
+cat $RepMaskGff $TransPSIGff | sortBed | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+echo
 done
 ```
 
@@ -519,7 +537,7 @@ Gene prediction followed three steps:
 ## Pre-gene prediction
 Quality of genome assemblies was assessed by looking for the gene space in the assemblies.
 
-```bash
+<!-- ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/cegma
   Assembly=repeat_masked/F.venenatum/strain1/filtered_contigs_repmask/strain1_contigs_unmasked.fa
   qsub $ProgDir/sub_cegma.sh $Assembly dna
@@ -527,7 +545,28 @@ Quality of genome assemblies was assessed by looking for the gene space in the a
 The cegma completeness report gave an indication of the number of genes core
 eukaryotic genes were present:
 ** Number of cegma genes present and complete: 237 (95.56%) **
-** Number of cegma genes present and partial: 241 (97.18%) **
+** Number of cegma genes present and partial: 241 (97.18%) ** -->
+
+```bash
+for Assembly in $(ls assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+  Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+  echo "$Organism - $Strain"
+  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+  # BuscoDB="Fungal"
+  BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+  OutDir=gene_pred/busco/$Organism/$Strain/assembly
+  qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+  for File in $(ls gene_pred/assembly/F*/*/genes/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e 'Total';
+  done
+```
+
 
 
 ## Gene prediction 1 - Braker1 gene model training and prediction
@@ -539,10 +578,30 @@ First, RNAseq data was aligned to Fusarium genomes.
 Acceptedhits.bam files were used as evidence for gene models training using
 Braker and CodingQuary.
 
+Accepted hits .bam file were concatenated and indexed for use for gene model training:
+<!--
+```bash
+ls /home/groups/harrisonlab/project_files/quorn/align/*.bam
+BamFiles=$(ls /home/groups/harrisonlab/project_files/quorn/align/*.Aligned.sortedByCoord.out.bam | grep -v 'SE' | tr -d '\n' | sed 's/.bam/.bam /g')
+samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam $BamFiles
+``` -->
+
+```bash
+OutDir=alignment/F.venenatum/WT/illumina
+mkdir -p $OutDir
+for File in $(ls /home/groups/harrisonlab/project_files/quorn/illumina/*.out.bam); do
+Prefix=$(basename $File | sed 's/.bam//g')
+echo $Prefix
+samtools sort -o $File $Prefix > $OutDir/"$Prefix"_sorted.bam
+done
+BamFiles=$(ls $OutDir/*_sorted.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+samtools merge -f $OutDir/concatenated.bam $BamFiles
+```
+
 #### Braker prediction
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa); do
+  for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
     Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
@@ -657,6 +716,29 @@ cat $DirPath/final_genes_combined.pep.fasta | grep '>' | wc -l;
 echo "";
 done
 ```
+
+# Assessing gene space in predicted transcriptomes
+
+```bash
+for Assembly in $(ls assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+  Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+  echo "$Organism - $Strain"
+  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+  # BuscoDB="Fungal"
+  BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+  OutDir=gene_pred/busco/$Organism/$Strain/assembly
+  qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+  for File in $(ls gene_pred/assembly/F*/*/genes/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e 'Total';
+  done
+```
+
 
 #Functional annotation
 
