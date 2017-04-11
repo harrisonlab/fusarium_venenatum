@@ -41,6 +41,21 @@ Assembly of remaining reads
   # cat raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date".fastq.gz raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_fail.fastq.gz > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_pass-fail.fastq.gz
 ```
 
+### Identifing read depth
+
+```bash
+  for Reads in $(ls raw_dna/minion/*/*/*_pass.fastq.gz); do
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+    qsub $ProgDir/sub_count_nuc.sh 38 $Reads
+  done
+  for Reads in $(ls qc_dna/paired/*/*/*/*_trim.fq.gz | grep 'WT'); do
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+    qsub $ProgDir/sub_count_nuc.sh 38 $Reads
+  done
+```
+
+
+
 
 ### Canu assembly
 
@@ -149,18 +164,56 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
   done
 ```
 
+```bash
+  for Assembly in $(ls assembly/spades_minion/*/*/contigs.fasta); do
+    echo "Filtering contigs smaller than 500bp"
+    InDir=$(dirname $Assembly)
+    OutDir=$InDir/filtered_contigs
+    mkdir -p $OutDir
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/abyss
+    $ProgDir/filter_abyss_contigs.py $Assembly 500 > $OutDir/contigs_min_500bp.fasta
+  done
+```
+
+
 
 ### Quast
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-  for Assembly in $(ls assembly/spades_minion/*/*/contigs.fasta); do
+  for Assembly in $(ls assembly/spades_minion/*/*//filtered_contigs/*_min_500bp.fasta); do
     Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
     Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
-    OutDir=assembly/spades_pacbio/$Organism/$Strain/filtered_contigs
+    echo "$Organism - $Strain"
+    OutDir=$(dirname $Assembly)
     qsub $ProgDir/sub_quast.sh $Assembly $OutDir
   done
 ```
+
+<!--
+## Nanopolish scaffolding
+
+```bash
+OutDir=assembly/nanopolish
+mkdir -p $OutDir
+  Reads=$(ls raw_dna/minion/*/*/*_pass.fastq.gz)
+Spades=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta)
+bwa index $Spades
+bwa mem -x ont2d -t 8 $Spades $Reads > $OutDir/aligned.bam
+samtools sort $OutDir/aligned.bam -f $OutDir/reads.sorted.bam
+samtools view -u $OutDir/aligned.bam | samtools sort - -f $OutDir/reads.sorted.bam
+samtools index reads.sorted.bam
+
+TMPDIR=/tmp/nanopolish
+mkdir -p $TMPDIR
+bwa index $TMPDIR/contigs_min_500bp.fasta
+bwa mem -x ont2d -t 16 $TMPDIR/contigs_min_500bp.fasta $TMPDIR/WT_07-03-17_pass.fastq.gz | samtools sort - -o $TMPDIR/reads.sorted.bam
+
+
+python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --results nanopolish.results -P 8 \
+    nanopolish variants --consensus polished.{1}.fa -w {1} -r $TMPDIR/WT_07-03-17_pass.fastq.gz -b $TMPDIR/reads.sorted.bam -g $TMPDIR/contigs_min_500bp.fasta -t 8 --min-candidate-frequency 0.1
+```
+ -->
 
 # Merging Minion and Hybrid Assemblies
 
@@ -421,6 +474,22 @@ bedtools maskfasta -fi $File -bed $TPSI -fo $OutFile
 done
 ```
 
+```bash
+for RepDir in $(ls -d repeat_masked/F.*/*/*); do
+Strain=$(echo $RepDir | rev | cut -f2 -d '/' | rev)
+Organism=$(echo $RepDir | rev | cut -f3 -d '/' | rev)  
+RepMaskGff=$(ls $RepDir/*_contigs_hardmasked.gff)
+TransPSIGff=$(ls $RepDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
+printf "$Organism\t$Strain\n"
+# printf "The number of bases masked by RepeatMasker:\t"
+sortBed -i $RepMaskGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+# printf "The number of bases masked by TransposonPSI:\t"
+sortBed -i $TransPSIGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+# printf "The total number of masked bases are:\t"
+cat $RepMaskGff $TransPSIGff | sortBed | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+echo
+done
+```
 
 # Gene Prediction
 
@@ -460,6 +529,13 @@ for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi
 done
 ```
 
+```bash
+  for File in $(ls gene_pred/assembly/F*/*/genes/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e 'Total';
+  done
+```
+
 ## Gene prediction 1 - Braker1 gene model training and prediction
 
 Gene prediction was performed using Braker1.
@@ -470,9 +546,23 @@ Acceptedhits.bam files were used as evidence for gene models training using
 Braker and CodingQuary.
 
 Accepted hits .bam file were concatenated and indexed for use for gene model training:
-
+<!--
 ```bash
 ls /home/groups/harrisonlab/project_files/quorn/align/*.bam
+BamFiles=$(ls /home/groups/harrisonlab/project_files/quorn/minion/*.Aligned.out.bam | grep -v 'SE' | tr -d '\n' | sed 's/.bam/.bam /g')
+samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam $BamFiles
+``` -->
+
+```bash
+OutDir=alignment/F.venenatum/WT/minion
+mkdir -p $OutDir
+for File in $(ls /home/groups/harrisonlab/project_files/quorn/minion/*.out.bam); do
+Prefix=$(basename $File | sed 's/.bam//g')
+echo $Prefix
+samtools sort -o $File $Prefix > $OutDir/"$Prefix"_sorted.bam
+done
+BamFiles=$(ls $OutDir/*_sorted.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+samtools merge -f $OutDir/concatenated.bam $BamFiles
 ```
 
 #### Braker prediction
@@ -497,6 +587,19 @@ ls /home/groups/harrisonlab/project_files/quorn/align/*.bam
 ** Number of genes predicted:  **
 
 
+```bash
+for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_ncbi'); do
+Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
+Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+FinalDir=gene_pred/final/$Organism/$Strain/final
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+$ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
+done
+
+```
+<!--
 ## Supplimenting Braker gene models with CodingQuary genes
 
 Additional genes were added to Braker gene predictions, using CodingQuary in
@@ -533,18 +636,17 @@ Secondly, genes were predicted using CodingQuary:
     qsub $ProgDir/sub_CodingQuary.sh $Assembly $CufflinksGTF $OutDir
   done
 ```
-<!--
+
 Then, additional transcripts were added to Braker gene models, when CodingQuary
 genes were predicted in regions of the genome, not containing Braker gene
 models:
 
 ```bash
-for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3); do
+for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_ncbi'); do
 Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
 Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
-# BrakerGff=gene_pred/braker/$Organism/$Strain/F.oxysporum_fsp_cepae_Fus2_braker/augustus_extracted.gff
-Assembly=$(ls repeat_masked/$Organism/$Strain/*/"$Strain"_contigs_softmasked.fa)
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
 CodingQuaryGff=gene_pred/codingquary/$Organism/$Strain/out/PredictedPass.gff3
 PGNGff=gene_pred/codingquary/$Organism/$Strain/out/PGN_predictedPass.gff3
 AddDir=gene_pred/codingquary/$Organism/$Strain/additional
@@ -593,3 +695,192 @@ cat $DirPath/final_genes_combined.pep.fasta | grep '>' | wc -l;
 echo "";
 done
 ``` -->
+
+## Assessing the Gene space in predicted transcriptomes:
+
+```bash
+	for Assembly in $(ls gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_Braker.gene.fasta); do
+		Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+		Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+		echo "$Organism - $Strain"
+		ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+		# BuscoDB="Fungal"
+		BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+		OutDir=gene_pred/busco/$Organism/$Strain/genes
+		qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+	done
+```
+
+
+```bash
+  for File in $(ls gene_pred/busco/F*/*/genes/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e 'Total';
+  done
+```
+
+#Functional annotation
+
+Interproscan was used to give gene models functional annotations. Annotation was
+ run using the commands below:
+
+Note: This is a long-running script. As such, these commands were run using
+ 'screen' to allow jobs to be submitted and monitored in the background.
+ This allows the session to be disconnected and reconnected over time.
+
+Screen ouput detailing the progress of submission of interporscan jobs was
+redirected to a temporary output file named interproscan_submission.log .
+
+
+```bash
+  screen -a
+  cd /home/groups/harrisonlab/project_files/fusarium_venenatum
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
+  # for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
+  for Genes in $(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa); do
+    echo $Genes
+    $ProgDir/sub_interproscan.sh $Genes
+  done 2>&1 | tee -a interproscan_submisison.log
+```
+
+Following interproscan annotation split files were combined using the following
+commands:
+
+```bash
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
+  # for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
+  for Proteins in $(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa); do
+    Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    echo $Strain
+    InterProRaw=gene_pred/interproscan/$Organism/$Strain/raw
+    $ProgDir/append_interpro.sh $Proteins $InterProRaw
+  done
+```
+
+## B) SwissProt
+
+```bash
+  # for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
+  for Proteome in $(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa); do
+    Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
+    OutDir=gene_pred/swissprot/$Organism/$Strain
+    SwissDbDir=../../uniprot/swissprot
+    SwissDbName=uniprot_sprot
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/swissprot
+    qsub $ProgDir/sub_swissprot.sh $Proteome $OutDir $SwissDbDir $SwissDbName
+  done
+```
+<!--
+## C) Summarising annotation in annotation table
+
+```bash
+  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended.gff3); do
+    Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
+    Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa)
+    InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
+    SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl)
+    OutDir=gene_pred/annotation/$Organism/$Strain
+    mkdir -p $OutDir
+    ProgDir=/home/armita/git_repos/emr_repos/tools/pathogen/annotation_tables
+    $ProgDir/build_annot_tab.py --genome $Assembly --genes_gff $GeneGff --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation.tsv
+  done
+``` -->
+
+
+#Genomic analysis
+<!-- The first analysis was based upon BLAST searches for genes known to be involved in toxin production -->
+
+
+## D) Secondary metabolites (Antismash and SMURF)
+
+Antismash was run to identify clusters of secondary metabolite genes within
+the genome. Antismash was run using the weserver at:
+http://antismash.secondarymetabolites.org
+
+<!--
+Results of web-annotation of gene clusters within the assembly were downloaded to
+the following directories:
+
+```bash
+  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa | grep 'strain1'); do
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    OutDir=analysis/antismash/$Organism/$Strain
+    mkdir -p $OutDir
+  done
+```
+
+```bash
+  for Zip in $(ls analysis/antismash/*/*/*.zip); do
+    OutDir=$(dirname $Zip)
+    unzip -d $OutDir $Zip
+  done
+```
+
+```bash
+  for AntiSmash in $(ls analysis/antismash/*/*/*/*.final.gbk); do
+    Organism=$(echo $AntiSmash | rev | cut -f4 -d '/' | rev)
+    Strain=$(echo $AntiSmash | rev | cut -f3 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=analysis/antismash/$Organism/$Strain
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+    $ProgDir/antismash2gff.py --inp_antismash $AntiSmash > $OutDir/"$Strain"_secondary_metabolite_regions.gff
+    printf "Number of clusters detected:\t"
+    cat $OutDir/"$Strain"_secondary_metabolite_regions.gff | grep 'antismash_cluster' | wc -l
+    # GeneGff=gene_pred/final_genes/F.oxysporum_fsp_cepae/Fus2_canu_new/final/final_genes_appended.gff3
+    GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended.gff3
+    bedtools intersect -u -a $GeneGff -b $OutDir/"$Strain"_secondary_metabolite_regions.gff > $OutDir/metabolite_cluster_genes.gff
+    cat $OutDir/metabolite_cluster_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > $OutDir/metabolite_cluster_gene_headers.txt
+    printf "Number of predicted proteins in clusters:\t"
+    cat $OutDir/metabolite_cluster_gene_headers.txt | wc -l
+    printf "Number of predicted genes in clusters:\t"
+    cat $OutDir/metabolite_cluster_genes.gff | grep -w 'gene' | wc -l
+  done
+```
+
+These clusters represented the following genes. Note that these numbers just
+show the number of intersected genes with gff clusters and are not confirmed by
+function
+
+```
+  F.venenatum - strain1
+  Number of clusters detected:    38
+  Number of predicted proteins in clusters:       585
+  Number of predicted genes in clusters:  562
+```
+-->
+
+SMURF was also run to identify secondary metabolite gene clusters.
+
+Genes needed to be parsed into a specific tsv format prior to submission on the
+SMURF webserver.
+
+```bash
+  # Gff=gene_pred/final/F.venenatum/strain1/final/final_genes_appended.gff3
+  for Gff in $(ls gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_Braker.gff3); do
+    Strain=$(echo $Gff | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Gff | rev | cut -f4 -d '/' | rev)
+    OutDir=analysis/secondary_metabolites/smurf/$Organism/$Strain
+    mkdir -p $OutDir
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+    $ProgDir/gff2smurf.py --gff $Gff > $OutDir/"$Strain"_genes_smurf.tsv
+  done
+```
+
+SMURF output was received by email and downloaded to the cluster in the output
+directory above.
+
+Output files were parsed into gff format:
+
+```bash
+  for OutDir in $(ls -d analysis/secondary_metabolites/smurf/F.venenatum/WT_ncbi); do
+    SmurfClusters=$(ls $OutDir/Secondary-Metabolite-Clusters.txt)
+    SmurfBackbone=$(ls $OutDir/Backbone-genes.txt)
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+    $ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
+  done
+```
