@@ -601,20 +601,20 @@ samtools merge -f $OutDir/concatenated.bam $BamFiles
 #### Braker prediction
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
-    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-    echo "$Organism - $Strain"
-    mkdir -p alignment/$Organism/$Strain/concatenated
-    # samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam \
-    # ../quorn/tophat/WTCHG_25*/accepted_hits.bam
-    OutDir=gene_pred/braker/$Organism/"$Strain"_braker
-    AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
-    GeneModelName="$Organism"_"$Strain"_braker
-    rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
-    ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
-    qsub $ProgDir/sub_braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
-  done
+for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+mkdir -p alignment/$Organism/$Strain/concatenated
+# samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam \
+# ../quorn/tophat/WTCHG_25*/accepted_hits.bam
+OutDir=gene_pred/braker/$Organism/"$Strain"_braker
+AcceptedHits=$(ls alignment/F.venenatum/WT/illumina/concatenated.bam)
+GeneModelName="$Organism"_"$Strain"_braker
+rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
+qsub $ProgDir/sub_braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
+done
 ```
 
 ** Number of genes predicted:  **
@@ -631,13 +631,13 @@ Note - cufflinks doesn't always predict direction of a transcript and
 therefore features can not be restricted by strand when they are intersected.
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
+for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
 Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
 mkdir -p $OutDir
-AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
+AcceptedHits=$(ls alignment/F.venenatum/WT/illumina/concatenated.bam)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
 qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
 done
