@@ -265,6 +265,30 @@ qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 done
 ```
 
+checking using busco
+
+```bash
+#for Assembly in  $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*_first/merged.fasta); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+  Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+  echo "$Organism - $Strain"
+  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+  # BuscoDB="Fungal"
+  BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+  OutDir=gene_pred/busco/$Organism/$Strain/assembly
+  qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+  for File in $(ls gene_pred/busco/*/*/assembly/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e 'Total';
+  done
+```
+
+
 This merged assembly was polished using Pilon
 
 ```bash
@@ -573,10 +597,8 @@ samtools merge -f $OutDir/concatenated.bam $BamFiles
     Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
     mkdir -p alignment/$Organism/$Strain/concatenated
-    samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam \
-    /home/groups/harrisonlab/project_files/quorn/align/WT*.sortedByCoord.out.bam
     OutDir=gene_pred/braker/$Organism/"$Strain"_braker
-    AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
+    AcceptedHits=alignment/F.venenatum/WT/minion/concatenated.bam
     GeneModelName="$Organism"_"$Strain"_braker
     rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
     ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
@@ -599,7 +621,7 @@ $ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/fina
 done
 
 ```
-<!--
+
 ## Supplimenting Braker gene models with CodingQuary genes
 
 Additional genes were added to Braker gene predictions, using CodingQuary in
@@ -617,7 +639,7 @@ Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
 mkdir -p $OutDir
-AcceptedHits=alignment/$Organism/$Strain/concatenated/concatenated.bam
+AcceptedHits=alignment/F.venenatum/WT/minion/concatenated.bam
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
 qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
 done
