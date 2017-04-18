@@ -84,6 +84,52 @@ done
 ```
 
 
+```bash
+ProjDir=$PWD
+
+NanoCorrDir=qc_dna/minion
+mkdir -p $NanoCorrDir
+cd $NanoCorrDir
+
+NanoReads=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/F.venenatum/WT/WT_07-03-17_pass.fastq.gz)
+
+
+ProgDir=/home/armita/prog/nanocorr/nanocorr
+python $ProgDir/partition.py 100 500 $NanoReads
+
+
+IlluminaReads=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/F.venenatum/WT/F/FvenWT_S1_L001_R1_001_trim.fq.gz)
+cat $IlluminaReads | gunzip -cf | sed -n '1~4s/^@/>/p;2~4p' > good_reads.fa
+for Dir in $(ls -d * | head -n1);
+do echo $Dir;
+num=500
+for j in $(seq 1 $num | head -n10); do
+Jobs=$(qstat | grep 'sub_nanoco' | wc -l)
+while [ $Jobs -gt 24 ]; do
+sleep 5m
+printf "."
+Jobs=$(qstat | grep 'sub_nanoco' | wc -l)
+done		
+printf "\n"
+# echo "SGE_TASK_ID=$j TMPDIR=/tmp nanocorr.py query.fa reference.fa"
+NanoPoreSubset=$(ls $Dir/* | head -n $j | tail -n1)
+OutDir=$Dir/$j
+export SGE_TASK_ID=$j
+export TMPDIR=/tmp/nanocorr/tmp
+#TMPDIR=/tmp
+# python $ProgDir/nanocorr.py /tmp/nanocorr/FvenWT_S1_L001_R1_001_trim.fa
+GitDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+qsub $GitDir/sub_nanocorr.sh $NanoPoreSubset $j good_reads.fa $OutDir
+done
+#cd ../
+done
+```
+
+
+
+
+
+
 <!-- Assemblies were polished using Pilon
 
 ```bash
