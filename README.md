@@ -578,6 +578,42 @@ First, RNAseq data was aligned to Fusarium genomes.
 Acceptedhits.bam files were used as evidence for gene models training using
 Braker and CodingQuary.
 
+
+
+#### Aligning
+
+Insert sizes of the RNA seq library were unknown until a draft alignment could
+be made. To do this tophat and cufflinks were run, aligning the reads against a
+single genome. The fragment length and stdev were printed to stdout while
+cufflinks was running.
+
+```bash
+for Assembly in $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa | grep -w 'WT'); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+for FileF in $(ls ../quorn/filtered/*.1.fq | grep -v 'SE' | tail -n+2); do
+Jobs=$(qstat | grep 'sub_sta' | grep 'qw'| wc -l)
+while [ $Jobs -gt 1 ]; do
+sleep 1m
+printf "."
+Jobs=$(qstat | grep 'sub_sta' | grep 'qw'| wc -l)
+done
+printf "\n"
+FileR=$(echo $FileF | sed 's/.1.fq/.2.fq/g')
+echo $FileF
+echo $FileR
+Prefix=$(echo $FileF | rev | cut -f1 -d '/' | rev | sed "s/.1.fq//g")
+# Timepoint=$(echo $FileF | rev | cut -f2 -d '/' | rev)
+Timepoint="treatment"
+#echo "$Timepoint"
+OutDir=alignment/star/$Organism/$Strain/$Timepoint/$Prefix
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
+qsub $ProgDir/sub_star.sh $Assembly $FileF $FileR $OutDir
+done
+done
+```
+
 Accepted hits .bam file were concatenated and indexed for use for gene model training:
 <!--
 ```bash
@@ -606,8 +642,6 @@ Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 mkdir -p alignment/$Organism/$Strain/concatenated
-# samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam \
-# ../quorn/tophat/WTCHG_25*/accepted_hits.bam
 OutDir=gene_pred/braker/$Organism/"$Strain"_braker
 AcceptedHits=$(ls alignment/F.venenatum/WT/illumina/concatenated.bam)
 GeneModelName="$Organism"_"$Strain"_braker
