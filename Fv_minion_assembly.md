@@ -160,7 +160,7 @@ done
 
 This merged assembly was polished using Pilon
 
-```bash
+<!-- ```bash
 for Assembly in $(ls assembly/canu-1.4/*/*/*.contigs.fasta); do
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
@@ -173,8 +173,75 @@ TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
     qsub $ProgDir/sub_pilon.sh $Assembly $TrimF1_Read $TrimR1_Read $OutDir
   done
+``` -->
+
+```bash
+for Assembly in $(ls assembly/canu-1.4/*/*/*.contigs.fasta); do
+Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
+IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+#TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n1 | tail -n1);
+#TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n1 | tail -n1);
+TrimF2_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
+#echo $TrimF1_Read
+#echo $TrimR1_Read
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=assembly/canu-1.4/$Organism/$Strain/polished_10
+Itterations=10
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
+#qsub $ProgDir/sub_pilon_3_libs.sh $Assembly $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Itterations
+qsub $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Itterations
+done
 ```
 
+checking using busco
+
+```bash
+#for Assembly in  $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
+for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/ncbi_report1/polished/pilon.fasta); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f5 | rev)
+  Organism=$(echo $Assembly | rev | cut -d '/' -f6 | rev)
+  echo "$Organism - $Strain"
+  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+  # BuscoDB="Fungal"
+  BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+  OutDir=gene_pred/busco/$Organism/"$Strain"_pilon/assembly
+  qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+  for File in $(ls gene_pred/busco/*/*/assembly/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e '(F)' -e '(M)' -e 'Total';
+  done
+```
+
+```
+gene_pred/busco/F.venenatum/WT/assembly/run_contigs_min_500bp/short_summary_contigs_min_500bp.txt
+	3688	Complete BUSCOs (C)
+	14	Fragmented BUSCOs (F)
+	23	Missing BUSCOs (M)
+	3725	Total BUSCO groups searched
+gene_pred/busco/F.venenatum/WT_ncbi/assembly/run_polished_contigs_softmasked_2017-03-23_18:19/short_summary_polished_contigs_softmasked_2017-03-23_18:19.txt
+	3475	Complete BUSCOs (C)
+	122	Fragmented BUSCOs (F)
+	128	Missing BUSCOs (M)
+	3725	Total BUSCO groups searched
+gene_pred/busco/F.venenatum/WT_spades_first_pilon/assembly/run_pilon/short_summary_pilon.txt
+	3629	Complete BUSCOs (C)
+	41	Fragmented BUSCOs (F)
+	55	Missing BUSCOs (M)
+	3725	Total BUSCO groups searched
+  ```
 
 <!--
 Inspection of flagged regions didn't identify any contigs that needed to be broken.
@@ -501,6 +568,23 @@ Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)  
 OutDir=$(dirname $Assembly)
 qsub $ProgDir/sub_quast.sh $Assembly $OutDir
+done
+```
+
+This edited assembly was corrected once more using pilon with 5 itterations
+
+```bash
+for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/ncbi_report1/WT_ncbi_contigs_renamed.fasta); do
+Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev | cut -f1 -d '_')
+IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
+echo "$Organism - $Strain"
+TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
+TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
+OutDir=$(dirname $Assembly)
+Itterations='5'
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
+qsub $ProgDir/sub_pilon.sh $Assembly $TrimF1_Read $TrimR1_Read $OutDir/polished $Itterations
 done
 ```
 
