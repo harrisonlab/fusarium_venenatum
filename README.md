@@ -410,58 +410,53 @@ qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 done
 ```
 
- Assemblies were summarised to allow the best assembly to be determined by eye.
-
- ** Assembly stats are:
-   * Assembly size:
-   * N50:153669
-   * N80:
-   * N20:
-   * Longest contig:687738
-   **
-
-
-<!--
-```bash
-  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-  Assembly=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta
-  OutDir=assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x
-  qsub $ProgDir/sub_quast.sh $Assembly $OutDir
-```
-
-Results were as follows:
-```
-  All statistics are based on contigs of size >= 500 bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).
-
-  Assembly                   contigs_min_500bp_10x  contigs_min_500bp_10x broken
-  # contigs (>= 0 bp)        213                    213
-  # contigs (>= 1000 bp)     196                    196
-  Total length (>= 0 bp)     37650527               37650527
-  Total length (>= 1000 bp)  37638009               37638009
-  # contigs                  212                    212
-  Largest contig             1154964                1154964
-  Total length               37650028               37650028
-  GC (%)                     47.62                  47.62
-  N50                        392022                 392022
-  N75                        233930                 233930
-  L50                        32                     32
-  L75                        62                     62
-  # N's per 100 kbp          0.00                   0.00
-```
-
-Contigs were renamed in accordance with ncbi recomendations.
+The results of quast were shown using the following commands:
 
 ```bash
-  ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
-  touch tmp.csv
-  for Assembly in $(ls assembly/spades/F.venenatum/strain1/filtered_contigs/contigs_min_500bp_10x.fasta); do
+  for Assembly in $(ls assembly/spades/*/*/filtered_contigs/report.txt); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev);
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev);
+    echo;
+    echo $Organism;
+    echo $Strain;
+    cat $Assembly;
+  done > assembly/quast_results.txt
+```
+
+
+A Bioproject and Biosample was made with NCBI genbank for submission of genomes.
+Following the creation of these submissions, the .fasta assembly was uploaded
+through the submission portal. A note was provided requesting that the assembly
+be run through the contamination screen to aid a more detailed resubmission in
+future. The returned FCSreport.txt was downloaded from the NCBI webportal and
+used to correct the assembly to NCBI standards.
+
+NCBI reports (FCSreport.txt) were manually downloaded to the following locations:
+
+```bash
+  for Assembly in $(ls assembly/spades/*/*/*/contigs_min_500bp.fasta | grep -v 'ncbi_edits' | grep -w 'WT'); do
     Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
-    OutDir=assembly/spades/$Organism/$Strain/filtered_contigs
-    $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/contigs_min_500bp_renamed.fasta --coord_file tmp.csv
+    NCBI_report_dir=genome_submission/$Organism/$Strain/initial_submission
+    mkdir -p $NCBI_report_dir
   done
-  rm tmp.csv
-``` -->
+```
+
+These downloaded files were used to correct assemblies:
+
+```bash
+for Assembly in $(ls assembly/spades/*/*/filtered_contigs/contigs_min_500bp.fasta | grep -w 'WT'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+echo "$Organism - $Strain"
+NCBI_report=$(ls genome_submission/$Organism/$Strain/initial_submission/Contamination*.txt)
+OutDir=assembly/spades/$Organism/$Strain/ncbi_edits
+mkdir -p $OutDir
+ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+$ProgDir/remove_contaminants.py --keep_mitochondria --inp $Assembly --out $OutDir/contigs_min_500bp_renamed.fasta --coord_file $NCBI_report > $OutDir/log.txt
+done
+```
+
 
 # Repeatmasking
 
@@ -471,8 +466,9 @@ The best assembly was used to perform repeatmasking
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/repeat_masking
-  BestAss=assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta
-  OutDir=repeat_masked/F.venenatum/WT/illumina_assembly
+  # BestAss=assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta
+  BestAss=assembly/spades/F.venenatum/WT/ncbi_edits/contigs_min_500bp_renamed.fasta
+  OutDir=repeat_masked/F.venenatum/WT/illumina_assembly_ncbi
   qsub $ProgDir/rep_modeling.sh $BestAss $OutDir
   qsub $ProgDir/transposonPSI.sh $BestAss $OutDir
 ```  
@@ -487,7 +483,7 @@ repeatmasker / repeatmodeller softmasked and hardmasked files.
 
 ```bash
 
-for File in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -w 'WT'); do
+for File in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -w 'WT' | grep 'ncbi'); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
@@ -497,7 +493,7 @@ echo "Number of masked bases:"
 cat $OutFile | grep -v '>' | tr -d '\n' | awk '{print $0, gsub("[a-z]", ".")}' | cut -f2 -d ' '
 done
 # The number of N's in hardmasked sequence are not counted as some may be present within the assembly and were therefore not repeatmasked.
-for File in $(ls repeat_masked/*/*/*/*_contigs_hardmasked.fa | grep -w 'WT'); do
+for File in $(ls repeat_masked/*/*/*/*_contigs_hardmasked.fa | grep -w 'WT' | grep 'ncbi'); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_hardmasked.fa/_contigs_hardmasked_repeatmasker_TPSI_appended.fa/g')
@@ -507,7 +503,7 @@ done
 ```
 
 ```bash
-for RepDir in $(ls -d repeat_masked/F.*/*/* | grep -w 'WT'); do
+for RepDir in $(ls -d repeat_masked/F.*/*/* | grep -w 'WT' | grep 'ncbi'); do
 Strain=$(echo $RepDir | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $RepDir | rev | cut -f3 -d '/' | rev)  
 RepMaskGff=$(ls $RepDir/*_contigs_hardmasked.gff)
@@ -522,6 +518,11 @@ cat $RepMaskGff $TransPSIGff | sortBed | bedtools merge | awk -F'\t' 'BEGIN{SUM=
 echo
 done
 ```
+
+F.venenatum	WT
+302604
+144657
+438768
 
 # Gene Prediction
 
@@ -548,12 +549,12 @@ eukaryotic genes were present:
 ** Number of cegma genes present and partial: 241 (97.18%) ** -->
 
 ```bash
-for Assembly in $(ls assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta); do
+# for Assembly in $(ls assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta); do
+for Assembly in $(ls  repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -w 'WT' | grep 'ncbi'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
   ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
-  # BuscoDB="Fungal"
   BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
   OutDir=gene_pred/busco/$Organism/$Strain/assembly
   qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
@@ -588,11 +589,11 @@ single genome. The fragment length and stdev were printed to stdout while
 cufflinks was running.
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa | grep -w 'WT'); do
+for Assembly in $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa | grep -w 'WT' | grep 'ncbi'); do
 Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
-for FileF in $(ls ../quorn/filtered/*.1.fq | grep -v 'SE' | tail -n+2); do
+for FileF in $(ls ../quorn/filtered/*.1.fq | grep -v 'SE'); do
 Jobs=$(qstat | grep 'sub_sta' | grep 'qw'| wc -l)
 while [ $Jobs -gt 1 ]; do
 sleep 1m
@@ -623,14 +624,9 @@ samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam $Bam
 ``` -->
 
 ```bash
-OutDir=alignment/F.venenatum/WT/illumina
+BamFiles=$(ls alignment/star/F.venenatum/WT/treatment/*/*.bam | tail -n +2 | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=alignment/star/F.venenatum/WT/concatenated
 mkdir -p $OutDir
-for File in $(ls /home/groups/harrisonlab/project_files/quorn/illumina/*.out.bam); do
-Prefix=$(basename $File | sed 's/.bam//g')
-echo $Prefix
-samtools sort -o $File $Prefix > $OutDir/"$Prefix"_sorted.bam
-done
-BamFiles=$(ls $OutDir/*_sorted.bam | tr -d '\n' | sed 's/.bam/.bam /g')
 samtools merge -f $OutDir/concatenated.bam $BamFiles
 ```
 
@@ -643,7 +639,7 @@ Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 mkdir -p alignment/$Organism/$Strain/concatenated
 OutDir=gene_pred/braker/$Organism/"$Strain"_braker
-AcceptedHits=$(ls alignment/F.venenatum/WT/illumina/concatenated.bam)
+AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/concatenated.bam)
 GeneModelName="$Organism"_"$Strain"_braker
 rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
 ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
@@ -671,7 +667,7 @@ Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
 mkdir -p $OutDir
-AcceptedHits=$(ls alignment/F.venenatum/WT/illumina/concatenated.bam)
+AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/concatenated.bam)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
 qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
 done
@@ -680,7 +676,7 @@ done
 Secondly, genes were predicted using CodingQuary:
 
 ```bash
-	for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep -e 'strain1'); do
+	for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
 		Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 		Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 		echo "$Organism - $Strain"
@@ -696,7 +692,7 @@ genes were predicted in regions of the genome, not containing Braker gene
 models:
 
 ```bash
-for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3); do
+for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3 | grep -w 'WT'); do
 Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
 Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
@@ -742,7 +738,7 @@ done
 
 The final number of genes per isolate was observed using:
 ```bash
-for DirPath in $(ls -d gene_pred/final/F.*/*/final); do
+for DirPath in $(ls -d gene_pred/final/F.*/*/final | grep -w 'WT'); do
 echo $DirPath;
 cat $DirPath/final_genes_Braker.pep.fasta | grep '>' | wc -l;
 cat $DirPath/final_genes_CodingQuary.pep.fasta | grep '>' | wc -l;
@@ -754,20 +750,20 @@ done
 # Assessing gene space in predicted transcriptomes
 
 ```bash
-for Assembly in $(ls assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta); do
+for Assembly in $(ls gene_pred/final/*/*/final/final_genes_combined.gene.fasta | grep -w 'WT'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
   ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
   # BuscoDB="Fungal"
   BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
-  OutDir=gene_pred/busco/$Organism/$Strain/assembly
+  OutDir=gene_pred/busco/$Organism/$Strain/genes
   qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
 done
 ```
 
 ```bash
-  for File in $(ls gene_pred/assembly/F*/*/genes/*/short_summary_*.txt); do  
+  for File in $(ls gene_pred/busco/F*/*/genes/*/short_summary_*.txt | grep -w 'WT'); do  
     echo $File;
     cat $File | grep -e '(C)' -e 'Total';
   done
@@ -791,7 +787,7 @@ redirected to a temporary output file named interproscan_submission.log .
 screen -a
 cd /home/groups/harrisonlab/project_files/fusarium_venenatum
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
-for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
+for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta | grep -w 'WT'); do
 echo $Genes
 $ProgDir/sub_interproscan.sh $Genes
 done 2>&1 | tee -a interproscan_submisison.log
@@ -802,7 +798,7 @@ commands:
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
-  for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
+  for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta | grep -w 'WT'); do
     Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
@@ -815,7 +811,7 @@ commands:
 ## B) SwissProt
 
 ```bash
-  for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
+  for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta | grep -w 'WT'); do
     Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
     OutDir=gene_pred/swissprot/$Organism/$Strain
@@ -829,7 +825,7 @@ commands:
 ## C) Summarising annotation in annotation table
 
 ```bash
-  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended.gff3); do
+  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended.gff3 | grep -w 'WT'); do
     Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
     Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa)
