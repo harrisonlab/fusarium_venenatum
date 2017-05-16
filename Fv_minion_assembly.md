@@ -206,14 +206,19 @@ checking using busco
 
 ```bash
 #for Assembly in  $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
-for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/ncbi_report1/polished/pilon.fasta); do
-  Strain=$(echo $Assembly| rev | cut -d '/' -f5 | rev)
-  Organism=$(echo $Assembly | rev | cut -d '/' -f6 | rev)
+# for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/ncbi_report1/polished/pilon.fasta); do
+for Assembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+  Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
   ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
   # BuscoDB="Fungal"
   BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
-  OutDir=gene_pred/busco/$Organism/"$Strain"_pilon/assembly
+  Prefix=$(echo $Assembly | rev | cut -d '/' -f1 | rev | sed 's/.fasta//g')
+  OutDir=$(dirname $Assembly)
+  OutDir=$OutDir/$Prefix
+  echo "$Prefix"
+  # OutDir=gene_pred/busco/$Organism/"$Strain"_pilon/assembly
   qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
 done
 ```
@@ -307,6 +312,40 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 ## Nanopolish scaffolding
 
 ```bash
+qlogin -pe smp 8
+WorkDir=/tmp/nanopolish/F.ven
+mkdir -p $WorkDir
+cd $WorkDir
+
+RawDatDir=/home/miseq_data/minion/2017/Fvenenatum/downloaded/pass
+Organism=F.venenatum
+Strain=WT
+Date=07-03-17
+for Fast5Dir in $(ls -d $RawDatDir/*); do
+  poretools fastq $Fast5Dir | gzip -cf
+done > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_pass.fastq.gz
+
+
+# OutDir=assembly/nanopolish/F.oxysporum_f.sp_mathioli/Stocks4
+# mkdir -p $OutDir
+Fast5Dir=$(ls /home/groups/harrisonlab/project_files/fusarium/raw_dna/minion/F.oxysporum/Stocks4/all_reads.fastq.gz)
+Assembly=$(ls /home/groups/harrisonlab/project_files/fusarium/assembly/SMARTdenovo/F.oxysporum_f.sp_mathioli/Stocks4/Stocks4_SMARTdenovo.fasta)
+cp $Assembly assembly.fa
+bwa index assembly.fa
+cp $Reads reads.fa.gz
+bwa mem -x ont2d -t 8 assembly.fa reads.fa.gz > aligned.sam
+# samtools sort $OutDir/aligned.bam -f $OutDir/reads.sorted.bam
+samtools view -b -S aligned.sam | samtools sort - -o tmp > reads.sorted.bam
+# samtools view -u aligned.bam | samtools sort - -f reads.sorted.bam
+samtools index reads.sorted.bam
+NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
+python $NanoPolishDir/nanopolish_makerange.py assembly.fa > nanopolish_range.txt
+nanopolish variants --consensus polished.{1}.fa -w {1} -r reads.fa.gz -a reads.sorted.bam -b reads.sorted.bam -g assembly.fa -t 8 --min-candidate-frequency 0.1 -o nanopolish_out.txt
+```
+
+
+
+```bash
 OutDir=assembly/nanopolish
 mkdir -p $OutDir
   Reads=$(ls raw_dna/minion/*/*/*_pass.fastq.gz)
@@ -329,7 +368,7 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
  -->
 
 # Merging Minion and Hybrid Assemblies
-
+<!--
 ```bash
   for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
@@ -340,8 +379,8 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
     qsub $ProgDir/sub_quickmerge.sh $PacBioAssembly $HybridAssembly $OutDir $AnchorLength
   done
-```
-
+``` -->
+<!--
 ```bash
   for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
@@ -352,14 +391,17 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
     qsub $ProgDir/sub_quickmerge.sh $PacBioAssembly $HybridAssembly $OutDir $AnchorLength
   done
-```
+``` -->
 
 ```bash
-  for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
-    Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
-    Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
+  # for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
+    # Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
+    # Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
+  for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished_10/pilon_10/pilon_10.fasta); do
+    Organism=$(echo $PacBioAssembly | rev | cut -f5 -d '/' | rev)
+    Strain=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
-    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_spades_first
+    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_spades_first_corrected
     AnchorLength=500000
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
     qsub $ProgDir/sub_quickmerge.sh $HybridAssembly $PacBioAssembly $OutDir $AnchorLength
@@ -397,7 +439,7 @@ done
 ```bash
   for File in $(ls gene_pred/busco/*/*/assembly/*/short_summary_*.txt); do  
     echo $File;
-    cat $File | grep -e '(C)' -e 'Total';
+    cat $File | grep -e '(C)' -e '(F)' -e '(M)' -e 'Total';
   done
 ```
 
