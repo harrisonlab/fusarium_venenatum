@@ -624,16 +624,23 @@ samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam $Bam
 ``` -->
 
 ```bash
-BamFiles=$(ls alignment/star/F.venenatum/WT/treatment/*/*.bam | tail -n +2 | tr -d '\n' | sed 's/.bam/.bam /g')
+# For all alignments
+BamFiles=$(ls alignment/star/F.venenatum/WT/treatment/*/*.sortedByCoord.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
 OutDir=alignment/star/F.venenatum/WT/concatenated
 mkdir -p $OutDir
 samtools merge -f $OutDir/concatenated.bam $BamFiles
+# one from each media type
+BamFiles=$(ls alignment/star/F.venenatum/WT/treatment/WTCHG_25*_201/star_aligmentAligned.sortedByCoord.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=alignment/star/F.venenatum/WT/concatenated
+mkdir -p $OutDir
+samtools merge -f $OutDir/one_per_media.bam $BamFiles
+
 ```
 
 #### Braker prediction
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
+for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT' | grep 'ncbi'); do
 Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
@@ -661,13 +668,13 @@ Note - cufflinks doesn't always predict direction of a transcript and
 therefore features can not be restricted by strand when they are intersected.
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
+for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT' | grep 'ncbi'); do
 Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
 mkdir -p $OutDir
-AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/concatenated.bam)
+AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/one_per_media.bam)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
 qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
 done
@@ -676,7 +683,7 @@ done
 Secondly, genes were predicted using CodingQuary:
 
 ```bash
-	for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
+	for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT' | grep 'ncbi'); do
 		Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 		Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 		echo "$Organism - $Strain"
