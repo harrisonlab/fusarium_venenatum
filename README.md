@@ -734,8 +734,8 @@ cat $FinalDir/final_genes_Braker.gene.fasta $FinalDir/final_genes_CodingQuary.ge
 cat $FinalDir/final_genes_Braker.upstream3000.fasta $FinalDir/final_genes_CodingQuary.upstream3000.fasta > $FinalDir/final_genes_combined.upstream3000.fasta
 
 
-GffBraker=$FinalDir/final_genes_CodingQuary.gff3
-GffQuary=$FinalDir/final_genes_Braker.gff3
+GffBraker=$FinalDir/final_genes_Braker.gff3
+GffQuary=$FinalDir/final_genes_CodingQuary.gff3
 GffAppended=$FinalDir/final_genes_appended.gff3
 cat $GffBraker $GffQuary > $GffAppended
 
@@ -743,13 +743,37 @@ cat $GffBraker $GffQuary > $GffAppended
 done
 ```
 
+In preperation for submission to ncbi, gene models were renamed and duplicate gene features were identified and removed.
+ * no duplicate genes were identified
+
+
+```bash
+GffAppended=$(ls gene_pred/final/F.venenatum/WT/final/final_genes_appended.gff3)
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+$ProgDir/remove_dup_features.py --inp_gff $GffAppended
+
+GffRenamed=$FinalDir/final_genes_appended_renamed.gff3
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+$ProgDir/gff_rename_genes.py --inp_gff $GffAppended > $GffRenamed
+
+Assembly=$(ls repeat_masked/$Organism/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT' | grep 'ncbi')
+$ProgDir/gff2fasta.pl $Assembly $GffRenamed gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed
+
+# The proteins fasta file contains * instead of Xs for stop codons, these should
+# be changed
+sed -i 's/\*/X/g' gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.pep.fasta
+```
+
+
+
+
 The final number of genes per isolate was observed using:
 ```bash
 for DirPath in $(ls -d gene_pred/final/F.*/*/final | grep -w 'WT'); do
 echo $DirPath;
 cat $DirPath/final_genes_Braker.pep.fasta | grep '>' | wc -l;
 cat $DirPath/final_genes_CodingQuary.pep.fasta | grep '>' | wc -l;
-cat $DirPath/final_genes_combined.pep.fasta | grep '>' | wc -l;
+cat $DirPath/final_genes_appended_renamed.pep.fasta | grep '>' | wc -l;
 echo "";
 done
 ```
@@ -757,7 +781,7 @@ done
 # Assessing gene space in predicted transcriptomes
 
 ```bash
-for Assembly in $(ls gene_pred/final/*/*/final/final_genes_combined.gene.fasta | grep -w 'WT'); do
+for Assembly in $(ls gene_pred/final/*/*/final/final_genes_appended_renamed.gene.fasta | grep -w 'WT'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
@@ -794,7 +818,7 @@ redirected to a temporary output file named interproscan_submission.log .
 screen -a
 cd /home/groups/harrisonlab/project_files/fusarium_venenatum
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
-for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta | grep -w 'WT'); do
+for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.pep.fasta  | grep -w 'WT'); do
 echo $Genes
 $ProgDir/sub_interproscan.sh $Genes
 done 2>&1 | tee -a interproscan_submisison.log
@@ -805,7 +829,7 @@ commands:
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
-  for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta | grep -w 'WT'); do
+  for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.pep.fasta | grep -w 'WT'); do
     Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
@@ -818,7 +842,7 @@ commands:
 ## B) SwissProt
 
 ```bash
-  for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta | grep -w 'WT'); do
+  for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.pep.fasta | grep -w 'WT'); do
     Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
     OutDir=gene_pred/swissprot/$Organism/$Strain
@@ -832,7 +856,7 @@ commands:
 ## C) Summarising annotation in annotation table
 
 ```bash
-  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended.gff3 | grep -w 'WT'); do
+  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.gff3 | grep -w 'WT'); do
     Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
     Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa)
