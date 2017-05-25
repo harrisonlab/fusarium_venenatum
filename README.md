@@ -668,16 +668,18 @@ Note - cufflinks doesn't always predict direction of a transcript and
 therefore features can not be restricted by strand when they are intersected.
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT' | grep 'ncbi'); do
-Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
-Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-echo "$Organism - $Strain"
-OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
-mkdir -p $OutDir
-AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/one_per_media.bam)
-ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
-qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
-done
+  for Assembly in $(ls repeat_masked/*/*/*/*_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT' | grep 'ncbi'); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
+    # OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated2
+    mkdir -p $OutDir
+    AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/one_per_media.bam)
+    # AcceptedHits=$(ls alignment/star/F.venenatum/WT/concatenated/concatenated.bam)
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
+    qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
+  done
 ```
 
 Secondly, genes were predicted using CodingQuary:
@@ -859,13 +861,13 @@ commands:
   for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.gff3 | grep -w 'WT'); do
     Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
-    Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa)
+    Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa | grep 'ncbi')
     InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
     SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl)
     OutDir=gene_pred/annotation/$Organism/$Strain
     mkdir -p $OutDir
     ProgDir=/home/armita/git_repos/emr_repos/tools/pathogen/annotation_tables
-    $ProgDir/build_annot_tab.py --genome $Assembly --genes_gff $GeneGff --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation.tsv
+    $ProgDir/build_annot_tab.py --genome $Assembly --genes_gff $GeneGff --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation_ncbi.tsv
   done
 ```
 
