@@ -84,6 +84,26 @@ done
 ```
 
 
+# Experimenting with LINKS
+
+```bash
+qlogin
+# blacklace01 assigned
+cd /tmp
+mkdir -p LINKS
+cd LINKS
+MiSeqAssembly=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_unmasked.fa)
+MinIonReads=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/F.venenatum/WT/WT_07-03-17_pass.fastq.gz)
+cp $MinIonReads reads.fq.gz
+echo "reads.fq.gz" > fof.txt
+LINKS -f $MiSeqAssembly -s fof.txt -b WT_LINKS
+
+```
+
+
+
+# Experimenting with nanocorr
+
 ```bash
 ProjDir=$PWD
 
@@ -130,50 +150,7 @@ done
 
 
 
-<!-- Assemblies were polished using Pilon
-
-```bash
-for Assembly in $(ls assembly/canu-1.4/*/*/*.contigs.fasta); do
-Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
-IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
-echo $Strain
-echo $Organism
-TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n1 | tail -n1);
-TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n1 | tail -n1);
-TrimF2_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
-TrimR2_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
-TrimF3_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
-TrimR3_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
-echo $TrimF1_Read
-echo $TrimR1_Read
-echo $TrimF2_Read
-echo $TrimR2_Read
-echo $TrimF3_Read
-echo $TrimR3_Read
-OutDir=assembly/canu-1.4/$Organism/$Strain/polished
-ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
-qsub $ProgDir/sub_pilon_3_libs.sh $Assembly $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir
-done
-``` -->
-
-
-This merged assembly was polished using Pilon
-
-<!-- ```bash
-for Assembly in $(ls assembly/canu-1.4/*/*/*.contigs.fasta); do
-Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
-IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
-echo $Strain
-echo $Organism
-TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
-TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
-  OutDir=assembly/canu-1.4/$Organism/$Strain/polished
-    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
-    qsub $ProgDir/sub_pilon.sh $Assembly $TrimF1_Read $TrimR1_Read $OutDir
-  done
-``` -->
+ Assemblies were polished using Pilon
 
 ```bash
 for Assembly in $(ls assembly/canu-1.4/*/*/*.contigs.fasta); do
