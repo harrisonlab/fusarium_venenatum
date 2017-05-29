@@ -903,23 +903,36 @@ the following directories:
 ```
 
 ```bash
-  for AntiSmash in $(ls analysis/antismash/*/*/*/*.final.gbk); do
+  for AntiSmash in $(ls gene_pred/secondary_metabolites/antismash/*/*/*/*.final.gbk); do
     Organism=$(echo $AntiSmash | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $AntiSmash | rev | cut -f3 -d '/' | rev)
     echo "$Organism - $Strain"
-    OutDir=analysis/antismash/$Organism/$Strain
+    OutDir=gene_pred/secondary_metabolites/antismash/$Organism/$Strain
+    Prefix=$OutDir/WT_antismash
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
-    $ProgDir/antismash2gff.py --inp_antismash $AntiSmash > $OutDir/"$Strain"_secondary_metabolite_regions.gff
-    printf "Number of clusters detected:\t"
-    cat $OutDir/"$Strain"_secondary_metabolite_regions.gff | grep 'antismash_cluster' | wc -l
-    # GeneGff=gene_pred/final_genes/F.oxysporum_fsp_cepae/Fus2_canu_new/final/final_genes_appended.gff3
-    GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended.gff3
-    bedtools intersect -u -a $GeneGff -b $OutDir/"$Strain"_secondary_metabolite_regions.gff > $OutDir/metabolite_cluster_genes.gff
-    cat $OutDir/metabolite_cluster_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > $OutDir/metabolite_cluster_gene_headers.txt
-    printf "Number of predicted proteins in clusters:\t"
-    cat $OutDir/metabolite_cluster_gene_headers.txt | wc -l
-    printf "Number of predicted genes in clusters:\t"
-    cat $OutDir/metabolite_cluster_genes.gff | grep -w 'gene' | wc -l
+    $ProgDir/antismash2gff.py --inp_antismash $AntiSmash --out_prefix $Prefix
+
+    # Identify secondary metabolites within predicted clusters
+    printf "Number of secondary metabolite detected:\t"
+    cat "$Prefix"_secmet_clusters.gff | wc -l
+    GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3
+    bedtools intersect -u -a $GeneGff -b "$Prefix"_secmet_clusters.gff > "$Prefix"_secmet_genes.gff
+    cat "$Prefix"_secmet_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > "$Prefix"_secmet_genes.txt
+    printf "Number of predicted proteins in secondary metabolite clusters:\t"
+    cat "$Prefix"_secmet_genes.txt | wc -l
+    printf "Number of predicted genes in secondary metabolite clusters:\t"
+    cat "$Prefix"_secmet_genes.gff | grep -w 'gene' | wc -l
+
+      # Identify cluster finder additional non-secondary metabolite clusters
+      printf "Number of cluster finder non-SecMet clusters detected:\t"
+      cat "$Prefix"_clusterfinder_clusters.gff | wc -l
+      GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3
+      bedtools intersect -u -a $GeneGff -b "$Prefix"_clusterfinder_clusters.gff > "$Prefix"_clusterfinder_genes.gff
+      cat "$Prefix"_clusterfinder_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > "$Prefix"_clusterfinder_genes.txt
+      printf "Number of predicted proteins in cluster finder non-SecMet clusters:\t"
+      cat "$Prefix"_clusterfinder_genes.txt | wc -l
+      printf "Number of predicted genes in cluster finder non-SecMet clusters:\t"
+      cat "$Prefix"_clusterfinder_genes.gff | grep -w 'gene' | wc -l
   done
 ```
 
