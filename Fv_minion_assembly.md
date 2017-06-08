@@ -70,6 +70,21 @@ Assembly of remaining reads
   qsub $ProgDir/submit_canu.sh $Reads $GenomeSz $Prefix $OutDir
 ```
 
+Just running canu read correction:
+
+```bash
+  Organism=F.venenatum
+  Strain=WT
+  Reads=$(ls raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
+  GenomeSz="38m"
+  Prefix="$Strain"
+  OutDir=assembly/canu-1.4/$Organism/"$Strain"_correction
+  ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/canu
+  qsub $ProgDir/sub_canu_correction.sh $Reads $GenomeSz $Prefix $OutDir
+```
+
+
+
 
 ### Quast
 
@@ -972,38 +987,39 @@ Antismash was run to identify clusters of secondary metabolite genes within
 the genome. Antismash was run using the weserver at:
 http://antismash.secondarymetabolites.org
 
-<!--
+
 Results of web-annotation of gene clusters within the assembly were downloaded to
 the following directories:
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa | grep 'strain1'); do
+  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
     Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
-    OutDir=analysis/antismash/$Organism/$Strain
+    OutDir=gene_pred/secondary_metabolites/antismash/$Organism/$Strain
     mkdir -p $OutDir
   done
 ```
 
 ```bash
-  for Zip in $(ls analysis/antismash/*/*/*.zip); do
+  for Zip in $(ls gene_pred/secondary_metabolites/antismash/*/*/*.zip); do
     OutDir=$(dirname $Zip)
     unzip -d $OutDir $Zip
   done
 ```
 
+
 ```bash
-  for AntiSmash in $(ls analysis/antismash/*/*/*/*.final.gbk); do
+  for AntiSmash in $(ls gene_pred/secondary_metabolites/antismash/*/*/*/*.final.gbk); do
     Organism=$(echo $AntiSmash | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $AntiSmash | rev | cut -f3 -d '/' | rev)
     echo "$Organism - $Strain"
-    OutDir=analysis/antismash/$Organism/$Strain
+    OutDir=gene_pred/secondary_metabolites/antismash/$Organism/$Strain
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
     $ProgDir/antismash2gff.py --inp_antismash $AntiSmash > $OutDir/"$Strain"_secondary_metabolite_regions.gff
     printf "Number of clusters detected:\t"
     cat $OutDir/"$Strain"_secondary_metabolite_regions.gff | grep 'antismash_cluster' | wc -l
     # GeneGff=gene_pred/final_genes/F.oxysporum_fsp_cepae/Fus2_canu_new/final/final_genes_appended.gff3
-    GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended.gff3
+    GeneGff=gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3
     bedtools intersect -u -a $GeneGff -b $OutDir/"$Strain"_secondary_metabolite_regions.gff > $OutDir/metabolite_cluster_genes.gff
     cat $OutDir/metabolite_cluster_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > $OutDir/metabolite_cluster_gene_headers.txt
     printf "Number of predicted proteins in clusters:\t"
@@ -1012,7 +1028,7 @@ the following directories:
     cat $OutDir/metabolite_cluster_genes.gff | grep -w 'gene' | wc -l
   done
 ```
-
+<!--
 These clusters represented the following genes. Note that these numbers just
 show the number of intersected genes with gff clusters and are not confirmed by
 function
@@ -1031,8 +1047,7 @@ Genes needed to be parsed into a specific tsv format prior to submission on the
 SMURF webserver.
 
 ```bash
-  # Gff=gene_pred/final/F.venenatum/strain1/final/final_genes_appended.gff3
-  for Gff in $(ls gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_Braker.gff3); do
+  for Gff in $(ls gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3); do
     Strain=$(echo $Gff | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $Gff | rev | cut -f4 -d '/' | rev)
     OutDir=analysis/secondary_metabolites/smurf/$Organism/$Strain
