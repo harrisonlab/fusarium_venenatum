@@ -83,7 +83,47 @@ Just running canu read correction:
   qsub $ProgDir/sub_canu_correction.sh $Reads $GenomeSz $Prefix $OutDir
 ```
 
+Running PBcR read correction (basis of canu read correcttion) using illumina data
 
+```bash
+qlogin -pe smp 8
+CurDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+cd $CurDir
+
+Organism=F.venenatum
+Strain=WT
+Reads=$(ls $CurDir/raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
+IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
+#TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n1 | tail -n1);
+#TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n1 | tail -n1);
+TrimF2_Read=$(ls $CurDir/$IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $CurDir/$IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $CurDir/$IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $CurDir/$IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
+GenomeSz="38000000"
+Prefix="$Strain"
+OutDir=assembly/canu-1.4/$Organism/"$Strain"_correction
+
+WorkDir=/tmp/PBcR
+mkdir $WorkDir
+cd $WorkDir
+
+cp $Reads readsPacBio.fq.gz
+gunzip readsPacBio.fq.gz
+cp readsPacBio.fq | cut -f1 -d ' ' > readsPacBio2.fq
+
+cp $TrimF3_Read readsF.fq.gz
+cp $TrimR3_Read readsR.fq.gz
+gunzip readsF.fq.gz
+gunzip readsR.fq.gz
+
+printf "merSize=14\n" > $Prefix.spec
+
+fastqToCA -libraryname illumina -technology illumina-long -innie -insertsize 400 150 -mates $WorkDir/readsF.fq,$WorkDir/readsR.fq > $WorkDir/illumina.frg
+# fastqToCA -libraryname illumina -technology illumina-long -innie -reads $WorkDir/readsF.fq  > $WorkDir/illumina.frg
+PBcR -t 8 -length 500 -partitions 200 -l $Prefix -s $Prefix.spec genomeSize=$GenomeSz -fastq readsPacBio2.fq illumina.frg 2>&1 | tee log.txt
+
+```
 
 
 ### Quast
@@ -194,12 +234,25 @@ qsub $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Re
 done
 ```
 
+Summarising assemblies using quast:
+```bash
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+for Assembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
+echo "$Organism - $Strain"
+OutDir=$(dirname $Assembly)
+qsub $ProgDir/sub_quast.sh $Assembly $OutDir
+done
+```
+
+
 checking using busco
 
 ```bash
 #for Assembly in  $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
 # for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first/polished/ncbi_report1/polished/pilon.fasta); do
-for Assembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta); do
+for Assembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
