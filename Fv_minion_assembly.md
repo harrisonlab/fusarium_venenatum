@@ -67,6 +67,18 @@ qsub $ProgDir/sub_porechop.sh $RawReads $OutDir
 done
 ```
 
+Read coverage was estimated from the trimemd datasets:
+
+```bash
+GenomeSz=38
+for Reads in $(ls qc_dna/minion/*/*/*.fastq.gz | grep -v 'appended'); do
+echo $Reads
+OutDir=$(dirname $Reads)
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+qsub $ProgDir/sub_count_nuc.sh $GenomeSz $Reads $OutDir
+done
+```
+
 ### Canu assembly
 
 ```bash
@@ -531,7 +543,7 @@ Checking assembly quality
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected'); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
 OutDir=$(dirname $Assembly)
@@ -543,7 +555,7 @@ checking using busco
 
 ```bash
 #for Assembly in  $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
-for Assembly in $(ls assembly/merged_canu_spades/*/*_first/merged.fasta); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
@@ -564,21 +576,32 @@ done
 
 
 This merged assembly was polished using Pilon
-
+<!--
 ```bash
-for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep 'spades_first'); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected'); do
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev | cut -f1 -d '_')
 IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
 echo $Strain
 echo $Organism
-TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
-TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
-OutDir=$(dirname $Assembly)
+#TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n1 | tail -n1);
+#TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n1 | tail -n1);
+TrimF2_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
+#echo $TrimF1_Read
+#echo $TrimR1_Read
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)"/polished_5"
+Itterations=5
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
-qsub $ProgDir/sub_pilon.sh $Assembly $TrimF1_Read $TrimR1_Read $OutDir/polished
+qsub $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Itterations
 done
-```
+``` -->
 
 ```bash
 for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep 'spades_first' | grep -v 'corrected'); do
