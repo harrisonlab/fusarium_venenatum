@@ -39,6 +39,16 @@ Assembly of remaining reads
   # poretools stats $RawDatDir/ > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_fail.stats.txt
   # poretools hist $RawDatDir/ > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_fail.hist
   # cat raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date".fastq.gz raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_fail.fastq.gz > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_pass-fail.fastq.gz
+
+  # Oxford nanopore 18/07/17 and other runs during HortRes conference
+  RawDatDir=/home/miseq_data/minion/2017/*_FvenenatumWT/fast5/pass
+  Organism=F.venenatum
+  Strain=WT
+  Date=18-07-17
+  mkdir -p raw_dna/minion/$Organism/$Strain/$Date
+  for Fast5Dir in $(ls -d $RawDatDir/*); do
+    poretools fastq $Fast5Dir | gzip -cf
+  done > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_pass.fastq.gz
 ```
 
 ### Identifing read depth
@@ -57,7 +67,7 @@ Assembly of remaining reads
 
 Splitting reads and trimming adapters using porechop
 ```bash
-for RawReads in $(ls raw_dna/minion/*/*/*_pass.fastq.gz); do
+for RawReads in $(ls raw_dna/minion/*/*/*_pass.fastq.gz | grep '18-07-17'); do
 Strain=$(echo $RawReads | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $RawReads | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -71,7 +81,7 @@ Read coverage was estimated from the trimemd datasets:
 
 ```bash
 GenomeSz=38
-for Reads in $(ls qc_dna/minion/*/*/*.fastq.gz | grep -v 'appended'); do
+for Reads in $(ls qc_dna/minion/*/*/*.fastq.gz | grep '18-07-17'); do
 echo $Reads
 OutDir=$(dirname $Reads)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
@@ -85,13 +95,13 @@ done
   Organism=F.venenatum
   Strain=WT
   # Reads=$(ls raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
-  Reads=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz)
+  Reads1=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n1 | tail -n1)
+  Reads2=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n2 | tail -n1)
   GenomeSz="38m"
   Prefix="$Strain"
-  # OutDir=assembly/canu-1.4/$Organism/"$Strain"
-  OutDir=assembly/canu-1.5/$Organism/"$Strain"
+  OutDir=assembly/canu-1.6/$Organism/"$Strain"
   ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/canu
-  qsub $ProgDir/submit_canu_minion.sh $Reads $GenomeSz $Prefix $OutDir
+  qsub $ProgDir/submit_canu_minion_2lib.sh $Reads1 $Reads2 $GenomeSz $Prefix $OutDir
 ```
 
 Just running canu read correction:
