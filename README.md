@@ -855,6 +855,7 @@ commands:
   done
 ```
 
+<!--
 ## C) Summarising annotation in annotation table
 
 ```bash
@@ -870,7 +871,7 @@ commands:
     $ProgDir/build_annot_tab.py --genome $Assembly --genes_gff $GeneGff --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation_ncbi.tsv
   done
 ```
-
+ -->
 
 #Genomic analysis
 <!-- The first analysis was based upon BLAST searches for genes known to be involved in toxin production -->
@@ -972,37 +973,59 @@ Output files were parsed into gff format:
 
 ```bash
   OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT
+  Prefix="WT"
   GeneGff=gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3
   SmurfClusters=$OutDir/Secondary-Metabolite-Clusters.txt
   SmurfBackbone=$OutDir/Backbone-genes.txt
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
   $ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
-  bedtools intersect -wo -a $GeneGff -b $OutDir/Smurf_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -i -e "s/;Parent=g\w+//g" | perl -p -i -e "s/;Notes=.*//g" > "$Prefix"_smurf_secmet_genes.tsv
+  bedtools intersect -wo -a $GeneGff -b $OutDir/Smurf_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -i -e "s/;Parent=g\w+//g" | perl -p -i -e "s/;Notes=.*//g" > $OutDir/"$Prefix"_smurf_secmet_genes.tsv
 ```
 
 Total number of secondary metabolite clusters:
 
 ```bash
 for Assembly in $(ls repeat_masked/*/*/illumina_assembly_ncbi/*_contigs_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
-  Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
-  Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
-  OutDir=analysis/secondary_metabolites/antismash/$Organism/$Strain
-  mkdir -p $OutDir
-  GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
-  AntismashClusters=$(ls analysis/secondary_metabolites/antismash/$Organism/$Strain/)
-  SmurfClusters=$(ls analysis/secondary_metabolites/smurf/$Organism/$Strain/Smurf_clusters.gff)
-  echo "Total number of Antismash clusters"
-  cat $AntismashClusters | wc -l
-  echo "Total number of SMURF clusters"
-  cat $SmurfClusters | wc -l
-  echo "number of $Antismash clusters intersecting Smurf clusters"
-  bedtools intersect -u -a $AntismashClusters -b $SmurfClusters | wc -l
-  echo "number of smurf clusters intersecting antismash clusters"
-  bedtools intersect -u -a $SmurfClusters -b $AntismashClusters | wc -l
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+OutDir=analysis/secondary_metabolites/antismash/$Organism/$Strain
+mkdir -p $OutDir
+GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
+AntismashClusters=$(ls analysis/secondary_metabolites/antismash/$Organism/$Strain/*_secmet_clusters.gff)
+SmurfClusters=$(ls analysis/secondary_metabolites/smurf/$Organism/$Strain/Smurf_clusters.gff)
+echo "Total number of Antismash clusters"
+cat $AntismashClusters | wc -l
+echo "Total number of SMURF clusters"
+cat $SmurfClusters | wc -l
+echo "number of Antismash clusters intersecting Smurf clusters"
+bedtools intersect -a $AntismashClusters -b $SmurfClusters | wc -l
+echo "number of Antismash clusters not intersecting Smurf clusters"
+bedtools intersect -v -a $AntismashClusters -b $SmurfClusters | wc -l
+echo "number of smurf clusters intersecting antismash clusters"
+bedtools intersect -a $SmurfClusters -b $AntismashClusters | wc -l
+echo "number of smurf clusters not intersecting antismash clusters"
+bedtools intersect -v -a $SmurfClusters -b $AntismashClusters | wc -l
 done
 ```
 
+## E) Summarising annotation in annotation table
 
+```bash
+  for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.gff3 | grep -w 'WT'); do
+    Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
+    Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa | grep 'ncbi')
+    Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT/WT_antismash_secmet_genes.tsv)
+    Smurf=$(ls analysis/secondary_metabolites/smurf/F.venenatum/WT/WT_smurf_secmet_genes.tsv)
+    InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
+    SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl)
+    OutDir=gene_pred/annotation/$Organism/$Strain
+    mkdir -p $OutDir
+    ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/annotation_tables
+    $ProgDir/build_annot_Fv.py --genome $Assembly --genes_gff $GeneGff --Antismash $Antismash --Smurf $Smurf --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation_ncbi.tsv
+  done
+```
+<!--
 ##Genes with homology to PHIbase
 Predicted gene models were searched against the PHIbase database using tBLASTx.
 
@@ -1017,7 +1040,7 @@ Top BLAST hits were used to annotate gene models.
 ```
 
 following blasting PHIbase to the genome, the hits were filtered by effect on
-virulence.
+virulence. -->
 
 ## Identification of potential CrisprCas sites.
 
