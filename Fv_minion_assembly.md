@@ -104,7 +104,7 @@ done
   qsub $ProgDir/submit_canu_minion_2lib.sh $Reads1 $Reads2 $GenomeSz $Prefix $OutDir
 ```
 
-Just running canu read correction:
+<!-- Just running canu read correction:
 
 ```bash
   Organism=F.venenatum
@@ -112,10 +112,10 @@ Just running canu read correction:
   Reads=$(ls raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
   GenomeSz="38m"
   Prefix="$Strain"
-  OutDir=assembly/canu-1.4/$Organism/"$Strain"_correction
+  OutDir=assembly/canu-1.6/$Organism/"$Strain"_correction
   ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/canu
   qsub $ProgDir/sub_canu_correction.sh $Reads $GenomeSz $Prefix $OutDir
-```
+``` -->
 <!--
 Running PBcR read correction (basis of canu read correcttion) using illumina data
 
@@ -136,7 +136,7 @@ TrimF3_Read=$(ls $CurDir/$IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
 TrimR3_Read=$(ls $CurDir/$IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
 GenomeSz="38000000"
 Prefix="$Strain"
-OutDir=assembly/canu-1.4/$Organism/"$Strain"_correction
+OutDir=assembly/canu-1.6/$Organism/"$Strain"_correction
 
 WorkDir=/tmp/PBcR
 mkdir $WorkDir
@@ -165,91 +165,31 @@ PBcR -t 8 -length 500 -partitions 200 -l $Prefix -s $Prefix.spec genomeSize=$Gen
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.5/*/*/*.contigs.fasta); do
+for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
-# OutDir=assembly/canu-1.5/$Organism/$Strain/filtered_contigs
+# OutDir=assembly/canu-1.6/$Organism/$Strain/filtered_contigs
 OutDir=$(dirname $Assembly)
 qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 done
 ```
 
-<!--
-# Experimenting with LINKS
+Error correction using racon:
 
 ```bash
-qlogin
-# blacklace01 assigned
-cd /tmp
-mkdir -p LINKS
-cd LINKS
-MiSeqAssembly=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_unmasked.fa)
-MinIonReads=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/F.venenatum/WT/WT_07-03-17_pass.fastq.gz)
-cp $MinIonReads reads.fq.gz
-echo "reads.fq.gz" > fof.txt
-LINKS -f $MiSeqAssembly -s fof.txt -b WT_LINKS
-
-```
-
-
-
-# Experimenting with nanocorr
-
-```bash
-ProjDir=$PWD
-
-NanoCorrDir=qc_dna/minion
-mkdir -p $NanoCorrDir
-cd $NanoCorrDir
-
-NanoReads=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/F.venenatum/WT/WT_07-03-17_pass.fastq.gz)
-
-
-ProgDir=/home/armita/prog/nanocorr/nanocorr
-python $ProgDir/partition.py 100 500 $NanoReads
-
-
-IlluminaReads=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/F.venenatum/WT/F/FvenWT_S1_L001_R1_001_trim.fq.gz)
-cat $IlluminaReads | gunzip -cf | sed -n '1~4s/^@/>/p;2~4p' > good_reads.fa
-for Dir in $(ls -d * | head -n1);
-do echo $Dir;
-num=500
-for j in $(seq 1 $num | head -n10); do
-Jobs=$(qstat | grep 'sub_nanoco' | wc -l)
-while [ $Jobs -gt 24 ]; do
-sleep 5m
-printf "."
-Jobs=$(qstat | grep 'sub_nanoco' | wc -l)
-done		
-printf "\n"
-# echo "SGE_TASK_ID=$j TMPDIR=/tmp nanocorr.py query.fa reference.fa"
-NanoPoreSubset=$(ls $Dir/* | head -n $j | tail -n1)
-OutDir=$Dir/$j
-export SGE_TASK_ID=$j
-export TMPDIR=/tmp/nanocorr/tmp
-#TMPDIR=/tmp
-# python $ProgDir/nanocorr.py /tmp/nanocorr/FvenWT_S1_L001_R1_001_trim.fa
-GitDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
-qsub $GitDir/sub_nanocorr.sh $NanoPoreSubset $j good_reads.fa $OutDir
-done
-#cd ../
-done
-```
- -->
-
-
- Error correction using racon:
-
-```bash
-for Assembly in $(ls assembly/canu-1.5/*/*/*.contigs.fasta); do
+for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
-ReadsFq=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz)
-OutDir=assembly/canu-1.5/$Organism/$Strain/racon
+ReadsFq1=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n1 | tail -n1)
+ReadsFq2=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n2 | tail -n1)
+ReadsAppended=qc_dna/minion/$Organism/$Strain/"$Strain"_reads_appended.fastq.gz
+cat $ReadsFq1 $ReadsFq2 > $ReadsAppended
+OutDir=assembly/canu-1.6/$Organism/$Strain/racon
 Iterations=10
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/racon
-qsub $ProgDir/sub_racon.sh $Assembly $ReadsFq $Iterations $OutDir
+qsub $ProgDir/sub_racon.sh $Assembly $ReadsAppended $Iterations $OutDir
+rm $ReadsAppended
 done
 ```
 
@@ -257,7 +197,7 @@ Quast and busco were run to assess the effects of racon on assembly quality:
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.4/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
   Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
   Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
   OutDir=$(dirname $Assembly)
@@ -267,7 +207,7 @@ done
 
 
 ```bash
-for Assembly in $(ls assembly/canu-1.4/*/*/racon/*.fasta | grep 'WT'); do
+for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -278,8 +218,6 @@ OutDir=gene_pred/busco/$Organism/$Strain/assembly
 qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
 done
 ```
-
-
 
 ```bash
 printf "Filename\tComplete\tDuplicated\tFragmented\tMissing\tTotal\n"
@@ -300,7 +238,7 @@ done
  Although three libraries were available, the first contained a relatively small amount of data and was not used for correction.
 
 ```bash
-for Assembly in $(ls assembly/canu-1.4/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
@@ -318,7 +256,7 @@ echo $TrimF2_Read
 echo $TrimR2_Read
 echo $TrimF3_Read
 echo $TrimR3_Read
-OutDir=assembly/canu-1.4/$Organism/$Strain/polished_10
+OutDir=assembly/canu-1.6/$Organism/$Strain/polished_10
 Itterations=10
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
 #qsub $ProgDir/sub_pilon_3_libs.sh $Assembly $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Itterations
@@ -329,7 +267,7 @@ done
 Summarising assemblies using quast:
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+for Assembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
 echo "$Organism - $Strain"
@@ -342,7 +280,7 @@ done
 checking using busco
 
 ```bash
-for Assembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+for Assembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
@@ -360,14 +298,14 @@ done
 
 ```bash
   # for File in $(ls gene_pred/busco/*/*/assembly/*/short_summary_*.txt); do  
-  for File in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_10/run_pilon_10/short_summary_*.txt); do  
+  for File in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_10/run_pilon_10/short_summary_*.txt); do  
     echo $File;
     cat $File | grep -e '(C)' -e '(F)' -e '(M)' -e 'Total';
   done
 ```
 
 ```
-assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_10/run_pilon_10/short_summary_pilon_10.txt
+assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_10/run_pilon_10/short_summary_pilon_10.txt
 	3628	Complete BUSCOs (C)
 	42	Fragmented BUSCOs (F)
 	55	Missing BUSCOs (M)
@@ -511,7 +449,7 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
 # Merging Minion and Hybrid Assemblies
 <!--
 ```bash
-  for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
+  for PacBioAssembly in $(ls assembly/canu-1.6/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
     HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
@@ -523,7 +461,7 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
 ``` -->
 <!--
 ```bash
-  for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
+  for PacBioAssembly in $(ls assembly/canu-1.6/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
     HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
@@ -535,10 +473,10 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
 ``` -->
 
 ```bash
-  # for PacBioAssembly in $(ls assembly/canu-1.4/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
+  # for PacBioAssembly in $(ls assembly/canu-1.6/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
     # Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     # Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
-  for PacBioAssembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+  for PacBioAssembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
     HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
