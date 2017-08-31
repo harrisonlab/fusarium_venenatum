@@ -20,7 +20,7 @@ Orthology analysis between Fv and Fg
 ### for Fv WT (strain name A3/5)
 ```bash
   Taxon_code=A3_5
-  Fasta_file=$(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa)
+  Fasta_file=$(ls gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_combined.pep.fasta)
   Id_field=1
   orthomclAdjustFasta $Taxon_code $Fasta_file $Id_field
   mv "$Taxon_code".fasta $WorkDir/formatted/"$Taxon_code".fasta
@@ -30,7 +30,7 @@ Orthology analysis between Fv and Fg
 
 ```bash
   Taxon_code=PH1
-  Fasta_file=$(ls assembly/external_group/F.graminearum/PH1/pep/Fusarium_graminearum.RR.pep.all.fa)
+  Fasta_file=$(ls assembly/external_group/F.graminearum/PH1/pep/Fusarium_graminearum.RR1.pep.all.fa)
   Id_field=1
   orthomclAdjustFasta $Taxon_code $Fasta_file $Id_field
   mv "$Taxon_code".fasta $WorkDir/formatted/"$Taxon_code".fasta
