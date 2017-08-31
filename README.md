@@ -457,6 +457,35 @@ $ProgDir/remove_contaminants.py --keep_mitochondria --inp $Assembly --out $OutDi
 done
 ```
 
+Quast
+
+```bash
+for Assembly in $(ls assembly/spades/*/*/ncbi_edits/contigs_min_500bp_renamed.fasta | grep -w 'WT'); do
+OutDir=$(dirname $Assembly)
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+qsub $ProgDir/sub_quast.sh $Assembly $OutDir
+done
+```
+
+```bash
+for Assembly in $(ls assembly/spades/*/*/ncbi_edits/contigs_min_500bp_renamed.fasta | grep -w 'WT'); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+OutDir=gene_pred/busco/$Organism/$Strain/assembly
+qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+  for File in $(ls gene_pred/assembly/F*/*/genes/*/short_summary_*.txt); do  
+    echo $File;
+    cat $File | grep -e '(C)' -e 'Total';
+  done
+```
+
 
 # Repeatmasking
 
@@ -1077,3 +1106,28 @@ was written.
   ProtospacerCSV=OutDir/"$Strain"_protospacer_by_gene.csv
   $ProgDir/protospacer_finder.py --inp $AugDB --out $OutDir/"$Strain"_protospacer_by_gene.csv
 ```
+
+# Genes with transcription factor annotations:
+
+
+A list of PFAM domains, superfamily annotations used as part of the DBD database
+and a further set of interproscan annotations listed by Shelest et al 2017 were made
+http://www.transcriptionfactor.org/index.cgi?Domain+domain:all
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5415576/
+
+
+```bash
+AnnotTab=$(ls gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi.tsv)
+OutDir=analysis/transcription_factors
+TF_Domains=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/analysis/transcription_factors/TF_domains_DBD_Shelest_2017.txt)
+cat $AnnotTab | grep -w -f $TF_Domains > $OutDir/TF_annotations.tsv
+cat $OutDir/TF_annotations.tsv | cut -f1 > $OutDir/TF_headers.txt
+cat $OutDir/TF_annotations.tsv | grep -e 'AS_Cluster' -e 'SM_Cluster' | cut -f1 > $OutDir/TF_SecMet_headers.txt
+```
+
+# Primary metabolism
+
+Genes involved in primary metabolism can be identified through GO annotations:
+http://amigo.geneontology.org/goose?query=SELECT+DISTINCT+descendant.acc%2C+descendant.name%2C+descendant.term_type%0D%0AFROM%0D%0A+term%0D%0A+INNER+JOIN+graph_path+ON+%28term.id%3Dgraph_path.term1_id%29%0D%0A+INNER+JOIN+term+AS+descendant+ON+%28descendant.id%3Dgraph_path.term2_id%29%0D%0AWHERE+term.name%3D%27Primary+Metabolic+Process%27+AND+distance+%3C%3E+0%3B&mirror=ebi&limit=0
+
+GO terms could be searched in annotation files to look at these genes.
