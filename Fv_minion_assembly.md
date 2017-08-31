@@ -77,7 +77,7 @@ qsub $ProgDir/sub_porechop.sh $RawReads $OutDir
 done
 ```
 
-Read coverage was estimated from the trimemd datasets:
+Read coverage was estimated from the trimmed datasets:
 
 ```bash
 GenomeSz=38
@@ -87,6 +87,21 @@ OutDir=$(dirname $Reads)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
 qsub $ProgDir/sub_count_nuc.sh $GenomeSz $Reads $OutDir
 done
+```
+
+```bash
+  for StrainDir in $(ls -d qc_dna/minion/F.venenatum/WT/); do
+    Strain=$(basename $StrainDir)
+    printf "$Strain\t"
+    for File in $(ls $StrainDir/*cov.txt | grep -v 'appended'); do
+      echo $(basename $File);
+      cat $File | tail -n1 | rev | cut -f2 -d ' ' | rev;
+    done | grep -v '.txt' | awk '{ SUM += $1} END { print SUM }'
+  done
+```
+
+```
+WT	45.04
 ```
 
 ### Canu assembly
@@ -232,8 +247,118 @@ printf "$FileName\t$Complete\t$Duplicated\t$Fragmented\t$Missing\t$Total\n"
 done
 ```
 
+# Assembly correction using nanopolish
 
- Assemblies were polished using Pilon
+Fast5 files are very large and need to be stored as gzipped tarballs. These needed temporarily unpacking but must be deleted after nanpolish has finished running.
+
+```bash
+# cat raw_dna/minion/F.venenatum/WT/*.fastq.gz > raw_dna/minion/F.venenatum/WT/appended.fastq.gz
+```
+
+```bash
+for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+echo "$Organism - $Strain"
+# Step 1 extract reads as a .fq file which contain info on the location of the fast5 files
+# Note - the full path from home must be used
+ReadDir=raw_dna/nanopolish/$Organism/$Strain
+if [ -d $ReadDir ]; then
+echo "reads already extracted"
+else
+echo "extracting reads"
+mkdir -p $ReadDir
+CurDir=$PWD
+cd $ReadDir
+# Event information would have been used from all of the runs, howver MinKnow doesnt
+# produce event-level information and therefore just the albacore data was used.
+for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass); do
+# for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass /home/miseq_data/minion/2017/*_FvenenatumWT/fast5/pass); do
+nanopolish extract -r $Fast5Dir | gzip -cf
+done > "$Strain"_reads.fa.gz
+cd $CurDir
+fi
+
+
+RawReads=$(ls $ReadDir/"$Strain"_reads.fa.gz)
+OutDir=$(dirname $Assembly)
+mkdir -p $OutDir
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
+# submit alignments for nanoppolish
+qsub $ProgDir/sub_bwa_nanopolish.sh $Assembly $RawReads $OutDir/nanopolish
+done
+```
+
+ Split the assembly into 50Kb fragments an submit each to the cluster for
+ nanopolish correction
+
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/F.*/*/racon*/racon_min_500bp_renamed.fasta | grep 'FON_63'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+echo "$Organism - $Strain"
+OutDir=$(dirname $Assembly)
+RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_reads.fa.gz)
+AlignedReads=$(ls $OutDir/nanopolish/reads.sorted.bam)
+
+NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
+python $NanoPolishDir/nanopolish_makerange.py $Assembly > $OutDir/nanopolish/nanopolish_range.txt
+
+Ploidy=1
+echo "nanopolish log:" > nanopolish_log.txt
+for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | tail -n+21); do
+Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
+while [ $Jobs -gt 1 ]; do
+sleep 1m
+printf "."
+Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
+done		
+printf "\n"
+echo $Region
+echo $Region >> nanopolish_log.txt
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
+qsub $ProgDir/sub_nanopolish_variants.sh $Assembly $RawReads $AlignedReads $Ploidy $Region $OutDir/$Region
+done
+done
+```
+
+```bash
+Assembly=$(ls assembly/SMARTdenovo/F.oxysporum_fsp_narcissi/FON_63/racon_10/racon_min_500bp_renamed.fasta)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+OutDir=assembly/SMARTdenovo/$Organism/$Strain/nanopolish
+mkdir -p $OutDir
+# cat "" > $OutDir/"$Strain"_nanoplish.fa
+NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
+python $NanoPolishDir/nanopolish_merge.py assembly/SMARTdenovo/$Organism/$Strain/racon_10/*/*.fa > $OutDir/"$Strain"_nanoplish.fa
+
+echo "" > tmp.txt
+ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+$ProgDir/remove_contaminants.py --keep_mitochondria --inp $OutDir/"$Strain"_nanoplish.fa --out $OutDir/"$Strain"_nanoplish_min_500bp_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+```
+
+Quast and busco were run to assess the effects of nanopolish on assembly quality:
+
+```bash
+
+for Assembly in $(ls assembly/SMARTdenovo/F.oxysporum_fsp_narcissi/FON_63/nanopolish/FON_63_nanoplish_min_500bp_renamed.fasta); do
+  Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+  Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
+	# Quast
+  OutDir=$(dirname $Assembly)
+	ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+  qsub $ProgDir/sub_quast.sh $Assembly $OutDir
+	# Busco
+	BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+	OutDir=gene_pred/busco/$Organism/$Strain/assembly
+	ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
+	qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+
+
+## Assemblies were polished using Pilon
 
  Although three libraries were available, the first contained a relatively small amount of data and was not used for correction.
 
