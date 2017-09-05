@@ -20,7 +20,7 @@ Orthology analysis between Fv and Fg
 ### for Fv WT (strain name A3/5)
 ```bash
   Taxon_code=A3_5
-  Fasta_file=$(ls gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_combined.pep.fasta)
+  Fasta_file=$(ls gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.pep.fasta)
   Id_field=1
   orthomclAdjustFasta $Taxon_code $Fasta_file $Id_field
   mv "$Taxon_code".fasta $WorkDir/formatted/"$Taxon_code".fasta
@@ -154,32 +154,22 @@ number of unique groups of inparalogs
 
 
 ```
-[1] "A3_5 (12909)"
-[1] 3270
-[1] 88
-[1] "PH1 (12657)"
-[1] 3055
-[1] 51
+[1] "A3_5 (10897)"
+[1] 1323
+[1] 57
+[1] "PH1 (12126)"
+[1] 2581
+[1] 28
 ```
 
 
 #### 6.3) Extracting fasta files for all orthogroups
 
 ```bash
-# IsolateAbrv=FoC_vs_Fo_vs_FoL_publication
 WorkDir=analysis/orthology/orthomcl/$IsolateAbrv
 ProgDir=~/git_repos/emr_repos/tools/pathogen/orthology/orthoMCL
 GoodProt=$WorkDir/goodProteins/goodProteins.fasta
 OutDir=$WorkDir/orthogroups_fasta
 mkdir -p $OutDir
 $ProgDir/orthoMCLgroups2fasta.py --orthogroups $WorkDir/"$IsolateAbrv"_orthogroups.txt --fasta $GoodProt --out_dir $OutDir > $OutDir/extractionlog.txt
-# for File in $(ls -v $OutDir/orthogroup*.fa); do
-# cat $File | grep '>' | tr -d '> '
-# done > $OutDir/orthogroup_genes.txt
-# cat $GoodProt | grep '>' | tr -d '> ' | grep -v -f $OutDir/orthogroup_genes.txt > $OutDir/singleton_genes.txt
-# ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/ORF_finder
-# $ProgDir/extract_from_fasta.py --fasta $GoodProt --headers $OutDir/singleton_genes.txt > $OutDir/singleton_genes.fa
-# echo "The numbe of singleton genes extracted is:"
-# cat $OutDir/singleton_genes.fa | grep '>' | wc -l
-
 ```
