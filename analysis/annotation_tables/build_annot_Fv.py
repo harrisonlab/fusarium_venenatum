@@ -28,6 +28,9 @@ ap.add_argument('--InterPro',required=True,type=str,help='The Interproscan funct
 ap.add_argument('--Swissprot',required=True,type=str,help='A parsed table of BLAST results against the Swissprot database. Note - must have been parsed with swissprot_parser.py')
 ap.add_argument('--Antismash',required=True,type=str,help='Output of Antismash parsed into a tsv file of gene names, contig, secmet function and cluster ID')
 ap.add_argument('--Smurf',required=True,type=str,help='Output of Smurf parsed into a tsv file of gene names, contig, secmet function and cluster ID')
+ap.add_argument('--vitamins',required=True,type=str,help='Table of blast hits produced by Greg showing hits from Fg homologs identified as vitamin pathway genes')
+ap.add_argument('--TFs',required=True,type=str,help='Tab seperated of putative transcription factors and their domains as identified by interpro2TFs.py')
+
 
 
 conf = ap.parse_args()
@@ -35,7 +38,7 @@ conf = ap.parse_args()
 with open(conf.genome) as f:
     contig_lines = f.readlines()
 with open(conf.genes_gff) as f:
-    FoC_genes_lines = f.readlines()
+    unordered_gff_lines = f.readlines()
 with open(conf.InterPro) as f:
     InterPro_lines = f.readlines()
 with open(conf.Swissprot) as f:
@@ -44,6 +47,10 @@ with open(conf.Antismash) as f:
     antismash_lines = f.readlines()
 with open(conf.Smurf) as f:
     smurf_lines = f.readlines()
+with open(conf.vitamins) as f:
+    vitamin_lines = f.readlines()
+with open(conf.TFs) as f:
+    TF_lines = f.readlines()
 
 column_list=[]
 
@@ -55,7 +62,6 @@ column_list=[]
 # This important for knock out design.
 #-----------------------------------------------------
 
-gene_id_set = Set([])
 contig_len_dict = defaultdict(list)
 contig_id = ""
 seq_lines = ""
@@ -70,6 +76,40 @@ for line in contig_lines:
     else:
         seq_lines += line
 
+
+
+#-----------------------------------------------------
+# Step 2.5
+# Order gff features by input contigs and gene start
+#-----------------------------------------------------
+
+contig_list = []
+gene_start_dict = defaultdict(list)
+features_dict = defaultdict(list)
+ordered_gff_lines = []
+
+for line in unordered_gff_lines:
+    line = line.strip("\n")
+    if line.startswith("#"):
+        ordered_gff_lines.append(line)
+        continue
+    split_line = line.split()
+    if split_line[2] == 'gene':
+        contig = split_line[0]
+        gene_start = split_line[3]
+        if contig not in contig_list:
+            contig_list.append(contig)
+        gene_start_dict[contig].append(int(gene_start))
+        key = "_".join([contig, gene_start])
+    features_dict[key].append(line)
+
+gff_lines = []
+for contig in sorted(contig_list, key = lambda x: (int(x.split('_')[1]))):
+    gene_start_list = gene_start_dict[contig]
+    for gene_start in sorted(gene_start_list):
+        key = "_".join([contig, str(gene_start)])
+        ordered_gff_lines.extend(features_dict[key])
+
 #-----------------------------------------------------
 # Step 3
 # Append co-ordinates from the FoC gene gff, showing
@@ -82,7 +122,7 @@ for line in contig_lines:
 gene_id_set = Set([])
 gene_id_list = []
 FoC_genes_dict = defaultdict(list)
-for line in FoC_genes_lines:
+for line in ordered_gff_lines:
     if "gff-version" in line:
         continue
     if line.startswith('#'):
@@ -180,6 +220,36 @@ for line in smurf_lines:
     smurf_dict[gene_id].extend([secmet_func, cluster])
 
 
+
+#-----------------------------------------------------
+# Step 6
+# Build a dictionary of vitamin metabolism gene homologs
+#-----------------------------------------------------
+
+vitamin_dict = defaultdict(list)
+for line in vitamin_lines:
+    line = line.rstrip("\n")
+    split_line = line.split("\t")
+    gene_id = split_line[0]
+    Fg_homolog = split_line[2]
+    kegg_term = split_line[3]
+    vit_pathway = split_line[5]
+    vitamin_dict[gene_id].extend([vit_pathway, kegg_term, Fg_homolog])
+
+#-----------------------------------------------------
+# Step 6
+# Build a dictionary of vitamin metabolism gene homologs
+#-----------------------------------------------------
+
+TF_dict = defaultdict(list)
+for line in TF_lines:
+    line = line.rstrip("\n")
+    split_line = line.split("\t")
+    gene_id = split_line[0]
+    TF_function = split_line[2]
+    TF_dict[gene_id].append(TF_function)
+
+
 #-----------------------------------------------------
 # Step 6
 # Print final table of information on query, blast
@@ -189,16 +259,23 @@ for line in smurf_lines:
 print ("\t".join([
 "gene_id", "contig", "gene_start", "gene_end", "gene_strand",
 "2kb_flank",
-"SecMet_program", "SecMet_function", "Secmet_cluster",
+"Cluster_ID", "SecMet_function", "SecMet_program", "Secmet_cluster",
+"Vitamin_pathway", "KEGG_ID", "Fg_homolog",
+"TF",
 "Swissprot_organism", "Swissprot_hit", "Swissprot_function",
 "Interpro_annotations"
 ]))
 
+in_cluster = False
+cluster_num = 0
 for gene_id in gene_id_list:
     useful_columns=[gene_id]
     useful_columns.extend(FoC_genes_dict[gene_id])
-
     if antismash_dict[gene_id] or smurf_dict[gene_id]:
+        if in_cluster == False: # group antismash and smurf clusters into a single set of clusters
+            cluster_num += 1
+            cluster_name = "SecMet_cluster_" + str(cluster_num)
+            in_cluster=True
         if antismash_dict[gene_id] and smurf_dict[gene_id]:
             # print gene_id
             antismash_cols = antismash_dict[gene_id]
@@ -218,9 +295,23 @@ for gene_id in gene_id_list:
             cluster = smurf_cols[1]
         else:
             continue
-        useful_columns.extend([prog, secmet_func, cluster])
+        useful_columns.extend([cluster_name, secmet_func, prog, cluster])
+    else:
+        useful_columns.extend(["","","",""])
+        in_cluster=False
+
+    key = gene_id.split(".")[0]
+    if vitamin_dict[key]:
+        vit_cols = vitamin_dict[key]
+        useful_columns.extend(vit_cols)
     else:
         useful_columns.extend(["","",""])
+
+    if TF_dict[gene_id]:
+        TF_functions = TF_dict[gene_id]
+        useful_columns.append(";".join(TF_functions))
+    else:
+        useful_columns.append("")
 
     if swissprot_dict[gene_id]:
         useful_columns.extend(swissprot_dict[gene_id])
