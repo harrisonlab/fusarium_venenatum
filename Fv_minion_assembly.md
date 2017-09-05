@@ -251,9 +251,18 @@ done
 
 Fast5 files are very large and need to be stored as gzipped tarballs. These needed temporarily unpacking but must be deleted after nanpolish has finished running.
 
-```bash
-# cat raw_dna/minion/F.venenatum/WT/*.fastq.gz > raw_dna/minion/F.venenatum/WT/appended.fastq.gz
+The minion device lost connection to metrichor during it's run before reconnecting,
+this is though to have led to the duplication of four reads in the dataset,
+which prevented nanopolish from running. As such, these were removed during the
+nanopolish extract step.
+reads were:
 ```
+>1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template:1D_000:template
+>ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template:1D_000:template
+>bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template:1D_000:template
+>d6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template:1D_000:template
+```
+
 
 ```bash
 for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
@@ -274,7 +283,13 @@ cd $ReadDir
 # produce event-level information and therefore just the albacore data was used.
 for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass); do
 # for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass /home/miseq_data/minion/2017/*_FvenenatumWT/fast5/pass); do
-nanopolish extract -r $Fast5Dir | gzip -cf
+nanopolish extract -r $Fast5Dir \
+| grep -v -A1 \
+-e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template:1D_000:template' \
+-e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template:1D_000:template' \
+-e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template:1D_000:template' \
+-e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template:1D_000:template' \
+| gzip -cf
 done > "$Strain"_reads.fa.gz
 cd $CurDir
 fi
@@ -293,7 +308,7 @@ done
  nanopolish correction
 
 ```bash
-for Assembly in $(ls assembly/SMARTdenovo/F.*/*/racon*/racon_min_500bp_renamed.fasta | grep 'FON_63'); do
+for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
