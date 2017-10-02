@@ -236,7 +236,7 @@ done
 
 ```bash
 printf "Filename\tComplete\tDuplicated\tFragmented\tMissing\tTotal\n"
-for File in $(ls gene_pred/busco/*/*/assembly/*/short_summary_*.txt | grep 'Stocks4'); do  
+for File in $(ls gene_pred/busco/*/*/assembly/*/short_summary_*.txt | grep 'WT'); do
 FileName=$(basename $File)
 Complete=$(cat $File | grep "(C)" | cut -f2)
 Duplicated=$(cat $File | grep "(D)" | cut -f2)
@@ -246,7 +246,7 @@ Total=$(cat $File | grep "Total" | cut -f2)
 printf "$FileName\t$Complete\t$Duplicated\t$Fragmented\t$Missing\t$Total\n"
 done
 ```
-
+<!--
 # Assembly correction using nanopolish
 
 Fast5 files are very large and need to be stored as gzipped tarballs. These needed temporarily unpacking but must be deleted after nanpolish has finished running.
@@ -284,18 +284,23 @@ cd $ReadDir
 for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass); do
 # for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass /home/miseq_data/minion/2017/*_FvenenatumWT/fast5/pass); do
 nanopolish extract -r $Fast5Dir \
-| grep -v -A1 \
--e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template:1D_000:template' \
--e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template:1D_000:template' \
--e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template:1D_000:template' \
--e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template:1D_000:template' \
 | gzip -cf
 done > "$Strain"_reads.fa.gz
 cd $CurDir
+cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
+| grep -A1 \
+-e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
+-e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
+-e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
+-e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
+> tmp.txt
+cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
+| grep -v -f tmp.txt | gzip -cf \
+> $ReadDir/"$Strain"_reads_no_duplicates.fa.gz
 fi
 
 
-RawReads=$(ls $ReadDir/"$Strain"_reads.fa.gz)
+RawReads=$(ls $ReadDir/"$Strain"_reads_no_duplicates.fa.gz)
 OutDir=$(dirname $Assembly)
 mkdir -p $OutDir
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
@@ -313,7 +318,7 @@ Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
 OutDir=$(dirname $Assembly)
-RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_reads.fa.gz)
+RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_reads_no_duplicates.fa.gz)
 AlignedReads=$(ls $OutDir/nanopolish/reads.sorted.bam)
 
 NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
@@ -370,7 +375,7 @@ for Assembly in $(ls assembly/SMARTdenovo/F.oxysporum_fsp_narcissi/FON_63/nanopo
 	qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
 done
 ```
-
+ -->
 
 
 ## Assemblies were polished using Pilon
