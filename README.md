@@ -1128,6 +1128,10 @@ for AnnotTab in $(ls gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi.tsv)
   Strain=$(echo $AnnotTab | rev | cut -f2 -d '/' | rev)
   Organism=$(echo $AnnotTab | rev | cut -f3 -d '/' | rev)
   OutDir=$(ls -d analysis/transcription_factors/$Organism/$Strain)
+  echo "Total number of clusters:"
+  cat $AnnotTab | grep 'SecMet_cluster_' | cut -f7 | sort | uniq | wc -l
+  cat $AnnotTab | grep 'SecMet_cluster_' | cut -f1,7 | cut -f1 > $OutDir/WT_SecMet_headers.txt
+  cat $OutDir/WT_SecMet_headers.txt | cut -f1 -d '.' | sort | uniq | wc -l
   cat $AnnotTab | grep -e 'AS_' -e 'SM_' | cut -f1,14 | grep -v -e "\s$" | cut -f1 > $OutDir/WT_TF_SecMet_headers.txt
   cat $OutDir/WT_TF_SecMet_headers.txt | wc -l
 done
