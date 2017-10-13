@@ -580,7 +580,7 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 ```
 
 ```bash
-  for Assembly in $(ls assembly/spades_minion/*/*/contigs.fasta); do
+  for Assembly in $(ls assembly/spades_minion/*/*/contigs.fasta |grep -v 'old'); do
     echo "Filtering contigs smaller than 500bp"
     InDir=$(dirname $Assembly)
     OutDir=$InDir/filtered_contigs
@@ -596,7 +596,7 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-  for Assembly in $(ls assembly/spades_minion/*/*//filtered_contigs/*_min_500bp.fasta); do
+  for Assembly in $(ls assembly/spades_minion/*/*//filtered_contigs/*_min_500bp.fasta |grep -v 'old'); do
     Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
     Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
     echo "$Organism - $Strain"
@@ -605,64 +605,6 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
   done
 ```
 
-<!--
-## Nanopolish scaffolding
-
-```bash
-qlogin -pe smp 8
-WorkDir=/tmp/nanopolish/F.ven
-mkdir -p $WorkDir
-cd $WorkDir
-
-RawDatDir=/home/miseq_data/minion/2017/Fvenenatum/downloaded/pass
-Organism=F.venenatum
-Strain=WT
-Date=07-03-17
-for Fast5Dir in $(ls -d $RawDatDir/*); do
-  poretools fastq $Fast5Dir | gzip -cf
-done > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_pass.fastq.gz
-
-
-# OutDir=assembly/nanopolish/F.oxysporum_f.sp_mathioli/Stocks4
-# mkdir -p $OutDir
-Fast5Dir=$(ls /home/groups/harrisonlab/project_files/fusarium/raw_dna/minion/F.oxysporum/Stocks4/all_reads.fastq.gz)
-Assembly=$(ls /home/groups/harrisonlab/project_files/fusarium/assembly/SMARTdenovo/F.oxysporum_f.sp_mathioli/Stocks4/Stocks4_SMARTdenovo.fasta)
-cp $Assembly assembly.fa
-bwa index assembly.fa
-cp $Reads reads.fa.gz
-bwa mem -x ont2d -t 8 assembly.fa reads.fa.gz > aligned.sam
-# samtools sort $OutDir/aligned.bam -f $OutDir/reads.sorted.bam
-samtools view -b -S aligned.sam | samtools sort - -o tmp > reads.sorted.bam
-# samtools view -u aligned.bam | samtools sort - -f reads.sorted.bam
-samtools index reads.sorted.bam
-NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
-python $NanoPolishDir/nanopolish_makerange.py assembly.fa > nanopolish_range.txt
-nanopolish variants --consensus polished.{1}.fa -w {1} -r reads.fa.gz -a reads.sorted.bam -b reads.sorted.bam -g assembly.fa -t 8 --min-candidate-frequency 0.1 -o nanopolish_out.txt
-```
-
-
-
-```bash
-OutDir=assembly/nanopolish
-mkdir -p $OutDir
-  Reads=$(ls raw_dna/minion/*/*/*_pass.fastq.gz)
-Spades=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/assembly/spades/F.venenatum/WT/filtered_contigs/contigs_min_500bp.fasta)
-bwa index $Spades
-bwa mem -x ont2d -t 8 $Spades $Reads > $OutDir/aligned.bam
-samtools sort $OutDir/aligned.bam -f $OutDir/reads.sorted.bam
-samtools view -u $OutDir/aligned.bam | samtools sort - -f $OutDir/reads.sorted.bam
-samtools index reads.sorted.bam
-
-TMPDIR=/tmp/nanopolish
-mkdir -p $TMPDIR
-bwa index $TMPDIR/contigs_min_500bp.fasta
-bwa mem -x ont2d -t 16 $TMPDIR/contigs_min_500bp.fasta $TMPDIR/WT_07-03-17_pass.fastq.gz | samtools sort - -o $TMPDIR/reads.sorted.bam
-
-
-python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --results nanopolish.results -P 8 \
-    nanopolish variants --consensus polished.{1}.fa -w {1} -r $TMPDIR/WT_07-03-17_pass.fastq.gz -b $TMPDIR/reads.sorted.bam -g $TMPDIR/contigs_min_500bp.fasta -t 8 --min-candidate-frequency 0.1
-```
- -->
 
 # Merging Minion and Hybrid Assemblies
 <!--
@@ -691,9 +633,6 @@ python nanopolish_makerange.py $TMPDIR/contigs_min_500bp.fasta | parallel --resu
 ``` -->
 
 ```bash
-  # for PacBioAssembly in $(ls assembly/canu-1.6/*/*/polished/*.fasta | grep -v -e '_nanopore' -e '_pass-fail'); do
-    # Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
-    # Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
   for PacBioAssembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
