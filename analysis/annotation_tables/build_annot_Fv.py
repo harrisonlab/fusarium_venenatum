@@ -30,6 +30,12 @@ ap.add_argument('--Antismash',required=True,type=str,help='Output of Antismash p
 ap.add_argument('--Smurf',required=True,type=str,help='Output of Smurf parsed into a tsv file of gene names, contig, secmet function and cluster ID')
 ap.add_argument('--vitamins',required=True,type=str,help='Table of blast hits produced by Greg showing hits from Fg homologs identified as vitamin pathway genes')
 ap.add_argument('--TFs',required=True,type=str,help='Tab seperated of putative transcription factors and their domains as identified by interpro2TFs.py')
+ap.add_argument('--orthogroups_PH1', required=True,type=str,help='A file containing results of orthology analysis')
+ap.add_argument('--orthogroups_GR1', required=True,type=str,help='A file containing results of orthology analysis')
+# ap.add_argument('--Fv_OrthoMCL_id',required=True,type=str,help='The identifier of this strain as used in the orthology analysis')
+# ap.add_argument('--OrthoMCL_all',required=True,type=str,nargs='+',help='The identifiers of all strains used in the orthology analysis')
+# ap.add_argument('--OrthoMCL_path',required=True,type=str,nargs='+',help='The identifiers of pathogenic strains used in the orthology analysis')
+# ap.add_argument('--OrthoMCL_nonpath',required=True,type=str,nargs='+',help='The identifiers of non-pathogenic strains used in the orthology analysis')
 
 
 
@@ -51,6 +57,10 @@ with open(conf.vitamins) as f:
     vitamin_lines = f.readlines()
 with open(conf.TFs) as f:
     TF_lines = f.readlines()
+with open(conf.orthogroups_PH1) as f:
+    PH1_orthogroup_lines = f.readlines()
+with open(conf.orthogroups_GR1) as f:
+    GR1_orthogroup_lines = f.readlines()
 
 column_list=[]
 
@@ -251,6 +261,55 @@ for line in TF_lines:
 
 
 #-----------------------------------------------------
+# Step 7
+# Build a dictionary of orthogroups
+#-----------------------------------------------------
+
+strain_id = 'A3_5'
+strain_id = strain_id + "|"
+
+PH1_orthogroup_dict = defaultdict(list)
+orthogroup_content_dict = defaultdict(list)
+all_isolates = ['A3_5', 'PH1']
+for line in PH1_orthogroup_lines:
+    line = line.rstrip("\n")
+    split_line = line.split(" ")
+    orthogroup_id = split_line[0].replace(":", "")
+    orthogroup_contents = []
+    orthogroup_content_dict.clear()
+    for isolate in all_isolates:
+        num_genes = line.count((isolate + "|"))
+        orthogroup_contents.append(str(isolate) + "(" + str(num_genes) + ")")
+        content_counts = ":".join(orthogroup_contents)
+        orthogroup_content_dict[isolate] = num_genes
+    for gene_id in split_line[1:]:
+        content_str = ",".join(split_line[1:])
+        if strain_id in gene_id:
+            gene_id = gene_id.replace(strain_id, '')
+            PH1_orthogroup_dict[gene_id].extend([orthogroup_id, content_counts, content_str])
+
+GR1_orthogroup_dict = defaultdict(list)
+orthogroup_content_dict = defaultdict(list)
+all_isolates = ['A3_5', 'FusGr1']
+for line in GR1_orthogroup_lines:
+    line = line.rstrip("\n")
+    split_line = line.split(" ")
+    orthogroup_id = split_line[0].replace(":", "")
+    orthogroup_contents = []
+    orthogroup_content_dict.clear()
+    for isolate in all_isolates:
+        num_genes = line.count((isolate + "|"))
+        orthogroup_contents.append(str(isolate) + "(" + str(num_genes) + ")")
+        content_counts = ":".join(orthogroup_contents)
+        orthogroup_content_dict[isolate] = num_genes
+    for gene_id in split_line[1:]:
+        content_str = ",".join(split_line[1:])
+        if strain_id in gene_id:
+            gene_id = gene_id.replace(strain_id, '')
+            GR1_orthogroup_dict[gene_id].extend([orthogroup_id, content_counts, content_str])
+
+
+#-----------------------------------------------------
 # Step 6
 # Print final table of information on query, blast
 # results and genes intersecting blast results
@@ -263,7 +322,9 @@ print ("\t".join([
 "Vitamin_pathway", "KEGG_ID", "Fg_homolog",
 "TF",
 "Swissprot_organism", "Swissprot_hit", "Swissprot_function",
-"Interpro_annotations"
+"Interpro_annotations",
+"PH1_orthogroup", "PH1_genes_per_isolate", "PH1_orthogroup_contents",
+"GR1_orthogroup", "GR1_genes_per_isolate", "GR1_orthogroup_contents"
 ]))
 
 in_cluster = False
@@ -323,5 +384,15 @@ for gene_id in gene_id_list:
         useful_columns.append(interpro_col)
     else:
         useful_columns.append("")
+
+    if PH1_orthogroup_dict[gene_id]:
+        useful_columns.extend(PH1_orthogroup_dict[gene_id])
+    else:
+        useful_columns.extend(["", ""])
+
+    if GR1_orthogroup_dict[gene_id]:
+        useful_columns.extend(GR1_orthogroup_dict[gene_id])
+    else:
+        useful_columns.extend(["", ""])
 
     print ("\t".join(useful_columns))
