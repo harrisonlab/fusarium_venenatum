@@ -1116,10 +1116,12 @@ Vitamins=$(ls analysis/vitamins/Fg_vs_Fv_vitamin_hits_parsed.txt)
 TFs=$(ls analysis/transcription_factors/F.venenatum/WT/WT_TF_domains.tsv)
 InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
 SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl)
+PH1_orthology=$(ls analysis/orthology/orthomcl/Fv_vs_Fg/Fv_vs_Fg_orthogroups.txt)
+GR1_orthology=$(ls analysis/orthology/orthomcl/Fv_vs_Fg_JGI/Fv_vs_Fg_JGI_orthogroups.txt)
 OutDir=gene_pred/annotation/$Organism/$Strain
 mkdir -p $OutDir
 ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/annotation_tables
-$ProgDir/build_annot_Fv.py --genome $Assembly --genes_gff $GeneGff --Antismash $Antismash --Smurf $Smurf --vitamins $Vitamins --TFs $TFs --InterPro $InterPro --Swissprot $SwissProt > $OutDir/"$Strain"_annotation_ncbi.tsv
+$ProgDir/build_annot_Fv.py --genome $Assembly --genes_gff $GeneGff --Antismash $Antismash --Smurf $Smurf --vitamins $Vitamins --TFs $TFs --InterPro $InterPro --Swissprot $SwissProt --orthogroups_PH1 $PH1_orthology --orthogroups_GR1 $GR1_orthology > $OutDir/"$Strain"_annotation_ncbi.tsv
 done
 ```
 
