@@ -51,14 +51,84 @@ Assembly of remaining reads
   done > raw_dna/minion/$Organism/$Strain/"$Strain"_"$Date"_pass.fastq.gz
 ```
 
+Data was basecalled again using Albacore 2.02 on the minion server:
+
+```bash
+Organism=F.venenatum
+Strain=WT
+OutDir=/home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/$Organism/$Strain
+mkdir -p
+
+ssh nanopore@nanopore
+mkdir Fven_26-10-17
+cd Fven_26-10-17
+screen -a
+# Oxford nanopore 07/03/17
+Organism=F.venenatum
+Strain=WT
+Date=07-03-17
+FlowCell="FLO-MIN106"
+Kit="SQK-LSK108"
+RawDatDir=/data/seq_data/minion/2017/Fvenenatum/downloaded/pass
+# OutDir=/data/seq_data/minion/2017/Fvenenatum/albacore_v2.02
+OutDir=/home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/$Organism/$Strain
+
+mkdir -p ~/Fven_26-10-17/$Date
+cd ~/Fven_26-10-17/$Date
+~/.local/bin/read_fast5_basecaller.py \
+  --flowcell $FlowCell \
+  --kit $Kit \
+  --input $RawDatDir \
+  --recursive \
+  --worker_threads 24 \
+  --save_path "$Organism"_"$Strain"_"$Date" \
+  --output_format fastq,fast5 \
+  --reads_per_fastq_batch 4000
+  cat "$Organism"_"$Strain"_"$Date"/workspace/pass/*.fastq | gzip -cf > "$Organism"_"$Strain"_"$Date"_albacore_v2.02.fastq.gz
+  scp "$Organism"_"$Strain"_"$Date"_albacore_v2.02.fastq.gz armita@192.168.1.200:$OutDir/.
+  tar -cz -f "$Organism"_"$Strain"_"$Date".tar.gz "$Organism"_"$Strain"_"$Date"
+  mkdir -p $OutDir
+  scp "$Organism"_"$Strain"_"$Date".tar.gz armita@192.168.1.200:$OutDir/.
+
+  # Oxford nanopore 18/07/17
+  RawDatDir=/data/seq_data/minion/2017/20170718_1517_FvenenatumWT/fast5/pass
+  Organism=F.venenatum
+  Strain=WT
+  Date=18-07-17
+  FlowCell="FLO-MIN107"
+  Kit="SQK-LSK108"
+  RawDatDir=/data/seq_data/minion/2017/Fvenenatum/downloaded/pass
+  # OutDir=/data/seq_data/minion/2017/Fvenenatum/albacore_v2.02
+  OutDir=/home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/$Organism/$Strain
+
+  mkdir -p ~/Fven_26-10-17/$Date
+  cd ~/Fven_26-10-17/$Date
+  ~/.local/bin/read_fast5_basecaller.py \
+    --flowcell $FlowCell \
+    --kit $Kit \
+    --input $RawDatDir \
+    --recursive \
+    --worker_threads 24 \
+    --save_path "$Organism"_"$Strain"_"$Date" \
+    --output_format fastq,fast5 \
+    --reads_per_fastq_batch 4000
+    cat "$Organism"_"$Strain"_"$Date"/workspace/pass/*.fastq | gzip -cf > "$Organism"_"$Strain"_"$Date"_albacore_v2.02.fastq.gz
+    scp "$Organism"_"$Strain"_"$Date"_albacore_v2.02.fastq.gz armita@192.168.1.200:$OutDir/.
+  tar -cz -f "$Organism"_"$Strain"_"$Date".tar.gz "$Organism"_"$Strain"_"$Date"
+  mkdir -p $OutDir
+  mv "$Organism"_"$Strain"_"$Date".tar.gz $OutDir/.
+  scp "$Organism"_"$Strain"_"$Date".tar.gz armita@192.168.1.200:$OutDir/.
+```
+
+
 ### Identifing read depth
 
 ```bash
-  for Reads in $(ls raw_dna/minion/*/*/*_pass.fastq.gz); do
+  for Reads in $(ls raw_dna/minion/*/*/*.fastq.gz | grep 'albacore' ); do
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
     qsub $ProgDir/sub_count_nuc.sh 38 $Reads
   done
-  for Reads in $(ls qc_dna/paired/*/*/*/*_trim.fq.gz | grep 'WT'); do
+  for Reads in $(ls raw_dna/paired/*/*/*/*.fq.gz | grep 'WT'); do
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
     qsub $ProgDir/sub_count_nuc.sh 38 $Reads
   done
@@ -67,7 +137,7 @@ Assembly of remaining reads
 
 Splitting reads and trimming adapters using porechop
 ```bash
-for RawReads in $(ls raw_dna/minion/*/*/*_pass.fastq.gz | grep '18-07-17'); do
+for RawReads in $(ls raw_dna/minion/*/*/*.fastq.gz | grep 'albacore'); do
 Strain=$(echo $RawReads | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $RawReads | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -86,6 +156,10 @@ echo $Reads
 OutDir=$(dirname $Reads)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
 qsub $ProgDir/sub_count_nuc.sh $GenomeSz $Reads $OutDir
+done
+for Reads in $(ls qc_dna/paired/*/*/*/*_trim.fq.gz | grep 'WT'); do
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
+  qsub $ProgDir/sub_count_nuc.sh 38 $Reads
 done
 ```
 
@@ -117,6 +191,21 @@ WT	45.04
   OutDir=assembly/canu-1.6/$Organism/"$Strain"
   ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/canu
   qsub $ProgDir/submit_canu_minion_2lib.sh $Reads1 $Reads2 $GenomeSz $Prefix $OutDir
+```
+
+
+
+### Assembbly using SMARTdenovo
+
+```bash
+for CorrectedReads in $(ls assembly/canu-1.6/F.venenatum/WT/WT.trimmedReads.fasta.gz); do
+Organism=$(echo $CorrectedReads | rev | cut -f3 -d '/' | rev)
+Strain=$(echo $CorrectedReads | rev | cut -f2 -d '/' | rev)
+Prefix="$Strain"
+OutDir=assembly/SMARTdenovo/$Organism/"$Strain"
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/SMARTdenovo
+qsub $ProgDir/sub_SMARTdenovo.sh $CorrectedReads $Prefix $OutDir
+done
 ```
 
 <!-- Just running canu read correction:
@@ -637,8 +726,37 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
     HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
-    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_spades_first_corrected
-    AnchorLength=500000
+    # OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_spades_first_corrected
+    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_spades_first_100k
+    AnchorLength=100000
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
+    qsub $ProgDir/sub_quickmerge.sh $HybridAssembly $PacBioAssembly $OutDir $AnchorLength
+  done
+```
+
+```bash
+  for PacBioAssembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+    Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
+    Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
+    HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
+    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_minion_first_100k
+    # OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_minion_first_corrected
+    AnchorLength=100000
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
+    qsub $ProgDir/sub_quickmerge.sh $PacBioAssembly $HybridAssembly $OutDir $AnchorLength
+  done
+```
+
+```bash
+  for PacBioAssembly in $(ls assembly/canu-1.4/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+    Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
+    Strain=$(echo $PacBioAssembly | rev | cut -f3 -d '/' | rev)
+    HybridAssembly=$(ls assembly/spades_*/$Organism/$Strain/contigs.fasta)
+    AnchorLength=100000
+    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_minion_first_100k_canu_1.4
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
+    qsub $ProgDir/sub_quickmerge.sh $PacBioAssembly $HybridAssembly $OutDir $AnchorLength
+    OutDir=assembly/merged_canu_spades/$Organism/"$Strain"_spades_first_100k_canu_1.4
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/quickmerge
     qsub $ProgDir/sub_quickmerge.sh $HybridAssembly $PacBioAssembly $OutDir $AnchorLength
   done
@@ -647,11 +765,12 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 Checking assembly quality
 
 ```bash
-ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected' | grep -v 'old'); do
+# for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep -e '_spades_first_corrected' -e 'hybrid_first_corrected' | grep -v 'old' | grep 'hybrid_first_corrected'); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*_100k_canu_1.4/merged.fasta); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
 OutDir=$(dirname $Assembly)
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
 qsub $ProgDir/sub_quast.sh $Assembly $OutDir
 done
 ```
@@ -660,7 +779,7 @@ checking using busco
 
 ```bash
 #for Assembly in  $(ls repeat_masked/*/*/*/*_contigs_unmasked.fa); do
-for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected' | grep -v 'old'); do
+for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep -e '_spades_first_corrected' -e 'hybrid_first_corrected' | grep -v 'old' | grep 'hybrid_first_corrected'); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
