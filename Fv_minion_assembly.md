@@ -151,7 +151,7 @@ Read coverage was estimated from the trimmed datasets:
 
 ```bash
 GenomeSz=38
-for Reads in $(ls qc_dna/minion/*/*/*.fastq.gz | grep '18-07-17'); do
+for Reads in $(ls qc_dna/minion/*/*/*.fastq.gz | grep 'albacore_v2.02'); do
 echo $Reads
 OutDir=$(dirname $Reads)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
@@ -184,11 +184,11 @@ WT	45.04
   Organism=F.venenatum
   Strain=WT
   # Reads=$(ls raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
-  Reads1=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n1 | tail -n1)
-  Reads2=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n2 | tail -n1)
+  Reads1=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | grep 'albacore_v2.02' | head -n1 | tail -n1)
+  Reads2=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | grep 'albacore_v2.02' | head -n2 | tail -n1)
   GenomeSz="38m"
   Prefix="$Strain"
-  OutDir=assembly/canu-1.6/$Organism/"$Strain"
+  OutDir=assembly/canu-1.6/$Organism/"$Strain"_albacore_v2
   ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/canu
   qsub $ProgDir/submit_canu_minion_2lib.sh $Reads1 $Reads2 $GenomeSz $Prefix $OutDir
 ```
@@ -641,11 +641,13 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 
 ```bash
   # for MinIonDat in $(ls raw_dna/minion/*/*/*_pass.fastq.gz); do
-  MinIonDat=$(ls raw_dna/minion/*/*/*_pass.fastq.gz)
-  mkdir tmp_assembly
-  cat $MinIonDat > tmp_assembly/miniondat.fastq.gz
-  Organism=$(echo $MinIonDat | head -n1 | rev | cut -f3 -d '/' | rev)
-  Strain=$(echo $MinIonDat | head -n1 | rev | cut -f2 -d '/' | rev)
+  # MinIonDat=$(ls raw_dna/minion/*/*/*_pass.fastq.gz)
+  # mkdir tmp_assembly
+  # cat $MinIonDat > tmp_assembly/miniondat.fastq.gz
+  Reads1=$(ls qc_dna/minion/F.venenatum/WT/F.venenatum_WT_07-03-17_albacore_v2.02_trim.fastq.gz)
+  Reads2=$(ls qc_dna/minion/F.venenatum/WT/F.venenatum_WT_18-07-17_albacore_v2.02_trim.fastq.gz)
+  Organism=$(echo $Reads1 | head -n1 | rev | cut -f3 -d '/' | rev)
+  Strain=$(echo $Reads1 | head -n1 | rev | cut -f2 -d '/' | rev)
   IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
   echo $Strain
   echo $Organism
@@ -661,9 +663,11 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
   echo $TrimR2_Read
   echo $TrimF3_Read
   echo $TrimR3_Read
-  OutDir=assembly/spades_minion/$Organism/$Strain
-  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/spades/multiple_libraries
-  qsub $ProgDir/subSpades_3lib_minion.sh tmp_assembly/miniondat.fastq.gz $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir
+  OutDir=assembly/spades_minion/$Organism/"$Strain"_albacore_v2
+  # ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/spades/multiple_libraries
+  # qsub $ProgDir/subSpades_3lib_minion.sh tmp_assembly/miniondat.fastq.gz $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir
+  ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/assembly
+  qsub $ProgDir/Fv_spades_hybrid.sh $Reads1 $Reads2 $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir
   # done
   rm -r tmp_assembly
 ```
