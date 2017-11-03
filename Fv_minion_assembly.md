@@ -184,8 +184,8 @@ WT	45.04
   Organism=F.venenatum
   Strain=WT
   # Reads=$(ls raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
-  Reads1=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | grep 'albacore_v2.02' | head -n1 | tail -n1)
-  Reads2=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | grep 'albacore_v2.02' | head -n2 | tail -n1)
+  Reads1=$(ls qc_dna/minion/$Organism/$Strain/*_trim.fastq.gz | grep 'albacore_v2.02' | head -n1 | tail -n1)
+  Reads2=$(ls qc_dna/minion/$Organism/$Strain/*_trim.fastq.gz | grep 'albacore_v2.02' | head -n2 | tail -n1)
   GenomeSz="38m"
   Prefix="$Strain"
   OutDir=assembly/canu-1.6/$Organism/"$Strain"_albacore_v2
@@ -198,7 +198,7 @@ WT	45.04
 ### Assembbly using SMARTdenovo
 
 ```bash
-for CorrectedReads in $(ls assembly/canu-1.6/F.venenatum/WT/WT.trimmedReads.fasta.gz); do
+for CorrectedReads in $(ls assembly/canu-1.6/F.venenatum/WT_albacore_v2/WT.trimmedReads.fasta.gz); do
 Organism=$(echo $CorrectedReads | rev | cut -f3 -d '/' | rev)
 Strain=$(echo $CorrectedReads | rev | cut -f2 -d '/' | rev)
 Prefix="$Strain"
@@ -269,7 +269,7 @@ PBcR -t 8 -length 500 -partitions 200 -l $Prefix -s $Prefix.spec genomeSize=$Gen
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta); do
+for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
 # OutDir=assembly/canu-1.6/$Organism/$Strain/filtered_contigs
@@ -281,15 +281,16 @@ done
 Error correction using racon:
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta); do
-Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
+for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta | grep 'albacore'); do
+Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev | sed 's/_albacore_v2//g')
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
-ReadsFq1=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n1 | tail -n1)
-ReadsFq2=$(ls qc_dna/minion/$Organism/$Strain/*_pass_trim.fastq.gz | head -n2 | tail -n1)
+ReadsFq1=$(ls qc_dna/minion/$Organism/$Strain/*_trim.fastq.gz | grep 'albacore_v2.02' | head -n1 | tail -n1)
+ReadsFq2=$(ls qc_dna/minion/$Organism/$Strain/*_trim.fastq.gz | grep 'albacore_v2.02' | head -n2 | tail -n1)
 ReadsAppended=qc_dna/minion/$Organism/$Strain/"$Strain"_reads_appended.fastq.gz
 cat $ReadsFq1 $ReadsFq2 > $ReadsAppended
-OutDir=assembly/canu-1.6/$Organism/$Strain/racon
+# OutDir=assembly/canu-1.6/$Organism/$Strain/racon
+OutDir=$(dirname $Assembly)/racon
 Iterations=10
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/racon
 qsub $ProgDir/sub_racon.sh $Assembly $ReadsAppended $Iterations $OutDir
@@ -673,7 +674,7 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 ```
 
 ```bash
-  for Assembly in $(ls assembly/spades_minion/*/*/contigs.fasta |grep -v 'old'); do
+  for Assembly in $(ls assembly/spades_minion/*/*/contigs.fasta |grep -v 'old' | grep '_albacore_v2'); do
     echo "Filtering contigs smaller than 500bp"
     InDir=$(dirname $Assembly)
     OutDir=$InDir/filtered_contigs
@@ -689,9 +690,9 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-  for Assembly in $(ls assembly/spades_minion/*/*//filtered_contigs/*_min_500bp.fasta |grep -v 'old'); do
-    Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
-    Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
+  for Assembly in $(ls assembly/spades_minion/*/*/filtered_contigs/*_min_500bp.fasta |grep -v 'old' | grep '_albacore_v2'); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
     echo "$Organism - $Strain"
     OutDir=$(dirname $Assembly)
     qsub $ProgDir/sub_quast.sh $Assembly $OutDir
