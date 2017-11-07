@@ -208,6 +208,17 @@ qsub $ProgDir/sub_SMARTdenovo.sh $CorrectedReads $Prefix $OutDir
 done
 ```
 
+Contigs shorter than 500bp were removed from the assembly
+
+```bash
+for Contigs in $(ls assembly/SMARTdenovo/*/*/*.dmo.lay.utg | grep 'albacore'); do
+AssemblyDir=$(dirname $Contigs)
+mkdir $AssemblyDir/filtered_contigs
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/abyss
+$ProgDir/filter_abyss_contigs.py $Contigs 500 > $AssemblyDir/contigs_min_500bp.fasta
+done
+```
+
 <!-- Just running canu read correction:
 
 ```bash
@@ -269,7 +280,8 @@ PBcR -t 8 -length 500 -partitions 200 -l $Prefix -s $Prefix.spec genomeSize=$Gen
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta | grep 'albacore'); do
+# for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta | grep 'albacore'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/contigs_min_500bp.fasta | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)  
 # OutDir=assembly/canu-1.6/$Organism/$Strain/filtered_contigs
@@ -281,7 +293,8 @@ done
 Error correction using racon:
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta | grep 'albacore'); do
+# for Assembly in $(ls assembly/canu-1.6/*/*/*.contigs.fasta | grep 'albacore'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/contigs_min_500bp.fasta | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev | sed 's/_albacore_v2//g')
 Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -293,16 +306,17 @@ cat $ReadsFq1 $ReadsFq2 > $ReadsAppended
 OutDir=$(dirname $Assembly)/racon
 Iterations=10
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/racon
-qsub $ProgDir/sub_racon.sh $Assembly $ReadsAppended $Iterations $OutDir
-rm $ReadsAppended
+# qsub $ProgDir/sub_racon.sh $Assembly $ReadsAppended $Iterations $OutDir
+qsub $ProgDir/sub_racon.sh $Assembly $ReadsFq1 $Iterations $OutDir
 done
+# rm $ReadsAppended
 ```
 
 Quast and busco were run to assess the effects of racon on assembly quality:
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
   Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
   Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
   OutDir=$(dirname $Assembly)
@@ -312,7 +326,7 @@ done
 
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -320,7 +334,7 @@ ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
 BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
 OutDir=gene_pred/busco/$Organism/$Strain/assembly
 # OutDir=$(dirname $Assembly)
-qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+qsub $ProgDir/sub_busco3.sh $Assembly $BuscoDB $OutDir
 done
 ```
 
@@ -336,11 +350,11 @@ Total=$(cat $File | grep "Total" | cut -f2)
 printf "$FileName\t$Complete\t$Duplicated\t$Fragmented\t$Missing\t$Total\n"
 done
 ```
-<!--
+
 # Assembly correction using nanopolish
 
 Fast5 files are very large and need to be stored as gzipped tarballs. These needed temporarily unpacking but must be deleted after nanpolish has finished running.
-
+<!--
 The minion device lost connection to metrichor during it's run before reconnecting,
 this is though to have led to the duplication of four reads in the dataset,
 which prevented nanopolish from running. As such, these were removed during the
@@ -351,11 +365,11 @@ reads were:
 >ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template:1D_000:template
 >bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template:1D_000:template
 >d6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template:1D_000:template
-```
+``` -->
 
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -367,26 +381,29 @@ echo "reads already extracted"
 else
 echo "extracting reads"
 mkdir -p $ReadDir
-CurDir=$PWD
-cd $ReadDir
+# CurDir=$PWD
+# cd $ReadDir
 # Event information would have been used from all of the runs, howver MinKnow doesnt
 # produce event-level information and therefore just the albacore data was used.
-for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass); do
-# for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass /home/miseq_data/minion/2017/*_FvenenatumWT/fast5/pass); do
-nanopolish extract -r $Fast5Dir \
-| gzip -cf
-done > "$Strain"_reads.fa.gz
-cd $CurDir
-cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
-| grep -A1 \
--e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
--e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
--e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
--e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
-> tmp.txt
-cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
-| grep -v -f tmp.txt | gzip -cf \
-> $ReadDir/"$Strain"_reads_no_duplicates.fa.gz
+# for Fast5Dir in $(ls -d /home/miseq_data/minion/2017/Fvenenatum/downloaded/pass); do
+# nanopolish extract -r $Fast5Dir \
+# | gzip -cf
+# done > "$Strain"_reads.fa.gz
+# cd $CurDir
+Fast5Dir1=/data/scratch/nanopore_tmp_data/Fven/07-03-17/F.venenatum_WT_07-03-17/workspace/pass
+Fast5Dir2=/data/scratch/nanopore_tmp_data/Fven/18-07-17/F.venenatum_WT_18-07-17/workspace/pass
+nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_nanopolish_index.fastq
+
+# cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
+# | grep -A1 \
+# -e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
+# -e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
+# -e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
+# -e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
+# > tmp.txt
+# cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
+# | grep -v -f tmp.txt | gzip -cf \
+# > $ReadDir/"$Strain"_reads_no_duplicates.fa.gz
 fi
 
 
