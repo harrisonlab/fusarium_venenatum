@@ -57,7 +57,7 @@ Data was basecalled again using Albacore 2.02 on the minion server:
 Organism=F.venenatum
 Strain=WT
 OutDir=/home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/$Organism/$Strain
-mkdir -p
+mkdir -p $OutDir
 
 ssh nanopore@nanopore
 mkdir Fven_26-10-17
@@ -97,8 +97,7 @@ cd ~/Fven_26-10-17/$Date
   Date=18-07-17
   FlowCell="FLO-MIN107"
   Kit="SQK-LSK108"
-  RawDatDir=/data/seq_data/minion/2017/Fvenenatum/downloaded/pass
-  # OutDir=/data/seq_data/minion/2017/Fvenenatum/albacore_v2.02
+  RawDatDir=/data/seq_data/minion/2017/20170718_1517_FvenenatumWT/fast5/pass
   OutDir=/home/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/$Organism/$Strain
 
   mkdir -p ~/Fven_26-10-17/$Date
@@ -108,7 +107,7 @@ cd ~/Fven_26-10-17/$Date
     --kit $Kit \
     --input $RawDatDir \
     --recursive \
-    --worker_threads 24 \
+    --worker_threads 12 \
     --save_path "$Organism"_"$Strain"_"$Date" \
     --output_format fastq,fast5 \
     --reads_per_fastq_batch 4000
@@ -124,7 +123,7 @@ cd ~/Fven_26-10-17/$Date
 ### Identifing read depth
 
 ```bash
-  for Reads in $(ls raw_dna/minion/*/*/*.fastq.gz | grep 'albacore' ); do
+  for Reads in $(ls raw_dna/minion/*/*/*.fastq.gz | grep 'albacore' | grep '18-07-17'); do
     ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/dna_qc
     qsub $ProgDir/sub_count_nuc.sh 38 $Reads
   done
@@ -137,7 +136,7 @@ cd ~/Fven_26-10-17/$Date
 
 Splitting reads and trimming adapters using porechop
 ```bash
-for RawReads in $(ls raw_dna/minion/*/*/*.fastq.gz | grep 'albacore'); do
+for RawReads in $(ls raw_dna/minion/*/*/*.fastq.gz | grep 'albacore' | grep '18-07-17'); do
 Strain=$(echo $RawReads | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $RawReads | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -183,6 +182,13 @@ WT	45.04
 ```bash
   Organism=F.venenatum
   Strain=WT
+  Jobs=$(qstat | grep 'sub_porech' | grep 'qw' | wc -l)
+  while [ $Jobs -gt 0 ]; do
+  sleep 1m
+  printf "."
+  Jobs=$(qstat | grep 'sub_porech' | grep 'qw' | wc -l)
+  done		
+  printf "\n"
   # Reads=$(ls raw_dna/minion/$Organism/$Strain/*_pass.fastq.gz)
   Reads1=$(ls qc_dna/minion/$Organism/$Strain/*_trim.fastq.gz | grep 'albacore_v2.02' | head -n1 | tail -n1)
   Reads2=$(ls qc_dna/minion/$Organism/$Strain/*_trim.fastq.gz | grep 'albacore_v2.02' | head -n2 | tail -n1)
@@ -376,10 +382,10 @@ echo "$Organism - $Strain"
 # Step 1 extract reads as a .fq file which contain info on the location of the fast5 files
 # Note - the full path from home must be used
 ReadDir=raw_dna/nanopolish/$Organism/$Strain
-if [ -d $ReadDir ]; then
-echo "reads already extracted"
-else
-echo "extracting reads"
+# if [ -d $ReadDir ]; then
+# echo "reads already extracted"
+# else
+# echo "extracting reads"
 mkdir -p $ReadDir
 # CurDir=$PWD
 # cd $ReadDir
@@ -390,29 +396,39 @@ mkdir -p $ReadDir
 # | gzip -cf
 # done > "$Strain"_reads.fa.gz
 # cd $CurDir
+ReadsFq1=$(ls raw_dna/minion/F.venenatum/WT/F.venenatum_WT_07-03-17_albacore_v2.02.fastq.gz)
+ReadsFq2=$(ls raw_dna/minion/F.venenatum/WT/F.venenatum_WT_18-07-17_albacore_v2.02.fastq.gz)
+# cat $ReadsFq1 $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_concatenated_reads.fastq
+
+cat $ReadsFq1 | gunzip -cf > $ReadDir/"$Strain"_07-03-17_reads.fastq
+cat $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_18-07-17_reads.fastq
+/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_07-03-17_reads.fastq --out $ReadDir/"$Strain"_07-03-17_reads_filtered.fastq
+/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_18-07-17_reads.fastq --out $ReadDir/"$Strain"_18-07-17_reads_filtered.fastq
+
 Fast5Dir1=/data/scratch/nanopore_tmp_data/Fven/07-03-17/F.venenatum_WT_07-03-17/workspace/pass
 Fast5Dir2=/data/scratch/nanopore_tmp_data/Fven/18-07-17/F.venenatum_WT_18-07-17/workspace/pass
-nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_nanopolish_index.fastq
+nanopolish extract -r -q -o $ReadDir/F.venenatum_WT_07-03-17_albacore_v2.02.fastq $Fast5Dir1
+nanopolish index -d $Fast5Dir1 -d $Fast5Dir2
 
-# cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
-# | grep -A1 \
-# -e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
-# -e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
-# -e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
-# -e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
-# > tmp.txt
+$ReadDir/"$Strain"_concatenated_reads.fastq.gz | gunzip -cf \
+| grep -A3 \
+-e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
+-e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
+-e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
+-e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
+> tmp.txt
 # cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
 # | grep -v -f tmp.txt | gzip -cf \
-# > $ReadDir/"$Strain"_reads_no_duplicates.fa.gz
+# > $ReadDir/"$Strain"_nanopolish_index.fastq.gz
 fi
 
 
-RawReads=$(ls $ReadDir/"$Strain"_reads_no_duplicates.fa.gz)
+# RawReads=$(ls $ReadDir/"$Strain"_reads_no_duplicates.fa.gz)
 OutDir=$(dirname $Assembly)
 mkdir -p $OutDir
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
 # submit alignments for nanoppolish
-qsub $ProgDir/sub_bwa_nanopolish.sh $Assembly $RawReads $OutDir/nanopolish
+qsub $ProgDir/sub_bwa_nanopolish.sh $ReadDir/"$Strain"_nanopolish_index.fastq.gz $RawReads $OutDir/nanopolish
 done
 ```
 
@@ -1087,7 +1103,6 @@ Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
 ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
 $ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
 done
-
 ```
 
 ## Supplimenting Braker gene models with CodingQuary genes
