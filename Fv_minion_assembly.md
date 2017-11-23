@@ -318,6 +318,16 @@ done
 # rm $ReadsAppended
 ```
 
+```bash
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
+  for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
+    OutDir=$(dirname $Assembly)
+    echo "" > tmp.txt
+    ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+    $ProgDir/remove_contaminants.py --keep_mitochondria --inp $Assembly --out $OutDir/racon_min_500bp_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+  done
+```
+
 Quast and busco were run to assess the effects of racon on assembly quality:
 
 ```bash
@@ -373,9 +383,20 @@ reads were:
 >d6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template:1D_000:template
 ``` -->
 
+Raw reads were moved onto the cluster scratch space for this step and unpacked:
 
 ```bash
-for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
+ScratchDir=/data/scratch/nanopore_tmp_data/Fven
+mkdir -p $ScratchDir
+cp raw_dna/minion/F.venenatum/WT/*.tar.gz $ScratchDir/.
+for Tar in $(ls $ScratchDir/*.tar.gz); do
+  tar -zxvf $Tar -C $ScratchDir
+done
+```
+
+
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/racon_min_500bp_renamed.fasta | grep 'WT' | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -398,29 +419,31 @@ mkdir -p $ReadDir
 # cd $CurDir
 ReadsFq1=$(ls raw_dna/minion/F.venenatum/WT/F.venenatum_WT_07-03-17_albacore_v2.02.fastq.gz)
 ReadsFq2=$(ls raw_dna/minion/F.venenatum/WT/F.venenatum_WT_18-07-17_albacore_v2.02.fastq.gz)
-# cat $ReadsFq1 $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_concatenated_reads.fastq
+cat $ReadsFq1 $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_concatenated_reads.fastq
+/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_concatenated_reads.fastq --out $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
 
-cat $ReadsFq1 | gunzip -cf > $ReadDir/"$Strain"_07-03-17_reads.fastq
-cat $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_18-07-17_reads.fastq
-/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_07-03-17_reads.fastq --out $ReadDir/"$Strain"_07-03-17_reads_filtered.fastq
-/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_18-07-17_reads.fastq --out $ReadDir/"$Strain"_18-07-17_reads_filtered.fastq
+# cat $ReadsFq1 | gunzip -cf > $ReadDir/"$Strain"_07-03-17_reads.fastq
+# cat $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_18-07-17_reads.fastq
+# /home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_07-03-17_reads.fastq --out $ReadDir/"$Strain"_07-03-17_reads_filtered.fastq
+# /home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_18-07-17_reads.fastq --out $ReadDir/"$Strain"_18-07-17_reads_filtered.fastq
 
-Fast5Dir1=/data/scratch/nanopore_tmp_data/Fven/07-03-17/F.venenatum_WT_07-03-17/workspace/pass
-Fast5Dir2=/data/scratch/nanopore_tmp_data/Fven/18-07-17/F.venenatum_WT_18-07-17/workspace/pass
-nanopolish extract -r -q -o $ReadDir/F.venenatum_WT_07-03-17_albacore_v2.02.fastq $Fast5Dir1
-nanopolish index -d $Fast5Dir1 -d $Fast5Dir2
+ScratchDir=/data/scratch/nanopore_tmp_data/Fven
+Fast5Dir1=$ScratchDir/F.venenatum_WT_07-03-17/workspace/pass
+Fast5Dir2=$ScratchDir/F.venenatum_WT_18-07-17/workspace/pass
+# nanopolish extract -r -q -o $ReadDir/F.venenatum_WT_07-03-17_albacore_v2.02.fastq $Fast5Dir1
+nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
 
-$ReadDir/"$Strain"_concatenated_reads.fastq.gz | gunzip -cf \
-| grep -A3 \
--e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
--e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
--e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
--e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
-> tmp.txt
+# $ReadDir/"$Strain"_concatenated_reads.fastq.gz | gunzip -cf \
+# | grep -A3 \
+# -e '1c8314d1-022d-4745-8c82-f3ba3d4deefa_Basecall_Alignment_template' \
+# -e 'ab4ed1d5-a7b5-4d8b-ab2b-c0573f48be7d_Basecall_Alignment_template' \
+# -e 'bdfcaf0b-fc25-4413-ab79-46e6e99c9e1c_Basecall_Alignment_template' \
+# -e 'd6d26487-5839-4f57-908c-f170cc713971_Basecall_Alignment_template' \
+# > tmp.txt
 # cat $ReadDir/"$Strain"_reads.fa.gz | gunzip -cf \
 # | grep -v -f tmp.txt | gzip -cf \
 # > $ReadDir/"$Strain"_nanopolish_index.fastq.gz
-fi
+# fi
 
 
 # RawReads=$(ls $ReadDir/"$Strain"_reads_no_duplicates.fa.gz)
@@ -428,7 +451,7 @@ OutDir=$(dirname $Assembly)
 mkdir -p $OutDir
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
 # submit alignments for nanoppolish
-qsub $ProgDir/sub_bwa_nanopolish.sh $ReadDir/"$Strain"_nanopolish_index.fastq.gz $RawReads $OutDir/nanopolish
+qsub $ProgDir/sub_bwa_nanopolish.sh $Assembly $ReadDir/"$Strain"_concatenated_reads_filtered.fastq.fa.gz $OutDir/nanopolish
 done
 ```
 
@@ -436,12 +459,12 @@ done
  nanopolish correction
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
 OutDir=$(dirname $Assembly)
-RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_reads_no_duplicates.fa.gz)
+RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq.fa.gz)
 AlignedReads=$(ls $OutDir/nanopolish/reads.sorted.bam)
 
 NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
@@ -449,7 +472,7 @@ python $NanoPolishDir/nanopolish_makerange.py $Assembly > $OutDir/nanopolish/nan
 
 Ploidy=1
 echo "nanopolish log:" > nanopolish_log.txt
-for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | tail -n+21); do
+for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | head -n1); do
 Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
 while [ $Jobs -gt 1 ]; do
 sleep 1m
