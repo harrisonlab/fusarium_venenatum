@@ -459,12 +459,12 @@ done
  nanopolish correction
 
 ```bash
-for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/contigs_min_500bp_racon_round_10.fasta | grep 'WT' | grep 'round_10' | grep 'albacore'); do
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/racon_min_500bp_renamed.fasta | grep 'WT' | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
 OutDir=$(dirname $Assembly)
-RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq.fa.gz)
+RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq)
 AlignedReads=$(ls $OutDir/nanopolish/reads.sorted.bam)
 
 NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
@@ -472,7 +472,7 @@ python $NanoPolishDir/nanopolish_makerange.py $Assembly > $OutDir/nanopolish/nan
 
 Ploidy=1
 echo "nanopolish log:" > nanopolish_log.txt
-for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | head -n1); do
+for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | tail -n+2); do
 Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
 while [ $Jobs -gt 1 ]; do
 sleep 1m
@@ -489,25 +489,26 @@ done
 ```
 
 ```bash
-Assembly=$(ls assembly/SMARTdenovo/F.oxysporum_fsp_narcissi/FON_63/racon_10/racon_min_500bp_renamed.fasta)
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/racon_min_500bp_renamed.fasta | grep 'WT' | grep 'albacore'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 OutDir=assembly/SMARTdenovo/$Organism/$Strain/nanopolish
 mkdir -p $OutDir
 # cat "" > $OutDir/"$Strain"_nanoplish.fa
+InDir=$(dirname $Assembly)
 NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
-python $NanoPolishDir/nanopolish_merge.py assembly/SMARTdenovo/$Organism/$Strain/racon_10/*/*.fa > $OutDir/"$Strain"_nanoplish.fa
+python $NanoPolishDir/nanopolish_merge.py $InDir/*:*-*/*.fa > $OutDir/"$Strain"_nanoplish.fa
 
 echo "" > tmp.txt
 ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
 $ProgDir/remove_contaminants.py --keep_mitochondria --inp $OutDir/"$Strain"_nanoplish.fa --out $OutDir/"$Strain"_nanoplish_min_500bp_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
 ```
 
 Quast and busco were run to assess the effects of nanopolish on assembly quality:
 
 ```bash
-
-for Assembly in $(ls assembly/SMARTdenovo/F.oxysporum_fsp_narcissi/FON_63/nanopolish/FON_63_nanoplish_min_500bp_renamed.fasta); do
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/WT_albacore_v2_nanoplish_min_500bp_renamed.fasta); do
   Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
   Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
 	# Quast
@@ -518,24 +519,24 @@ for Assembly in $(ls assembly/SMARTdenovo/F.oxysporum_fsp_narcissi/FON_63/nanopo
 	BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
 	OutDir=gene_pred/busco/$Organism/$Strain/assembly
 	ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
-	qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+	qsub $ProgDir/sub_busco3.sh $Assembly $BuscoDB $OutDir
 done
 ```
- -->
+
 
 
 ## Assemblies were polished using Pilon
 
  Although three libraries were available, the first contained a relatively small amount of data and was not used for correction.
 
-As nanopolish was not run the assembly remained ralatively error prone. This
+<!-- As nanopolish was not run the assembly remained ralatively error prone. This
 mena thtat the memorey overhead of pilon was very high. To reduce this, the
 assembly was broken into contigs and an iteration of pilon run on each contig.
 Following a single iteration of pilon correction this way, the assembly was merged once more and pilon run for a further x iterations on the combined assembly.
 
 Split the assembly into contigs:
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/racon/*.fasta | grep 'WT' | grep 'round_10'); do
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/WT_albacore_v2_nanoplish_min_500bp_renamed.fasta); do
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 echo "$Organism - $Strain"
@@ -547,13 +548,13 @@ for File in $(ls $OutDir/* | grep -v 'fasta'); do
   mv $File $File.fasta
 done
 done
-```
+``` -->
 
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/*/*/racon/by_contig/*.fasta | grep 'WT' | head -n1); do
-Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/WT_albacore_v2_nanoplish_min_500bp_renamed.fasta); do
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | sed 's/_albacore_v2//g')
 IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
 echo $Strain
 echo $Organism
@@ -570,7 +571,7 @@ echo $TrimR2_Read
 echo $TrimF3_Read
 echo $TrimR3_Read
 OutDir=$(dirname $Assembly)
-Iterations=1
+Iterations=10
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
 #qsub $ProgDir/sub_pilon_3_libs.sh $Assembly $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
 qsub $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
