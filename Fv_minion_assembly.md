@@ -609,7 +609,7 @@ done
 Summarising assemblies using quast:
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/quast
-for Assembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/pilon_*.fasta | grep 'pilon_10'); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)  
 echo "$Organism - $Strain"
@@ -622,7 +622,7 @@ done
 checking using busco
 
 ```bash
-for Assembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta); do
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/pilon_*.fasta); do
   Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
   Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
   echo "$Organism - $Strain"
@@ -640,7 +640,7 @@ done
 
 
 ```bash
-  for File in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*/*/short_summary_*.txt); do  
+  for File in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/pilon_*/*/short_summary_*.txt); do  
   Strain=$(echo $File| rev | cut -d '/' -f5 | rev)
   Organism=$(echo $File | rev | cut -d '/' -f6 | rev)
   Round=$(echo $File | rev | cut -d '/' -f3 | rev)
@@ -664,35 +664,19 @@ F.venenatum	WT	pilon_8	3656	32	37	3725
 F.venenatum	WT	pilon_9	3656	32	37	3725
 F.venenatum	WT	pilon_10	3656	32	37	3725
 ```
-<!--
+
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/pilon_*.fasta | grep 'pilon_10'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+# OutDir=assembly/SMARTdenovo/$Organism/$Strain/nanopolish
+OutDir=$(dirname $Assembly)
+echo "" > tmp.txt
+ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+$ProgDir/remove_contaminants.py --keep_mitochondria --inp $Assembly --out $OutDir/"$Strain"_pilon_min_500bp_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
 ```
-assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_10/run_pilon_10/short_summary_pilon_10.txt
-	3628	Complete BUSCOs (C)
-	42	Fragmented BUSCOs (F)
-	55	Missing BUSCOs (M)
-	3725	Total BUSCO groups searched
-gene_pred/busco/F.venenatum/WT/assembly/run_contigs_min_500bp/short_summary_contigs_min_500bp.txt
-	3688	Complete BUSCOs (C)
-	14	Fragmented BUSCOs (F)
-	23	Missing BUSCOs (M)
-	3725	Total BUSCO groups searched
-gene_pred/busco/F.venenatum/WT_ncbi/assembly/run_polished_contigs_softmasked_2017-03-23_18:19/short_summary_polished_contigs_softmasked_2017-03-23_18:19.txt
-	3475	Complete BUSCOs (C)
-	122	Fragmented BUSCOs (F)
-	128	Missing BUSCOs (M)
-	3725	Total BUSCO groups searched
-gene_pred/busco/F.venenatum/WT_spades_first_pilon/assembly/run_pilon/short_summary_pilon.txt
-	3629	Complete BUSCOs (C)
-	41	Fragmented BUSCOs (F)
-	55	Missing BUSCOs (M)
-	3725	Total BUSCO groups searched
-``` -->
-
 <!--
-Inspection of flagged regions didn't identify any contigs that needed to be broken.
--->
-
-
 ### Hybrid assembly:
 
 #### Hybrid assembly: Spades Assembly
@@ -754,7 +738,7 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
     OutDir=$(dirname $Assembly)
     qsub $ProgDir/sub_quast.sh $Assembly $OutDir
   done
-```
+``` -->
 
 
 # Merging Minion and Hybrid Assemblies
@@ -782,7 +766,7 @@ Inspection of flagged regions didn't identify any contigs that needed to be brok
     qsub $ProgDir/sub_quickmerge.sh $PacBioAssembly $HybridAssembly $OutDir $AnchorLength
   done
 ``` -->
-
+<!--
 ```bash
   for PacBioAssembly in $(ls assembly/canu-1.6/F.venenatum/WT/polished_10/pilon_*.fasta | grep 'pilon_10'); do
     Organism=$(echo $PacBioAssembly | rev | cut -f4 -d '/' | rev)
@@ -859,35 +843,10 @@ done
     cat $File | grep -e '(C)' -e '(F)' -e '(M)' -e 'Total';
   done
 ```
+-->
 
-
-This merged assembly was polished using Pilon
 <!--
-```bash
-for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected'); do
-Organism=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f2 -d '/' | rev | cut -f1 -d '_')
-IlluminaDir=$(ls -d qc_dna/paired/$Organism/$Strain)
-echo $Strain
-echo $Organism
-#TrimF1_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n1 | tail -n1);
-#TrimR1_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n1 | tail -n1);
-TrimF2_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
-TrimR2_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
-TrimF3_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
-TrimR3_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
-#echo $TrimF1_Read
-#echo $TrimR1_Read
-echo $TrimF2_Read
-echo $TrimR2_Read
-echo $TrimF3_Read
-echo $TrimR3_Read
-OutDir=$(dirname $Assembly)"/polished_5"
-Iterations=5
-ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/pilon
-qsub $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
-done
-``` -->
+This merged assembly was polished using Pilon
 
 ```bash
 for Assembly in $(ls assembly/merged_canu_spades/*/*/merged.fasta | grep '_spades_first_corrected' | grep -v 'old'); do
@@ -965,6 +924,7 @@ done
     cat $File | grep -e '(C)' -e '(F)' -e '(M)' -e 'Total';
   done
 ```
+-->
 
 # Repeatmasking
 
@@ -976,18 +936,23 @@ The best assemblies were used to perform repeatmasking
 
 ```bash
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/repeat_masking
-for Assembly in $(ls assembly/merged_canu_spades/F.venenatum/WT_spades_first_corrected/polished*/*_merged_polished.fasta); do
-Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev | cut -f1 -d '_')
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_albacore_v2/nanopolish/WT_albacore_v2_pilon_min_500bp_renamed.fasta); do
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | cut -f1 -d '_')
+echo "$Organism - $Strain"
 OutDir=repeat_masked/$Organism/"$Strain"_minion/minion_submission
 qsub $ProgDir/rep_modeling.sh $Assembly $OutDir
 qsub $ProgDir/transposonPSI.sh $Assembly $OutDir
 done
 ```
 
-```bash
 
-for File in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
+The TransposonPSI masked bases were used to mask additional bases from the
+repeatmasker / repeatmodeller softmasked and hardmasked files.
+
+
+```bash
+for File in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_softmasked.fa); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
@@ -997,7 +962,7 @@ echo "Number of masked bases:"
 cat $OutFile | grep -v '>' | tr -d '\n' | awk '{print $0, gsub("[a-z]", ".")}' | cut -f2 -d ' '
 done
 # The number of N's in hardmasked sequence are not counted as some may be present within the assembly and were therefore not repeatmasked.
-for File in $(ls repeat_masked/*/*/*/*_contigs_hardmasked.fa | grep 'WT_ncbi'); do
+for File in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_softmasked.fa); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_hardmasked.fa/_contigs_hardmasked_repeatmasker_TPSI_appended.fa/g')
@@ -1006,65 +971,64 @@ bedtools maskfasta -fi $File -bed $TPSI -fo $OutFile
 done
 ```
 
+
 ```bash
-for RepDir in $(ls -d repeat_masked/F.*/*/*); do
+for RepDir in $(ls -d repeat_masked/F.venenatum/WT_minion/minion_submission); do
 Strain=$(echo $RepDir | rev | cut -f2 -d '/' | rev)
 Organism=$(echo $RepDir | rev | cut -f3 -d '/' | rev)  
 RepMaskGff=$(ls $RepDir/*_contigs_hardmasked.gff)
 TransPSIGff=$(ls $RepDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
-printf "$Organism\t$Strain\n"
 # printf "The number of bases masked by RepeatMasker:\t"
-sortBed -i $RepMaskGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+RepMaskerBp=$(sortBed -i $RepMaskGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}')
 # printf "The number of bases masked by TransposonPSI:\t"
-sortBed -i $TransPSIGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
+TpsiBp=$(sortBed -i $TransPSIGff | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}')
 # printf "The total number of masked bases are:\t"
-cat $RepMaskGff $TransPSIGff | sortBed | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}'
-echo
+Total=$(cat $RepMaskGff $TransPSIGff | sortBed | bedtools merge | awk -F'\t' 'BEGIN{SUM=0}{ SUM+=$3-$2 }END{print SUM}')
+printf "$Organism\t$Strain\t$RepMaskerBp\t$TpsiBp\t$Total\n"
 done
 ```
 
+```bash
+  F.venenatum	WT_minion	476671	128276	602385
+```
+
+
 # Gene Prediction
 
-Gene prediction followed three steps:
-	Pre-gene prediction
-		- Quality of genome assemblies were assessed using Cegma to see how many core eukaryotic genes can be identified.
-	Gene model training
+Gene prediction followed steps:
+Gene model training
 		- Gene models were trained using assembled RNAseq data as part of the Braker1 pipeline
 	Gene prediction
 		- Gene models were used to predict genes in genomes as part of the the Braker1 pipeline. This used RNAseq data as hints for gene models.
 
 
-## Pre-gene prediction
-Quality of genome assemblies was assessed by looking for the gene space in the assemblies.
-<!--
-```bash
-  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/cegma
-  Assembly=repeat_masked/F.venenatum/WT_ncbi/ncbi_submission/polished_contigs_softmasked_repeatmasker_TPSI_appended.fa
-  qsub $ProgDir/sub_cegma.sh $Assembly dna
-```
-The cegma completeness report gave an indication of the number of genes core
-eukaryotic genes were present:
-** Number of cegma genes present and complete:  **
-** Number of cegma genes present and partial:  **
--->
+#### Aligning
+
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
-  Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
-  Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-  echo "$Organism - $Strain"
-  ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/busco
-  # BuscoDB="Fungal"
-  BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
-  OutDir=gene_pred/busco/$Organism/$Strain/assembly
-  qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
-done
-```
-
-```bash
-  for File in $(ls gene_pred/assembly/F*/*/genes/*/short_summary_*.txt); do  
-    echo $File;
-    cat $File | grep -e '(C)' -e 'Total';
+  for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_unmasked.fa); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    for FileF in $(ls ../quorn/filtered/*.1.fq | grep -v 'SE'); do
+      Jobs=$(qstat | grep 'sub_sta' | grep 'qw'| wc -l)
+      while [ $Jobs -gt 1 ]; do
+        sleep 1m
+        printf "."
+        Jobs=$(qstat | grep 'sub_sta' | grep 'qw'| wc -l)
+      done
+      printf "\n"
+      FileR=$(echo $FileF | sed 's/.1.fq/.2.fq/g')
+      echo $FileF
+      echo $FileR
+      Prefix=$(echo $FileF | rev | cut -f1 -d '/' | rev | sed "s/.1.fq//g")
+      # Timepoint=$(echo $FileF | rev | cut -f2 -d '/' | rev)
+      Timepoint="treatment"
+      #echo "$Timepoint"
+      OutDir=alignment/star/$Organism/$Strain/$Timepoint/$Prefix
+      ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
+      qsub $ProgDir/sub_star.sh $Assembly $FileF $FileR $OutDir
+    done
   done
 ```
 
@@ -1086,14 +1050,14 @@ samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam $Bam
 ``` -->
 
 ```bash
-OutDir=alignment/F.venenatum/WT/minion
+OutDir=alignment/star/F.venenatum/WT_minion/treatment/concatenated
 mkdir -p $OutDir
-for File in $(ls /home/groups/harrisonlab/project_files/quorn/minion/*.out.bam); do
-Prefix=$(basename $File | sed 's/.bam//g')
-echo $Prefix
-samtools sort -o $File $Prefix > $OutDir/"$Prefix"_sorted.bam
-done
-BamFiles=$(ls $OutDir/*_sorted.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+# for File in $(ls alignment/star/F.venenatum/WT_minion/treatment/*/*.sortedByCoord.out.bam); do
+# Prefix=$(basename $File | sed 's/.bam//g')
+# echo $Prefix
+# samtools sort -o $File $Prefix > $OutDir/"$Prefix"_sorted.bam
+# done
+BamFiles=$(ls alignment/star/F.venenatum/WT_minion/treatment/*/*.sortedByCoord.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
 samtools merge -f $OutDir/concatenated.bam $BamFiles
 ```
 
