@@ -653,16 +653,16 @@ done
 ```
 
 ```
-F.venenatum	WT	pilon_1	3306	223	196	3725
-F.venenatum	WT	pilon_2	3567	78	80	3725
-F.venenatum	WT	pilon_3	3635	43	47	3725
-F.venenatum	WT	pilon_4	3652	32	41	3725
-F.venenatum	WT	pilon_5	3654	33	38	3725
-F.venenatum	WT	pilon_6	3656	32	37	3725
-F.venenatum	WT	pilon_7	3656	32	37	3725
-F.venenatum	WT	pilon_8	3656	32	37	3725
-F.venenatum	WT	pilon_9	3656	32	37	3725
-F.venenatum	WT	pilon_10	3656	32	37	3725
+F.venenatum	WT_albacore_v2	pilon_1	3616	55	54	3725
+F.venenatum	WT_albacore_v2	pilon_2	3645	38	42	3725
+F.venenatum	WT_albacore_v2	pilon_3	3660	31	34	3725
+F.venenatum	WT_albacore_v2	pilon_4	3662	30	33	3725
+F.venenatum	WT_albacore_v2	pilon_5	3663	30	32	3725
+F.venenatum	WT_albacore_v2	pilon_6	3663	30	32	3725
+F.venenatum	WT_albacore_v2	pilon_7	3663	30	32	3725
+F.venenatum	WT_albacore_v2	pilon_8	3663	30	32	3725
+F.venenatum	WT_albacore_v2	pilon_9	3663	30	32	3725
+F.venenatum	WT_albacore_v2	pilon_10	3663	30	32	3725
 ```
 
 ```bash
@@ -1064,13 +1064,13 @@ samtools merge -f $OutDir/concatenated.bam $BamFiles
 #### Braker prediction
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
+  for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
     Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
     mkdir -p alignment/$Organism/$Strain/concatenated
     OutDir=gene_pred/braker/$Organism/"$Strain"_braker
-    AcceptedHits=alignment/F.venenatum/WT/minion/concatenated.bam
+    AcceptedHits=alignment/star/F.venenatum/WT_minion/treatment/concatenated/concatenated.bam
     GeneModelName="$Organism"_"$Strain"_braker
     rm -r /home/armita/prog/augustus-3.1/config/species/"$Organism"_"$Strain"_braker
     ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/braker1
@@ -1104,13 +1104,13 @@ Note - cufflinks doesn't always predict direction of a transcript and
 therefore features can not be restricted by strand when they are intersected.
 
 ```bash
-for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
 Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
 mkdir -p $OutDir
-AcceptedHits=alignment/F.venenatum/WT/minion/concatenated.bam
+AcceptedHits=alignment/star/F.venenatum/WT_minion/treatment/concatenated/concatenated.bam
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
 qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
 done
