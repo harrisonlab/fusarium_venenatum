@@ -431,7 +431,7 @@ ScratchDir=/data/scratch/nanopore_tmp_data/Fven
 Fast5Dir1=$ScratchDir/F.venenatum_WT_07-03-17/workspace/pass
 Fast5Dir2=$ScratchDir/F.venenatum_WT_18-07-17/workspace/pass
 # nanopolish extract -r -q -o $ReadDir/F.venenatum_WT_07-03-17_albacore_v2.02.fastq $Fast5Dir1
-nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
+# nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
 
 # $ReadDir/"$Strain"_concatenated_reads.fastq.gz | gunzip -cf \
 # | grep -A3 \
@@ -447,13 +447,41 @@ nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_concatenated_rea
 
 
 # RawReads=$(ls $ReadDir/"$Strain"_reads_no_duplicates.fa.gz)
-OutDir=$(dirname $Assembly)
+OutDir=$(dirname $Assembly)2
 mkdir -p $OutDir
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
 # submit alignments for nanoppolish
 qsub $ProgDir/sub_bwa_nanopolish.sh $Assembly $ReadDir/"$Strain"_concatenated_reads_filtered.fastq.fa.gz $OutDir/nanopolish
 done
 ```
+
+```bash
+for Assembly in $(ls ../fusarium_ex_pea/assembly/SMARTdenovo/*/*/racon/racon_min_500bp_renamed.fasta | grep 'FOP1'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+echo "$Organism - $Strain"
+# Step 1 extract reads as a .fq file which contain info on the location of the fast5 files
+# Note - the full path from home must be used
+ReadDir=raw_dna/nanopolish/$Organism/$Strain
+mkdir -p $ReadDir
+ReadsFq1=$(ls ../fusarium_ex_pea/raw_dna/minion/*/FOP1-EMR/*.fastq.gz)
+cp $ReadsFq1 $ReadDir/.
+Reads=$(ls $ReadDir/*.fastq.gz)
+
+ScratchDir=/data/scratch/nanopore_tmp_data/Fven
+Fast5Dir1=$ScratchDir/F.oxysporum_fsp_pisi_FOP1-EMR_2017-07-11/workspace/pass
+nanopolish index -d $Fast5Dir1 $ReadsFq1
+# OutDir=$(dirname $Assembly)
+OutDir=$ReadDir
+mkdir -p $OutDir
+ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
+# submit alignments for nanoppolish
+qsub $ProgDir/sub_bwa_nanopolish.sh $Assembly $Reads $OutDir/nanopolish
+done
+```
+
+
+
 
  Split the assembly into 50Kb fragments an submit each to the cluster for
  nanopolish correction
@@ -472,7 +500,7 @@ python $NanoPolishDir/nanopolish_makerange.py $Assembly > $OutDir/nanopolish/nan
 
 Ploidy=1
 echo "nanopolish log:" > nanopolish_log.txt
-for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | tail -n+2); do
+for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | head -n1); do
 Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
 while [ $Jobs -gt 1 ]; do
 sleep 1m
@@ -1050,15 +1078,16 @@ samtools merge -f alignment/$Organism/$Strain/concatenated/concatenated.bam $Bam
 ``` -->
 
 ```bash
+# From all media types
 OutDir=alignment/star/F.venenatum/WT_minion/treatment/concatenated
 mkdir -p $OutDir
-# for File in $(ls alignment/star/F.venenatum/WT_minion/treatment/*/*.sortedByCoord.out.bam); do
-# Prefix=$(basename $File | sed 's/.bam//g')
-# echo $Prefix
-# samtools sort -o $File $Prefix > $OutDir/"$Prefix"_sorted.bam
-# done
 BamFiles=$(ls alignment/star/F.venenatum/WT_minion/treatment/*/*.sortedByCoord.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
 samtools merge -f $OutDir/concatenated.bam $BamFiles
+# one from each media type
+BamFiles=$(ls alignment/star/F.venenatum/WT_minion/treatment/WTCHG_25*_201/star_aligmentAligned.sortedByCoord.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=alignment/star/F.venenatum/WT_minion/concatenated
+mkdir -p $OutDir
+samtools merge -f $OutDir/one_per_media.bam $BamFiles
 ```
 
 #### Braker prediction
@@ -1081,17 +1110,6 @@ samtools merge -f $OutDir/concatenated.bam $BamFiles
 ** Number of genes predicted:  **
 
 
-```bash
-for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_ncbi'); do
-Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
-Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
-echo "$Organism - $Strain"
-FinalDir=gene_pred/final/$Organism/$Strain/final
-Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
-ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
-$ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
-done
-```
 
 ## Supplimenting Braker gene models with CodingQuary genes
 
@@ -1110,7 +1128,7 @@ Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated
 mkdir -p $OutDir
-AcceptedHits=alignment/star/F.venenatum/WT_minion/treatment/concatenated/concatenated.bam
+AcceptedHits=$(ls alignment/star/F.venenatum/WT_minion/concatenated/one_per_media.bam)
 ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/RNAseq
 qsub $ProgDir/sub_cufflinks.sh $AcceptedHits $OutDir
 done
@@ -1119,15 +1137,15 @@ done
 Secondly, genes were predicted using CodingQuary:
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
-    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-    echo "$Organism - $Strain"
-    OutDir=gene_pred/codingquary/$Organism/$Strain
-    CufflinksGTF=gene_pred/cufflinks/$Organism/$Strain/concatenated/transcripts.gtf
-    ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
-    qsub $ProgDir/sub_CodingQuary.sh $Assembly $CufflinksGTF $OutDir
-  done
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+OutDir=gene_pred/codingquary/$Organism/$Strain
+CufflinksGTF=gene_pred/cufflinks/$Organism/$Strain/concatenated/transcripts.gtf
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+qsub $ProgDir/sub_CodingQuary.sh $Assembly $CufflinksGTF $OutDir
+done
 ```
 
 Then, additional transcripts were added to Braker gene models, when CodingQuary
@@ -1135,7 +1153,7 @@ genes were predicted in regions of the genome, not containing Braker gene
 models:
 
 ```bash
-for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_ncbi'); do
+for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_minion'); do
 Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
 Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
@@ -1175,6 +1193,19 @@ GffAppended=$FinalDir/final_genes_appended.gff3
 cat $GffBraker $GffQuary > $GffAppended
 
 # cat $BrakerGff $AddDir/additional_gene_parsed.gff3 | bedtools sort > $FinalGff
+done
+```
+
+
+```bash
+for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_minion'); do
+Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
+Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+FinalDir=gene_pred/final/$Organism/$Strain/final
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+$ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
 done
 ```
 
