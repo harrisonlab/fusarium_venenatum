@@ -1157,7 +1157,7 @@ for BrakerGff in $(ls gene_pred/braker/F.*/*_braker/*/augustus.gff3  | grep 'WT_
 Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
 Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
-Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
 CodingQuaryGff=gene_pred/codingquary/$Organism/$Strain/out/PredictedPass.gff3
 PGNGff=gene_pred/codingquary/$Organism/$Strain/out/PGN_predictedPass.gff3
 AddDir=gene_pred/codingquary/$Organism/$Strain/additional
@@ -1203,7 +1203,7 @@ Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev | sed 's/_braker//g')
 Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 FinalDir=gene_pred/final/$Organism/$Strain/final
-Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked.fa)
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
 ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
 $ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
 done
@@ -1211,19 +1211,48 @@ done
 
 The final number of genes per isolate was observed using:
 ```bash
-for DirPath in $(ls -d gene_pred/final/F.*/*/final); do
+for DirPath in $(ls -d gene_pred/final/F.*/*/final | grep 'WT_minion'); do
 echo $DirPath;
 cat $DirPath/final_genes_Braker.pep.fasta | grep '>' | wc -l;
 cat $DirPath/final_genes_CodingQuary.pep.fasta | grep '>' | wc -l;
 cat $DirPath/final_genes_combined.pep.fasta | grep '>' | wc -l;
 echo "";
 done
-``` -->
+```
+
+Before submission to ncbi, duplicate features were identified and removed.
+Gene models were also renamed.
+
+```bash
+for GffAppended in $(ls gene_pred/final/*/*/final/final_genes_appended.gff3 | grep 'WT_minion'); do
+Strain=$(echo $GffAppended | rev | cut -d '/' -f3 | rev)
+Organism=$(echo $GffAppended | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+FinalDir=/data/scratch/armita/fusarium_venenatum/data/gene_pred/final/$Organism/$Strain/final
+mkdir -p $FinalDir
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+$ProgDir/remove_dup_features.py --inp_gff $GffAppended --out_gff $FinalDir/filtered_duplicates.gff
+GffRenamed=$FinalDir/final_genes_appended_renamed.gff3
+LogFile=$FinalDir/final_genes_appended_renamed.log
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/codingquary
+$ProgDir/gff_rename_genes.py --inp_gff $FinalDir/filtered_duplicates.gff --conversion_log $LogFile > $GffRenamed
+rm $FinalDir/filtered_duplicates.gff
+
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+$ProgDir/gff2fasta.pl $Assembly $GffRenamed $FinalDir/final_genes_appended_renamed
+
+# The proteins fasta file contains * instead of Xs for stop codons, these should
+# be changed
+sed -i 's/\*/X/g' $FinalDir/final_genes_appended_renamed.pep.fasta
+done
+```
+
+
 
 ## Assessing the Gene space in predicted transcriptomes:
 
 ```bash
-	for Assembly in $(ls gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_Braker.gene.fasta); do
+	for Assembly in $(ls gene_pred/final/*/*/final/final_genes_Braker.gene.fasta | grep 'WT_minion'); do
 		Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
 		Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 		echo "$Organism - $Strain"
@@ -1231,7 +1260,7 @@ done
 		# BuscoDB="Fungal"
 		BuscoDB=$(ls -d /home/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
 		OutDir=gene_pred/busco/$Organism/$Strain/genes
-		qsub $ProgDir/sub_busco2.sh $Assembly $BuscoDB $OutDir
+		qsub $ProgDir/sub_busco3.sh $Assembly $BuscoDB $OutDir
 	done
 ```
 
@@ -1260,8 +1289,7 @@ redirected to a temporary output file named interproscan_submission.log .
   screen -a
   cd /home/groups/harrisonlab/project_files/fusarium_venenatum
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
-  # for Genes in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
-  for Genes in $(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa); do
+  for Genes in $(ls gene_pred/final/*/*/final/final_genes_Braker.pep.fasta | grep 'WT_minion'); do
     echo $Genes
     $ProgDir/sub_interproscan.sh $Genes
   done 2>&1 | tee -a interproscan_submisison.log
@@ -1272,8 +1300,7 @@ commands:
 
 ```bash
   ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/interproscan
-  # for Proteins in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
-  for Proteins in $(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa); do
+  for Proteins in $(ls gene_pred/final/*/*/final/final_genes_Braker.pep.fasta | grep 'WT_minion'); do
     Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
@@ -1286,8 +1313,7 @@ commands:
 ## B) SwissProt
 
 ```bash
-  # for Proteome in $(ls gene_pred/final/F.*/*/*/final_genes_combined.pep.fasta); do
-  for Proteome in $(ls gene_pred/braker/F.venenatum/WT_ncbi_braker/F.venenatum_WT_ncbi_braker/augustus.aa); do
+  for Proteome in $(ls gene_pred/final/*/*/final/final_genes_Braker.pep.fasta | grep 'WT_minion'); do
     Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
     OutDir=gene_pred/swissprot/$Organism/$Strain
@@ -1330,7 +1356,7 @@ Results of web-annotation of gene clusters within the assembly were downloaded t
 the following directories:
 
 ```bash
-  for Assembly in $(ls repeat_masked/*/*/*/*_contigs_softmasked.fa | grep 'WT_ncbi'); do
+  for Assembly in $(ls repeat_masked/$Organism/$Strain/*/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
     Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
     Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
     OutDir=gene_pred/secondary_metabolites/antismash/$Organism/$Strain
