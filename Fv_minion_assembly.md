@@ -1434,3 +1434,81 @@ Output files were parsed into gff format:
     $ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
   done
 ```
+
+
+
+# F) Genes with transcription factor annotations:
+
+
+A list of PFAM domains, superfamily annotations used as part of the DBD database
+and a further set of interproscan annotations listed by Shelest et al 2017 were made
+http://www.transcriptionfactor.org/index.cgi?Domain+domain:all
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5415576/
+
+
+<!-- ```bash
+AnnotTab=$(ls gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi.tsv)
+OutDir=analysis/transcription_factors
+TF_Domains=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/analysis/transcription_factors/TF_domains_DBD_Shelest_2017.txt)
+cat $AnnotTab | grep -w -f $TF_Domains > $OutDir/TF_annotations.tsv
+cat $OutDir/TF_annotations.tsv | cut -f1 > $OutDir/TF_headers.txt
+cat $OutDir/TF_annotations.tsv | grep -e 'AS_Cluster' -e 'SM_Cluster' > $OutDir/TF_SecMet.tsv
+``` -->
+<!--
+```bash
+cat analysis/transcription_factors/DBD_SSF.tab | sed "s/\t/\tSSF/g" | awk '{ print $2 ", " $1}' | sed -r "s/^/(\'/g" | sed -r "s/$/\'),/g" | sed "s/, /\', \'/g" | sort | uniq | sed -e "s/ / /g" > analysis/transcription_factors/DBD.tsv
+cat analysis/transcription_factors/DBD_PFAM.tab | awk '{ print $2 ", " $1}' | sed -r "s/^/(\'/g" | sed -r "s/$/\'),/g" | sed "s/, /\', \'/g" | sort | uniq | sed -e "s/ / /g" >> analysis/transcription_factors/DBD.tsv
+cat analysis/transcription_factors/TFs_interpro_shelest_2017.txt | grep -v -e "^$" | sed -r "s/^/(\'/g" | sed -r "s/$/\'),/g" | sed "s/\t/\', \'/g" | sort | uniq | sed -e "s/ / /g" >> analysis/transcription_factors/DBD.tsv
+``` -->
+
+```bash
+  for Interpro in $(ls gene_pred/interproscan/*/*/*_interproscan.tsv | grep -w 'WT_minion'); do
+    Organism=$(echo $Interpro | rev | cut -f3 -d '/' | rev)
+    Strain=$(echo $Interpro | rev | cut -f2 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=analysis/transcription_factors/$Organism/$Strain
+    mkdir -p $OutDir
+    ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/transcription_factors
+    $ProgDir/interpro2TFs.py --InterPro $Interpro > $OutDir/"$Strain"_TF_domains.tsv
+    echo "total number of transcription factors"
+    cat $OutDir/"$Strain"_TF_domains.tsv | cut -f1 | sort | uniq > $OutDir/"$Strain"_TF_gene_headers.txt
+    cat $OutDir/"$Strain"_TF_gene_headers.txt | wc -l
+  done
+```
+
+
+## G) Summarising annotation in annotation table
+
+```bash
+for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.gff3 | grep -w 'WT_minion'); do
+Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
+Assembly=$(ls repeat_masked/$Organism/$Strain/*/*_contigs_unmasked.fa)
+# Antismash=$(ls analysis/secondary_metabolites/antismash/$Organism/$Strain/*_antismash_secmet_genes.tsv)
+# Smurf=$(ls analysis/secondary_metabolites/smurf/F.venenatum/WT/WT_smurf_secmet_genes.tsv)
+# Vitamins=$(ls analysis/vitamins/Fg_vs_Fv_vitamin_hits_parsed.txt)
+TFs=$(ls analysis/transcription_factors/$Organism/$Strain/*_TF_domains.tsv)
+InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
+SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vMar2018_tophit_parsed.tbl)
+# PH1_orthology=$(ls analysis/orthology/orthomcl/Fv_vs_Fg/Fv_vs_Fg_orthogroups.txt)
+GR1_orthology=$(ls analysis/orthology/orthomcl/Fv_minion_vs_Fg_JGI/formatted/*/Orthogroups.txt)
+OutDir=gene_pred/annotation/$Organism/$Strain
+mkdir -p $OutDir
+ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/annotation_tables
+$ProgDir/build_annot_Fv_minion.py --genome $Assembly --genes_gff $GeneGff --TFs $TFs --InterPro $InterPro --Swissprot $SwissProt --orthogroups_GR1 $GR1_orthology > $OutDir/"$Strain"_annotation_ncbi.tsv
+done
+```
+
+```bash
+for AnnotTab in $(ls gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi.tsv); do
+  Strain=$(echo $AnnotTab | rev | cut -f2 -d '/' | rev)
+  Organism=$(echo $AnnotTab | rev | cut -f3 -d '/' | rev)
+  OutDir=$(ls -d analysis/transcription_factors/$Organism/$Strain)
+  echo "Total number of clusters:"
+  cat $AnnotTab | grep 'SecMet_cluster_' | cut -f7 | sort | uniq | wc -l
+  cat $AnnotTab | grep 'SecMet_cluster_' | cut -f1,7 | cut -f1 > $OutDir/WT_SecMet_headers.txt
+  cat $OutDir/WT_SecMet_headers.txt | cut -f1 -d '.' | sort | uniq | wc -l
+  cat $AnnotTab | grep -e 'AS_' -e 'SM_' | cut -f1,14 | grep -v -e "\s$" | cut -f1 > $OutDir/WT_TF_SecMet_headers.txt
+  cat $OutDir/WT_TF_SecMet_headers.txt | wc -l
+done
+```
