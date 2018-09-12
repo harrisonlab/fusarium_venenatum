@@ -1,9 +1,9 @@
 # Fv vs Fg
 
-Orthology analysis between Fv and Fg
+Orthology analysis between Fv illimina and Fv minion
 
 
-# 1. Using most up-to-date Fg gene models:
+# 1. Using old Fg gene models:
 
 ```bash
   ProjDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
@@ -101,14 +101,14 @@ mv "$Taxon_code".fasta $WorkDir/formatted/"$Taxon_code".fasta
 Also try using orthofinder
 
 ```bash
-qlogin -pe smp 8
+  qlogin -pe smp 8
 
-#16 threads used
-ProjDir=/data/scratch/armita/alternaria
-cd $ProjDir
-IsolateAbrv=MiSeq_vs_MinION
-WorkDir=analysis/orthology/orthomcl/$IsolateAbrv
-orthofinder -f $WorkDir/formatted -t 8 -a 8
+  #16 threads used
+  ProjDir=/home/groups/harrisonlab/project_files/fusarium_venenatum
+  cd $ProjDir
+  IsolateAbrv=MiSeq_vs_MinION
+  WorkDir=analysis/orthology/orthomcl/$IsolateAbrv
+  orthofinder -f $WorkDir/formatted -t 8 -a 8
 ```
 
 orthofinder results:
