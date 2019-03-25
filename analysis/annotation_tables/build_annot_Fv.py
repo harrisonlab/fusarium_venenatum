@@ -16,6 +16,7 @@ and swissprot annotations.
 import sys
 import argparse
 import re
+import numpy as np
 from sets import Set
 from collections import defaultdict
 from operator import itemgetter
@@ -32,6 +33,9 @@ ap.add_argument('--vitamins',required=True,type=str,help='Table of blast hits pr
 ap.add_argument('--TFs',required=True,type=str,help='Tab seperated of putative transcription factors and their domains as identified by interpro2TFs.py')
 ap.add_argument('--orthogroups_PH1', required=True,type=str,help='A file containing results of orthology analysis')
 ap.add_argument('--orthogroups_GR1', required=True,type=str,help='A file containing results of orthology analysis')
+ap.add_argument('--DEGs',required=True,type=str,help='List of the total set of differentially expressed genes')
+ap.add_argument('--fpkm',required=True,type=str,help='Calculated fpkm per condition for each gene in tsv format')
+
 # ap.add_argument('--Fv_OrthoMCL_id',required=True,type=str,help='The identifier of this strain as used in the orthology analysis')
 # ap.add_argument('--OrthoMCL_all',required=True,type=str,nargs='+',help='The identifiers of all strains used in the orthology analysis')
 # ap.add_argument('--OrthoMCL_path',required=True,type=str,nargs='+',help='The identifiers of pathogenic strains used in the orthology analysis')
@@ -61,8 +65,174 @@ with open(conf.orthogroups_PH1) as f:
     PH1_orthogroup_lines = f.readlines()
 with open(conf.orthogroups_GR1) as f:
     GR1_orthogroup_lines = f.readlines()
+with open(conf.DEGs) as f:
+    DEG_lines = f.readlines()
+with open(conf.fpkm) as f:
+    fpkm_lines = f.readlines()
 
 column_list=[]
+
+
+#-----------------------------------------------------
+# Define classes
+#-----------------------------------------------------
+
+class Expression_obj(object):
+    """Information on a genes fpkm under various conditions and whether a gene
+        is differentially expressed under different conditions:
+    """
+    def __init__(self, gene_id):
+        """Return a Expression_obj whose name is *gene_id*"""
+        self.gene_id = gene_id
+        self.DEG_conditions = set()
+        # self.fpkm_dict = defaultdict(list)
+        self.condition_list = []
+        self.fpkm_list = []
+        self.treatments = []
+        self.mean_fpkm = []
+        self.FC_values = []
+        self.FC_values_adj = []
+
+    def add_DEG(self, DEG_condition):
+        """"""
+        self.DEG_conditions.add(DEG_condition)
+
+    def add_fpkm(self, conditions_list, fpkm_list):
+        """"""
+        for condition, fpkm in zip(conditions_list, fpkm_list):
+            self.condition_list.append(condition)
+            fpkm = int(np.round_(float(fpkm),  decimals=0))
+            self.fpkm_list.append(str(fpkm))
+
+    def add_LFC(self):
+        "Add LFC information based upon fpkm data already in the dictionary"
+        fpkm_dict = defaultdict(list)
+        for condition_rep, fpkm in zip(self.condition_list, self.fpkm_list):
+            condition = condition_rep[:-2]
+            fpkm_dict[condition].append(int(fpkm))
+        fpkm_list = []
+        condition_list = []
+        for condition in fpkm_dict.keys():
+            # condition_list.append(condition)
+            fpkm_mean = np.mean(fpkm_dict[condition])
+            fpkm_dict[condition].append(fpkm_mean)
+            self.treatments.append(condition)
+            self.mean_fpkm.append(str(np.round_(fpkm_mean,  decimals=1)))
+        LFC_conditions = [
+        ('Control', '02793'),
+        ('Control', 'F55'),
+        ('Control', '10170'),
+        ('Control', 'MWT'),
+        ('Control', 'MOL'),
+        ('Control', 'MKO'),
+        ('Control', 'TJ')
+        ]
+        for x, y in LFC_conditions:
+            x_fpkm_mean = fpkm_dict[x][-1]
+            y_fpkm_mean = fpkm_dict[y][-1]
+            if y_fpkm_mean == x_fpkm_mean:
+                FC = 1
+                FC_adj = 0
+            elif y_fpkm_mean >= x_fpkm_mean:
+                FC = np.divide(y_fpkm_mean, x_fpkm_mean)
+            else:
+                FC = np.negative(np.divide(x_fpkm_mean, y_fpkm_mean))
+            if x_fpkm_mean < 1:
+                x_adj = 1
+            else:
+                x_adj = x_fpkm_mean
+            if y_fpkm_mean < 1:
+                y_adj = 1
+            else:
+                y_adj = y_fpkm_mean
+            FC_adj = np.log2(y_adj) - np.log2(x_adj)
+            self.FC_values.append(str(np.round_(FC,  decimals=1)))
+            self.FC_values_adj.append(str(np.round_(FC_adj,  decimals=1)))
+
+
+            def add_LFC(self):
+                "Add LFC information based upon fpkm data already in the dictionary"
+                fpkm_dict = defaultdict(list)
+                for condition_rep, fpkm in zip(self.condition_list, self.fpkm_list):
+                    condition = condition_rep[:-2]
+                    fpkm_dict[condition].append(int(fpkm))
+                fpkm_list = []
+                condition_list = []
+                for condition in fpkm_dict.keys():
+                    # condition_list.append(condition)
+                    fpkm_mean = np.mean(fpkm_dict[condition])
+                    fpkm_dict[condition].append(fpkm_mean)
+                    self.treatments.append(condition)
+                    self.mean_fpkm.append(str(np.round_(fpkm_mean,  decimals=1)))
+                LFC_conditions = [
+                ('Control', '02793'),
+                ('Control', 'F55'),
+                ('Control', '10170'),
+                ('Control', 'MWT'),
+                ('Control', 'MOL'),
+                ('Control', 'MKO'),
+                ('Control', 'TJ')
+                ]
+                for x, y in LFC_conditions:
+                    x_fpkm_mean = fpkm_dict[x][-1]
+                    y_fpkm_mean = fpkm_dict[y][-1]
+                    if y_fpkm_mean == x_fpkm_mean:
+                        FC = 1
+                        FC_adj = 0
+                    elif y_fpkm_mean >= x_fpkm_mean:
+                        FC = np.divide(y_fpkm_mean, x_fpkm_mean)
+                    else:
+                        FC = np.negative(np.divide(x_fpkm_mean, y_fpkm_mean))
+                    if x_fpkm_mean < 1:
+                        x_adj = 1
+                    else:
+                        x_adj = x_fpkm_mean
+                    if y_fpkm_mean < 1:
+                        y_adj = 1
+                    else:
+                        y_adj = y_fpkm_mean
+                    FC_adj = np.log2(y_adj) - np.log2(x_adj)
+                    self.FC_values.append(str(np.round_(FC,  decimals=1)))
+                    self.FC_values_adj.append(str(np.round_(FC_adj,  decimals=1)))
+
+
+#-----------------------------------------------------
+# Step X
+# Process fpkm data
+#-----------------------------------------------------
+
+expression_dict = defaultdict(list)
+for line in DEG_lines:
+    gene_id = line.rstrip()
+    if expression_dict[gene_id]:
+        exp_obj = expression_dict[gene_id][0]
+    else:
+        exp_obj = Expression_obj(gene_id)
+    condition = "DEG"
+    exp_obj.add_DEG(condition)
+    expression_dict[gene_id].append(exp_obj)
+
+conditions_list = fpkm_lines[0].rstrip().split("\t")
+conditions_list = conditions_list[2:]
+# print conditions_list
+for line in fpkm_lines[1:]:
+    line = line.rstrip()
+    split_line = line.split("\t")
+    gene_id = split_line[0]
+    fpkm_list = split_line[2:]
+    if expression_dict[gene_id]:
+        expression_dict[gene_id][0].add_fpkm(conditions_list, fpkm_list)
+    else:
+        exp_obj = Expression_obj(gene_id)
+        exp_obj.add_fpkm(conditions_list, fpkm_list)
+        expression_dict[gene_id].append(exp_obj)
+
+for gene_id in expression_dict.keys():
+    for obj in expression_dict[gene_id]:
+        # print (gene_id + "\t" + "\t".join(obj.fpkm_list))
+        obj.add_LFC()
+        # print (gene_id + "\t" + "\t".join(obj.FC_values_adj))
+
 
 #-----------------------------------------------------
 # Step 2
@@ -315,7 +485,7 @@ for line in GR1_orthogroup_lines:
 # results and genes intersecting blast results
 #-----------------------------------------------------
 
-print ("\t".join([
+header_line = [
 "gene_id", "contig", "gene_start", "gene_end", "gene_strand",
 "2kb_flank",
 "Cluster_ID", "SecMet_function", "SecMet_program", "Secmet_cluster",
@@ -325,7 +495,11 @@ print ("\t".join([
 "Interpro_annotations",
 "PH1_orthogroup", "PH1_genes_per_isolate", "PH1_orthogroup_contents",
 "GR1_orthogroup", "GR1_genes_per_isolate", "GR1_orthogroup_contents"
-]))
+]
+header_line.extend(conditions_list)
+header_line.append("DEG")
+header_line.extend(['02793 LFC', 'F55 LFC', '10170 LFC', 'MWT LFC', 'MOL LFC', 'MKO LFC', 'TJ LFC'])
+print ("\t".join(header_line))
 
 in_cluster = False
 cluster_num = 0
@@ -394,5 +568,12 @@ for gene_id in gene_id_list:
         useful_columns.extend(GR1_orthogroup_dict[gene_id])
     else:
         useful_columns.extend(["", ""])
+
+    id = re.sub(r"\.t.*", "", gene_id)
+    # print id
+    for obj in expression_dict[id]:
+        useful_columns.extend(obj.fpkm_list)
+        useful_columns.append(",".join(obj.DEG_conditions))
+        useful_columns.extend(obj.FC_values_adj)
 
     print ("\t".join(useful_columns))
