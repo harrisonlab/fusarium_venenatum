@@ -1105,6 +1105,15 @@ cat analysis/transcription_factors/TFs_interpro_shelest_2017.txt | grep -v -e "^
 
 ## G) Summarising annotation in annotation table
 
+
+Sumamrising DEGs
+
+```bash
+  OutDir=gene_pred/annotation/F.venenatum/WT
+  ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/RNAseq
+  $ProgDir/filter_DEGs.py --sig /home/deakig/projects/quorn/DGE/all.merged.tsv | cut -f1 > $OutDir/DEG_IDs.txt
+```
+
 ```bash
 for GeneGff in $(ls gene_pred/final/F.*/*/*/final_genes_appended_renamed.gff3 | grep -w 'WT'); do
 Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
@@ -1118,10 +1127,14 @@ InterPro=$(ls gene_pred/interproscan/$Organism/$Strain/*_interproscan.tsv)
 SwissProt=$(ls gene_pred/swissprot/$Organism/$Strain/swissprot_vJul2016_tophit_parsed.tbl)
 PH1_orthology=$(ls analysis/orthology/orthomcl/Fv_vs_Fg/Fv_vs_Fg_orthogroups.txt)
 GR1_orthology=$(ls analysis/orthology/orthomcl/Fv_vs_Fg_JGI/Fv_vs_Fg_JGI_orthogroups.txt)
+Fpkm=$(ls /home/deakig/projects/quorn/DGE/Quorn_fpkm.txt)
+# DEGs=$(ls gene_pred/annotation/F.venenatum/WT/DEG_IDs.txt)
+DEGs=$(ls /home/deakig/projects/quorn/DGE/all.merged.tsv)
 OutDir=gene_pred/annotation/$Organism/$Strain
 mkdir -p $OutDir
 ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/annotation_tables
-$ProgDir/build_annot_Fv.py --genome $Assembly --genes_gff $GeneGff --Antismash $Antismash --Smurf $Smurf --vitamins $Vitamins --TFs $TFs --InterPro $InterPro --Swissprot $SwissProt --orthogroups_PH1 $PH1_orthology --orthogroups_GR1 $GR1_orthology > $OutDir/"$Strain"_annotation_ncbi.tsv
+# $ProgDir/build_annot_Fv.py --genome $Assembly --genes_gff $GeneGff --Antismash $Antismash --Smurf $Smurf --vitamins $Vitamins --TFs $TFs --InterPro $InterPro --Swissprot $SwissProt --orthogroups_PH1 $PH1_orthology --orthogroups_GR1 $GR1_orthology > $OutDir/"$Strain"_annotation_ncbi.tsv
+$ProgDir/build_annot_Fv.py --genome $Assembly --genes_gff $GeneGff --Antismash $Antismash --Smurf $Smurf --vitamins $Vitamins --TFs $TFs --InterPro $InterPro --Swissprot $SwissProt --orthogroups_PH1 $PH1_orthology --orthogroups_GR1 $GR1_orthology --fpkm $Fpkm --DEGs $DEGs > $OutDir/"$Strain"_annotation_ncbi_expression.tsv
 done
 ```
 
@@ -1199,3 +1212,13 @@ Genes involved in primary metabolism can be identified through GO annotations:
 http://amigo.geneontology.org/goose?query=SELECT+DISTINCT+descendant.acc%2C+descendant.name%2C+descendant.term_type%0D%0AFROM%0D%0A+term%0D%0A+INNER+JOIN+graph_path+ON+%28term.id%3Dgraph_path.term1_id%29%0D%0A+INNER+JOIN+term+AS+descendant+ON+%28descendant.id%3Dgraph_path.term2_id%29%0D%0AWHERE+term.name%3D%27Primary+Metabolic+Process%27+AND+distance+%3C%3E+0%3B&mirror=ebi&limit=0
 
 GO terms could be searched in annotation files to look at these genes.
+
+
+# Promotor identification
+
+Regulatory elements of genes of interest were identified.
+
+This included:
+* Vitamin pathway genes
+* Primary metabolism
+* highly expressed genes
