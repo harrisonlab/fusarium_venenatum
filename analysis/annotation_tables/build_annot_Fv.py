@@ -65,10 +65,8 @@ with open(conf.orthogroups_PH1) as f:
     PH1_orthogroup_lines = f.readlines()
 with open(conf.orthogroups_GR1) as f:
     GR1_orthogroup_lines = f.readlines()
-# with open(conf.DEGs) as f:
-#     DEG_lines = f.readlines()
 with open(conf.DEGs) as f:
-    deseq_lines = f.readlines()
+    DEG_lines = f.readlines()
 with open(conf.fpkm) as f:
     fpkm_lines = f.readlines()
 
@@ -86,7 +84,7 @@ class Expression_obj(object):
     def __init__(self, gene_id):
         """Return a Expression_obj whose name is *gene_id*"""
         self.gene_id = gene_id
-        # self.DEG_conditions = set()
+        self.DEG_conditions = set()
         # self.fpkm_dict = defaultdict(list)
         self.condition_list = []
         self.fpkm_list = []
@@ -94,9 +92,6 @@ class Expression_obj(object):
         self.mean_fpkm = []
         self.FC_values = []
         self.FC_values_adj = []
-        self.deseq_dict = defaultdict(list)
-        self.DEG_conditions = []
-        self.deseq_lfc = []
 
     def add_DEG(self, DEG_condition):
         """"""
@@ -154,34 +149,6 @@ class Expression_obj(object):
             self.FC_values.append(str(np.round_(FC,  decimals=1)))
             self.FC_values_adj.append(str(np.round_(FC_adj,  decimals=1)))
 
-    def add_deseq(self, conditions, lfc_list, p_list):
-        "Add LFC information based upon fpkm data already in the dictionary"
-        fpkm_dict = defaultdict(list)
-        for condition_rep, fpkm in zip(self.condition_list, self.fpkm_list):
-            condition = condition_rep[:-2]
-            fpkm_dict[condition].append(int(fpkm))
-        fpkm_list = []
-
-        for condition, p_val, lfc in zip(conditions, p_list, lfc_list):
-            # print("\t".join([self.gene_id, str(condition), str(p_val), str(lfc)]))
-            self.deseq_dict[condition] = [str(np.round_(float(p_val),  decimals=2)), str(np.round_(float(lfc), decimals=1))]
-            if (
-            float(p_val) <= 0.05 and
-            abs(float(lfc)) >= 2 and
-            any([float(x) >= 5 for x in self.fpkm_list])
-            ):
-                self.DEG_conditions.append(condition)
-        condition_list = ['02793', 'F55', '10170', 'MWT', 'MOL', 'MKO', 'TJ']
-        # print fpkm_dict.keys()
-        for condition in condition_list:
-            fpkm_mean = np.mean(fpkm_dict[condition])
-            fpkm_dict[condition].append(fpkm_mean)
-            self.treatments.append(condition)
-            self.mean_fpkm.append(str(np.round_(fpkm_mean,  decimals=1)))
-            # if self.deseq_dict[condition][1]
-            # print(self.deseq_dict[condition])
-            self.deseq_lfc.append(self.deseq_dict[condition][1])
-
 
 #-----------------------------------------------------
 # Step X
@@ -189,18 +156,15 @@ class Expression_obj(object):
 #-----------------------------------------------------
 
 expression_dict = defaultdict(list)
-# for line in DEG_lines:
-#     gene_id = line.rstrip()
-#     if expression_dict[gene_id]:
-#         exp_obj = expression_dict[gene_id][0]
-#     else:
-#         exp_obj = Expression_obj(gene_id)
-#     condition = "DEG"
-#     exp_obj.add_DEG(condition)
-#     expression_dict[gene_id].append(exp_obj)
-
-
-
+for line in DEG_lines:
+    gene_id = line.rstrip()
+    if expression_dict[gene_id]:
+        exp_obj = expression_dict[gene_id][0]
+    else:
+        exp_obj = Expression_obj(gene_id)
+    condition = "DEG"
+    exp_obj.add_DEG(condition)
+    expression_dict[gene_id].append(exp_obj)
 
 conditions_list = fpkm_lines[0].rstrip().split("\t")
 conditions_list = conditions_list[2:]
@@ -217,42 +181,11 @@ for line in fpkm_lines[1:]:
         exp_obj.add_fpkm(conditions_list, fpkm_list)
         expression_dict[gene_id].append(exp_obj)
 
-for line in deseq_lines[0:1]:
-    line = line.rstrip()
-    split_line = line.split("\t")
-    # print(split_line)
-    # print(len(split_line))
-    condition_list=itemgetter(3, 5, 7, 9, 11, 13, 15)(split_line)
-    condition_list = [x.replace("P_", "") for x in condition_list]
-for line in deseq_lines[1:]:
-    line = line.rstrip()
-    split_line = line.split("\t")
-    id = split_line[0]
-    # print "\t".join([id, str(len(split_line))])
-    if ((len(split_line) < 16 and split_line[1] == "0") or
-    (split_line[3] == "")):
-        lfc_list = [0, 0, 0, 0, 0, 0, 0]
-        p_list = [1, 1, 1, 1, 1, 1, 1]
-    elif len(split_line) < 16:
-        # print "\t".join([id, str(len(split_line))])
-        # print(split_line)
-        continue
-    else:
-        # print "\t".join([id, str(len(split_line))])
-        # print(split_line)
-        lfc_list = itemgetter(2, 4, 6, 8, 10, 12, 14)(split_line)
-        # print "\t".join([id, str(len(split_line))])
-        p_list = itemgetter(3, 5, 7, 9, 11, 13, 15)(split_line)
-        p_list = [x or "1" for x in p_list]
-
-    for obj in expression_dict[id]:
-        obj.add_deseq(condition_list, lfc_list, p_list)
-
-# for gene_id in expression_dict.keys():
-#     for obj in expression_dict[gene_id]:
-#         # print (gene_id + "\t" + "\t".join(obj.fpkm_list))
-#         obj.add_LFC()
-#         # print (gene_id + "\t" + "\t".join(obj.FC_values_adj))
+for gene_id in expression_dict.keys():
+    for obj in expression_dict[gene_id]:
+        # print (gene_id + "\t" + "\t".join(obj.fpkm_list))
+        obj.add_LFC()
+        # print (gene_id + "\t" + "\t".join(obj.FC_values_adj))
 
 
 #-----------------------------------------------------
@@ -595,7 +528,6 @@ for gene_id in gene_id_list:
     for obj in expression_dict[id]:
         useful_columns.extend(obj.fpkm_list)
         useful_columns.append(",".join(obj.DEG_conditions))
-        # useful_columns.extend(obj.FC_values_adj)
-        useful_columns.extend(obj.deseq_lfc)
+        useful_columns.extend(obj.FC_values_adj)
 
     print ("\t".join(useful_columns))
