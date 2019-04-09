@@ -993,11 +993,12 @@ done
 for File in $(ls repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_softmasked.fa); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
-OutFile=$(echo $File | sed 's/_contigs_hardmasked.fa/_contigs_hardmasked_repeatmasker_TPSI_appended.fa/g')
+OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_hardmasked_repeatmasker_TPSI_appended.fa/g')
 echo "$OutFile"
 bedtools maskfasta -fi $File -bed $TPSI -fo $OutFile
 done
 ```
+
 
 
 ```bash
