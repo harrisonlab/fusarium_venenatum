@@ -84,7 +84,8 @@ class Expression_obj(object):
     def __init__(self, gene_id):
         """Return a Expression_obj whose name is *gene_id*"""
         self.gene_id = gene_id
-        self.DEG_conditions = set()
+        # self.DEG_conditions = set()
+        self.DEG_conditions = str()
         # self.fpkm_dict = defaultdict(list)
         self.condition_list = []
         self.fpkm_list = []
@@ -92,10 +93,31 @@ class Expression_obj(object):
         self.mean_fpkm = []
         self.FC_values = []
         self.FC_values_adj = []
+        self.FC_dict = defaultdict(str)
+        self.DEG_conditions_adj = []
 
     def add_DEG(self, DEG_condition):
         """"""
-        self.DEG_conditions.add(DEG_condition)
+        # self.DEG_conditions.add(DEG_condition)
+        self.DEG_conditions = DEG_condition
+        # print DEG_condition
+
+    def filter_DEG(self):
+        """"""
+        if self.DEG_conditions != "":
+            conditions = self.DEG_conditions
+            split_condits = conditions.split(";")
+            # print split_condits
+            for condit in split_condits:
+                FC = self.FC_dict[condit]
+                # print self.gene_id
+                # print condit
+                # print FC
+                if float(FC) >= 2:
+                    self.DEG_conditions_adj.append(("DEG:" + condit).upper())
+                if float(FC) <= -2:
+                    self.DEG_conditions_adj.append(("DEG:" + condit).lower())
+
 
     def add_fpkm(self, conditions_list, fpkm_list):
         """"""
@@ -148,6 +170,7 @@ class Expression_obj(object):
             FC_adj = np.log2(y_adj) - np.log2(x_adj)
             self.FC_values.append(str(np.round_(FC,  decimals=1)))
             self.FC_values_adj.append(str(np.round_(FC_adj,  decimals=1)))
+            self.FC_dict[y] = str(np.round_(FC_adj,  decimals=1))
 
 
 #-----------------------------------------------------
@@ -157,13 +180,17 @@ class Expression_obj(object):
 
 expression_dict = defaultdict(list)
 for line in DEG_lines:
-    gene_id = line.rstrip()
+    line = line.rstrip()
+    split_line = line.split("\t")
+    gene_id = split_line[0]
+    condition = split_line[1]
     if expression_dict[gene_id]:
         exp_obj = expression_dict[gene_id][0]
     else:
         exp_obj = Expression_obj(gene_id)
-    condition = "DEG"
     exp_obj.add_DEG(condition)
+    # print "\t".join([gene_id, condition])
+    # print exp_obj.DEG_conditions
     expression_dict[gene_id].append(exp_obj)
 
 conditions_list = fpkm_lines[0].rstrip().split("\t")
@@ -185,6 +212,8 @@ for gene_id in expression_dict.keys():
     for obj in expression_dict[gene_id]:
         # print (gene_id + "\t" + "\t".join(obj.fpkm_list))
         obj.add_LFC()
+        # print obj.DEG_conditions
+        obj.filter_DEG()
         # print (gene_id + "\t" + "\t".join(obj.FC_values_adj))
 
 
@@ -368,7 +397,12 @@ for line in vitamin_lines:
     Fg_homolog = split_line[2]
     kegg_term = split_line[3]
     vit_pathway = split_line[5]
-    vitamin_dict[gene_id].extend([vit_pathway, kegg_term, Fg_homolog])
+    if vitamin_dict[gene_id]:
+        vitamin_dict[gene_id][0]+=";" + str(vit_pathway)
+        vitamin_dict[gene_id][1]+=";" + str(kegg_term)
+        vitamin_dict[gene_id][2]+=";" + str(Fg_homolog)
+    else:
+        vitamin_dict[gene_id].extend([vit_pathway, kegg_term, Fg_homolog])
 
 #-----------------------------------------------------
 # Step 6
@@ -516,18 +550,18 @@ for gene_id in gene_id_list:
     if PH1_orthogroup_dict[gene_id]:
         useful_columns.extend(PH1_orthogroup_dict[gene_id])
     else:
-        useful_columns.extend(["", ""])
+        useful_columns.extend(["", "", ""])
 
     if GR1_orthogroup_dict[gene_id]:
         useful_columns.extend(GR1_orthogroup_dict[gene_id])
     else:
-        useful_columns.extend(["", ""])
+        useful_columns.extend(["", "", ""])
 
     id = re.sub(r"\.t.*", "", gene_id)
     # print id
     for obj in expression_dict[id]:
         useful_columns.extend(obj.fpkm_list)
-        useful_columns.append(",".join(obj.DEG_conditions))
+        useful_columns.append(",".join(obj.DEG_conditions_adj))
         useful_columns.extend(obj.FC_values_adj)
 
     print ("\t".join(useful_columns))
