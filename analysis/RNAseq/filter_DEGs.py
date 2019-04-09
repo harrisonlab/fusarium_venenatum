@@ -30,24 +30,37 @@ with open(conf.sig) as f:
 #-----------------------------------------------------
 
 problem_genes = []
+
+for line in DEG_lines[0:1]:
+    line = line.rstrip()
+    split_line = line.split("\t")
+    condition_list = list(itemgetter(2,4,6,8,10,12,14)(split_line))
+    # print condition_list
+    condition_list = [x.replace('FC_', '') for x in condition_list]
+
 for line in DEG_lines[1:]:
     line = line.rstrip()
     split_line = line.split("\t")
     gene_id = split_line[0]
     if len(split_line) < 16:
         continue
-    # print gene_id
+    # print line
     LFCs = itemgetter(2,4,6,8,10,12,14)(split_line)
-    # print LFCs
     Pvals = itemgetter(3,5,7,9,11,13,15)(split_line)
-    # print Pvals
-    if any([p == "" for p in Pvals]):
-        problem_genes.append(gene_id)
-        continue
-    if (
-        any([float(p) < 0.01 for p in Pvals]) and
-        any([abs(float(x)) > 2 for x in LFCs])
-        ):
-        print line
-        # x=1
-# print(",".join(problem_genes))
+    Pvals = [p or 1 for p in Pvals]
+    # if (
+    #     any([float(p) < 0.05 for p in Pvals]) and
+    #     any([abs(float(x)) > 2 for x in LFCs])
+    #     ):
+    #     print line
+    DEG_conditions = []
+    # print LFCs
+    for condition, lfc, p in zip(condition_list, LFCs, Pvals):
+        # print "\t".join([gene_id, condition, lfc, p])
+        if (
+            float(p) < 0.05 and
+            abs(float(lfc)) > 2
+            ):
+                DEG_conditions.append(condition)
+    if DEG_conditions:
+        print "\t".join([gene_id, ";".join(DEG_conditions)])
