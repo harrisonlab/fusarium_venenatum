@@ -81,6 +81,21 @@ done
   9196
 ```
 
+# Create a conversion table of old to new gene IDs
+
+Run from the old cluster:
+```bash
+cd /home/groups/harrisonlab/project_files/fusarium_venenatum
+NewGff=$(ls gene_pred/braker/*/*_UTR/*/augustus.hints.gff3)
+OldGff=$(ls gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3)
+
+OutDir=$(dirname $NewGff)/gene_conversion
+mkdir -p $OutDir
+cat $OldGff | grep -w 'gene' > $OutDir/old_locations.gff
+cat $NewGff | grep -w 'gene' > $OutDir/new_locations.gff
+
+bedtools intersect -loj -s -a $OutDir/old_locations.gff -b $OutDir/new_locations.gff > $OutDir/gene_intersects.gff
+```
 
 ## Antismash secmet prediction with Cassis
 
@@ -117,54 +132,19 @@ antismash \
   --tta \
   --outputfolder Fv_antismash \
   --verbose \
-  Fv_genes.gbk
-
+  Fv_genes2.gbk
 ```
 
-## Stand alone run of CASSIS
 
+# Identify promoter regions of genes with UTRs.
+
+Extract region from around UTR -1000 to +50 unless intersecting another gene model
 
 ```bash
-screen -a
-ssh compute02
-WorkDir=~/tmp/cassis_Fv
-mkdir $WorkDir
-cd $WorkDir
-OldProjDir=/oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum
-Assembly=$(ls $OldProjDir/repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_softmasked_repeatmasker_TPSI_appended.fa)
-Genes=$(ls $OldProjDir/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3)
-# Genes=$(ls $OldProjDir/gene_pred/braker/F.venenatum/WT_UTR/*/augustus_extracted.gff)
-Interpro=$(ls $OldProjDir/gene_pred/interproscan/F.venenatum/WT/WT_interproscan.tsv)
-
-cp $Interpro interpro.tsv
-
-smips interpro.tsv
-
-# smips2cassis.pl 40 interpro.tsv.anchor_genes.csv <annotation> <genome>
-
-
-cat interpro.tsv.anchor_genes.csv | grep -v "^#" | cut -f1 > anchor_genes.txt
-
-cat $Genes | grep 'mRNA' | sed 's/ID=//g' | sed "s/;.*//g" | awk '{ print $9 "\t" $1 "\t" $4 "\t" $5 "\t" $7}' > cassis.tsv
-
-for GeneID in $(cat anchor_genes.txt | head -n2 | tail -n1); do
-  echo $GeneID
-  mkdir out/$GeneID
-  cassis \
-    --annotation cassis.tsv \
-    --genome $Assembly \
-    --anchor $GeneID \
-    --dir out/$GeneID \
-    --mismatches 0 \
-    -v \
-    --prediction \
-    --num-cpus 40
-done
+/home/armita/git_repos/emr_repos/tools/gene_prediction/promoters/extract_promoters.py --gff gene_pred/braker/F.venenatum/WT_UTR/__braker/augustus.hints_utr.gff3 --fasta repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_unmasked.fa --prefix WT_promoters
 ```
 
 ```
-Cannot read from binding sites file "out/g717.t1/g717.t1/fimo/+0_-3/fimo.txt".
-No such file or directory at script/cassis.pl line 1519.
-  +0_-3   (base) armita@compute02:~/tmp/cassis_Fv$ ls out/g717.t1/g717.t1/fimo/+0_-3/fimo.txt
-ls: cannot access 'out/g717.t1/g717.t1/fimo/+0_-3/fimo.txt': No such file or directory
+Average distance of TSS from start codon:
+461.675954232
 ```
