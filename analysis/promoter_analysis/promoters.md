@@ -165,7 +165,8 @@ for Query in $(ls analysis/meme/promotor_regions/1-1000/F.venenatum/WT/tri/*/*_p
   echo $Region
   OutDir=$(dirname $Query)
   mkdir -p $OutDir/meme
-  meme $Query -p 4 -dna -oc $OutDir/meme -nostatus -mod zoops -nmotifs 5 -minw 6 -maxw 20 -objfun classic -revcomp -markov_order 0
+  # meme $Query -p 4 -dna -oc $OutDir/meme -nostatus -mod zoops -nmotifs 5 -minw 6 -maxw 20 -objfun classic -revcomp -markov_order 0
+  meme $Query -p 4 -dna -mod anr -nmotifs 1 -minw 6 -maxw 12 -revcomp -evt 1.0e+005
   ls $OutDir/meme/meme.txt
   mast $OutDir/meme/meme.xml $Query -oc $OutDir/meme -nostatus
   mv $OutDir/meme/mast.txt $OutDir/meme/${Region}_mast.txt
