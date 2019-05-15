@@ -489,3 +489,324 @@ done > $SubPromoters
 glam2 n -O $OutDir/glam_${ListLen} -2 -n 10000 $SubPromoters
 ls $OutDir/glam_${ListLen}/glam2.txt
 ```
+
+
+
+
+
+# Analysis using UTR gene set:
+
+
+### Tri genes
+
+Attempt to identify common elements in similarly regulated transcription factors.
+
+
+```bash
+screen -a
+ssh compute02
+
+
+WorkDir=~/tmp/cassis_Fv
+mkdir $WorkDir
+cd $WorkDir
+ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
+OutDir=tri_meme_UTR_out
+mkdir -p $OutDir/meme
+
+GeneList="g3123 g3124 g3125 g3126 g3127 g3128 g3129 g3130 g3131 g3132 g3133 g3134 g3135"
+ListLen=$(echo $GeneList | grep -o 'g' | wc -l)
+SubPromoters=$OutDir/TF_promoters_${ListLen}.fa
+
+Old2NewTable=$(ls $ProjDir/gene_pred/braker/*/*_UTR/*/gene_conversion/gene_intersects.gff)
+for GeneID in $GeneList; do
+  NewGeneID=$(cat $Old2NewTable | grep "ID=${GeneID};.contig" | cut -f18 | sed 's/ID=//g' | tr -d ';')
+cat $Promoters | sed -n "/^>${NewGeneID}_/,/^>/p" | grep -v "^$" | head -n -1
+done > $SubPromoters
+
+meme $SubPromoters -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/meme_${ListLen}
+
+cat $OutDir/meme_${ListLen}/meme.txt | grep -C2 'regular expression'
+
+
+#---
+# Running MAST
+#---
+
+mast $OutDir/meme_${ListLen}/meme.xml $SubPromoters -oc $OutDir/mast
+ls $OutDir/mast/mast.txt
+
+#---
+# Running FIMO
+#---
+Thresh=0.00006 #CASSIS (trained for secmet clusters)
+# Thresh=1e-4 #Default
+fimo -thresh $Thresh -oc $OutDir/fimo_${ListLen} $OutDir/meme_${ListLen}/meme.html $OutDir/TF_promoters_${ListLen}.fa
+for Motif in $(cat $OutDir/fimo_${ListLen}/fimo.tsv | grep 'TSS' | cut -f1 | sort | uniq); do
+  echo $Motif
+  echo "Promoters containing motif:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | uniq | wc -l
+  echo "Total number found in these promoters:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | wc -l
+  echo "this covers the following genes:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | uniq | grep -o -P "g.*?\.t\d" > $OutDir/fimo_${ListLen}/gene_containing_motifs.txt
+  cat $OutDir/fimo_${ListLen}/gene_containing_motifs.txt | wc -l
+done
+
+ls -d $PWD/$OutDir
+```
+
+```
+CTTTCMMCYGCM
+Promoters containing motif:
+8
+Total number found in these promoters:
+29
+this covers the following genes:
+0
+GGKRGGCCTDR
+Promoters containing motif:
+10
+Total number found in these promoters:
+26
+this covers the following genes:
+0
+RATRAWCCATCT
+Promoters containing motif:
+7
+Total number found in these promoters:
+16
+this covers the following genes:
+0
+TAAWCCAKGGCY
+Promoters containing motif:
+4
+Total number found in these promoters:
+10
+this covers the following genes:
+0
+TGRGGCTGTWMT
+Promoters containing motif:
+6
+Total number found in these promoters:
+8
+this covers the following genes:
+0
+```
+
+
+### Transcription factors
+
+Attempt to identify common elements in similarly regulated transcription factors.
+
+
+```bash
+screen -a
+ssh compute02
+
+
+WorkDir=~/tmp/cassis_Fv
+mkdir $WorkDir
+cd $WorkDir
+# Promoters=$(ls out/g*.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
+ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
+OutDir=tri_meme_UTR_TF_out
+mkdir -p $OutDir/meme
+
+# GeneList="g10.t1 g1967.t1 g1528.t1 g3130.t1 g10338.t1"
+
+GeneList="g1704 g12379 g12427 g1490 g2437 g6597 g7360 g1888 g9268 g8487 g9623 g2182 g7676 g9017 g6382 g10234 g6306 g1541 g820 g10390 g8825 g499 g7497 g4653 g5510 g8341 g1290 g9924 g9275 g10558 g1407 g10 g1967 g1528 g3130 g10338 g4714 g6017 g320 g12195 g3653 g3508 g2035 g10056 g1037 g11177 g5257 g10694 g2100 g5166"
+ListLen=$(echo $GeneList | grep -o 'g' | wc -l)
+SubPromoters=$OutDir/TF_promoters_${ListLen}.fa
+
+Old2NewTable=$(ls $ProjDir/gene_pred/braker/*/*_UTR/*/gene_conversion/gene_intersects.gff)
+for GeneID in $GeneList; do
+  NewGeneID=$(cat $Old2NewTable | grep "ID=${GeneID};.contig" | cut -f18 | sed 's/ID=//g' | tr -d ';')
+  # printf "${GeneID} $NewGeneID\n"
+cat $Promoters | sed -n "/^>${NewGeneID}_/,/^>/p" | grep -v "^$" | head -n -1
+done > $SubPromoters
+
+GeneList="g3130 g1528"
+ListLen=$(echo $GeneList | grep -o 'g' | wc -l)
+SubPromoters=$OutDir/TF_promoters_${ListLen}.fa
+
+Old2NewTable=$(ls $ProjDir/gene_pred/braker/*/*_UTR/*/gene_conversion/gene_intersects.gff)
+for GeneID in $GeneList; do
+  NewGeneID=$(cat $Old2NewTable | grep "ID=${GeneID};.contig" | cut -f18 | sed 's/ID=//g' | tr -d ';')
+  # echo "${GeneID} - ${NewGeneID}"
+cat $Promoters | sed -n "/^>${NewGeneID}_/,/^>/p" | grep -v "^$" | head -n -1
+done > $SubPromoters
+
+meme $SubPromoters -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/meme_${ListLen}
+
+cat $OutDir/meme_${ListLen}/meme.txt | grep -C2 'regular expression'
+
+# From g3130.t1 g1528.t1"
+# Motif GGMCATRCAAAG MEME-1 regular expression
+# GG[AC]CAT[AG]CAAAG
+
+#---
+# Running MAST
+#---
+
+mast $OutDir/meme_${ListLen}/meme.xml $SubPromoters -oc $OutDir/mast
+ls $OutDir/mast/mast.txt
+
+#---
+# Running FIMO
+#---
+Thresh=0.00006 #CASSIS (trained for secmet clusters)
+# Thresh=1e-4 #Default
+fimo -thresh $Thresh -oc $OutDir/fimo_${ListLen} $OutDir/meme_${ListLen}/meme.html $OutDir/TF_promoters_50.fa
+for Motif in $(cat $OutDir/fimo_${ListLen}/fimo.tsv | grep 'TSS' | cut -f1 | sort | uniq); do
+  echo $Motif
+  echo "Promoters containing motif:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | uniq | wc -l
+  echo "Total number found in these promoters:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | wc -l
+  echo "this covers the following genes:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | uniq | grep -o -P "g.*?\.t\d" > $OutDir/fimo_${ListLen}/gene_containing_motifs.txt
+  cat $OutDir/fimo_${ListLen}/gene_containing_motifs.txt | wc -l
+done
+```
+```
+CAMATGCA
+Promoters containing motif:
+7
+Total number found in these promoters:
+9
+this covers the following genes:
+0
+GGMCATRCAAAG
+Promoters containing motif:
+7
+Total number found in these promoters:
+13
+this covers the following genes:
+0
+KWCAGAAANCA
+Promoters containing motif:
+9
+Total number found in these promoters:
+13
+this covers the following genes:
+0
+TTTTCTCSAWS
+Promoters containing motif:
+7
+Total number found in these promoters:
+13
+this covers the following genes:
+0
+```
+
+
+### Fusarin genes
+
+Attempt to identify common elements in similarly regulated transcription factors.
+
+
+```bash
+screen -a
+ssh compute02
+
+
+WorkDir=~/tmp/cassis_Fv
+mkdir $WorkDir
+cd $WorkDir
+ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
+OutDir=fusarin_meme_UTR_out
+mkdir -p $OutDir/meme
+
+GeneList=$(for num in $(seq 2032 2095); do printf "g${num} "; done)
+ListLen=$(echo $GeneList | grep -o 'g' | wc -l)
+SubPromoters=$OutDir/TF_promoters_${ListLen}.fa
+
+Old2NewTable=$(ls $ProjDir/gene_pred/braker/*/*_UTR/*/gene_conversion/gene_intersects.gff)
+for GeneID in $GeneList; do
+  NewGeneID=$(cat $Old2NewTable | grep "ID=${GeneID};.contig" | cut -f18 | sed 's/ID=//g' | tr -d ';')
+  # printf "${GeneID} $NewGeneID\n"
+cat $Promoters | sed -n "/^>${NewGeneID}_/,/^>/p" | grep -v "^$" | head -n -1
+done > $SubPromoters
+
+GeneList="g2081 g2082 g2083 g2079 g2077 g2084 g2076 g2085 g2078 g2080 g2060"
+ListLen=$(echo $GeneList | grep -o 'g' | wc -l)
+SubPromoters=$OutDir/TF_promoters_${ListLen}.fa
+
+Old2NewTable=$(ls $ProjDir/gene_pred/braker/*/*_UTR/*/gene_conversion/gene_intersects.gff)
+for GeneID in $GeneList; do
+  NewGeneID=$(cat $Old2NewTable | grep "ID=${GeneID};.contig" | cut -f18 | sed 's/ID=//g' | tr -d ';')
+  # echo $GeneID
+cat $Promoters | sed -n "/^>${NewGeneID}_/,/^>/p" | grep -v "^$" | head -n -1
+done > $SubPromoters
+
+meme $SubPromoters -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/meme_${ListLen}
+
+cat $OutDir/meme_${ListLen}/meme.txt | grep -C2 'regular expression'
+
+
+#---
+# Running MAST
+#---
+
+mast $OutDir/meme_${ListLen}/meme.xml $SubPromoters -oc $OutDir/mast
+ls $OutDir/mast/mast.txt
+
+#---
+# Running FIMO
+#---
+Thresh=0.00006 #CASSIS (trained for secmet clusters)
+# Thresh=1e-4 #Default
+fimo -thresh $Thresh -oc $OutDir/fimo_${ListLen} $OutDir/meme_${ListLen}/meme.html $OutDir/TF_promoters_64.fa
+for Motif in $(cat $OutDir/fimo_${ListLen}/fimo.tsv | grep 'TSS' | cut -f1 | sort | uniq); do
+  echo $Motif
+  echo "Promoters containing motif:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | uniq | wc -l
+  echo "Total number found in these promoters:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | wc -l
+  echo "this covers the following genes:"
+  cat $OutDir/fimo_${ListLen}/fimo.tsv | grep "^$Motif" | cut -f3 | sort | uniq | grep -o -P "g.*?\.t\d" > $OutDir/fimo_${ListLen}/gene_containing_motifs.txt
+  cat $OutDir/fimo_${ListLen}/gene_containing_motifs.txt | wc -l
+done
+```
+
+```
+ACTGTCARACTC
+Promoters containing motif:
+9
+Total number found in these promoters:
+15
+this covers the following genes:
+0
+ARATCCTTCGR
+Promoters containing motif:
+17
+Total number found in these promoters:
+37
+this covers the following genes:
+0
+ARWAGAARRAKA
+Promoters containing motif:
+17
+Total number found in these promoters:
+25
+this covers the following genes:
+0
+GATCTTATCTYA
+Promoters containing motif:
+15
+Total number found in these promoters:
+21
+this covers the following genes:
+0
+TGCABWCRCCC
+Promoters containing motif:
+10
+Total number found in these promoters:
+12
+this covers the following genes:
+0
+```
