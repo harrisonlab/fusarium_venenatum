@@ -9,20 +9,26 @@ opt_list <- list(
     make_option("--cds", type="character", help="fasta file containing cds data"),
     make_option("--low", type="character", help="IDs of lowly expressed genes"),
     make_option("--high", type="character", help="IDs of highly expressed genes"),
+    make_option("--out", type="character", help="name of output file")
   )
 opt = parse_args(OptionParser(option_list=opt_list))
 
-
+#
 genes <- readDNAStringSet(opt$cds)
+# print(genes)
 df_low <- read.delim(file=opt$low, header=F, sep="\t")
 df_high <- read.delim(file=opt$high, header=F, sep="\t")
+# print("got here")
 
-cds <- '/home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.cds.fasta'
-genes <- readDNAStringSet(cds)
-low <- 'analysis/codon_usage/fpkm_1-10/quorn_fpkm_1-10_IDs_filtered.txt'
-df_low <- read.delim(file=low, header=T, sep="\t")
-high <- 'analysis/codon_usage/fpkm_148/quorn_fpkm_148_IDs_filtered.txt'
-df_high <- read.delim(file=high, header=T, sep="\t")
+# cds <- '/home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.cds.fasta'
+# cds <- '../clocks/public_genomes/JR2/Verticillium_dahliaejr2.VDAG_JR2v.4.0.cds.all_parsed.fa'
+# genes <- readDNAStringSet(cds)
+# # low <- 'analysis/codon_usage/fpkm_1-10/quorn_fpkm_1-10_IDs_filtered.txt'
+# low <- 'analysis/codon_usage/by_expression/low_genes_filtered_no_transposons.txt'
+# df_low <- read.delim(file=low, header=T, sep="\t")
+# # high <- 'analysis/codon_usage/fpkm_148/quorn_fpkm_148_IDs_filtered.txt'
+# high <- 'analysis/codon_usage/by_expression/quartile_genes_filtered_no_transposons.txt'
+# df_high <- read.delim(file=high, header=T, sep="\t")
 
 # Load libraries
 #
@@ -53,17 +59,21 @@ df_high <- read.delim(file=high, header=T, sep="\t")
 ids <- list()
 ids[[1]] <- df_low[,1]
 ids[[2]] <- df_high[,1]
+# print(ids[[2]])
+# print(genes[3])
 
 # Extract CDS sequences
 # Seq <- extractSeq(ids,genes)
 low_seq <- genes[ids[[1]]]
 high_seq <- genes[ids[[2]]]
+# print("got here")
 Seq <- list()
 Seq[1] <- low_seq
 Seq[2] <- high_seq
 
-# Calculate RSCU values
 
+# print("got here")
+# Calculate RSCU values
 
 matL <- lapply(Seq[[1]], function(x) {SADEG.RSCU(x)})
 matH <- lapply(Seq[[2]], function(x) {SADEG.RSCU(x)})
@@ -148,7 +158,9 @@ rownames(matL1) <- names(matL)
 		}
 	}
 	print(head(fusTest))
-  write.table(data.frame(fusTest), file = "fus_test.txt",append = FALSE, sep = "\t",row.names = TRUE, col.names = TRUE, quote=FALSE)
+  # write.table(data.frame(fusTest), file = "fus_test.txt",append = FALSE, sep = "\t",row.names = TRUE, col.names = TRUE, quote=FALSE)
+  write.table(data.frame(fusTest), file = opt$low, append = FALSE, sep = "\t",row.names = TRUE, col.names = TRUE, quote=FALSE)
+
 
 # 	arrangedfus = matrix(data = NA, nrow = 64, ncol = 2, byrow = FALSE, dimnames = NULL)
 #
