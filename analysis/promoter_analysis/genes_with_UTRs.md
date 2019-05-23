@@ -41,6 +41,8 @@ braker.pl \
   --overwrite \
   --fungus \
   --UTR=on \
+  # --stranded=. \
+  # --AUGUSTUS_ab_initio \
   --gff3 \
   --softmasking on \
   --species=$GeneModelName \
@@ -57,14 +59,15 @@ rm -r $WorkDir
 Fasta and gff files were extracted from Braker1 output.
 
 ```bash
-for File in $(ls gene_pred/braker/*/*_UTR/*/augustus.hints.gff3); do
+# for File in $(ls gene_pred/braker/*/*_UTR/*/augustus.hints.gff3); do
+for File in $(ls gene_pred/braker/*/*_UTR/*/augustus.hints_utr.gff3); do
 	Strain=$(echo $File | rev | cut -d '/' -f3 | rev | sed 's/_UTR//g')
 	Organism=$(echo $File | rev | cut -d '/' -f4 | rev)
 	echo "$Organism - $Strain"
 	echo "number of genes:"
 	cat $File | grep -v '#' | grep -w 'gene' | wc -l
-	echo "number of genes with predicted UTRs"
-	cat ${File%.gff3}_utr.gff | grep -v '#' | grep -w 'gene' | wc -l
+	# echo "number of genes with predicted UTRs"
+	# cat ${File%.gff3}_utr.gff | grep -v '#' | grep -w 'gene' | wc -l
 
 	getAnnoFasta.pl $File
 	OutDir=$(dirname $File)
@@ -73,12 +76,18 @@ for File in $(ls gene_pred/braker/*/*_UTR/*/augustus.hints.gff3); do
 done
 ```
 
-```
+<!-- ```
   V.dahliae - 12008
   number of genes:
   9602
   number of genes with predicted UTRs
   9196
+``` -->
+
+```
+  F.venenatum - WT
+  number of genes:
+  11481
 ```
 
 # Create a conversion table of old to new gene IDs
@@ -86,7 +95,7 @@ done
 Run from the old cluster:
 ```bash
 cd /home/groups/harrisonlab/project_files/fusarium_venenatum
-NewGff=$(ls gene_pred/braker/*/*_UTR/*/augustus.hints.gff3)
+NewGff=$(ls gene_pred/braker/*/*_UTR/*/augustus.hints_utr.gff3)
 OldGff=$(ls gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3)
 
 OutDir=$(dirname $NewGff)/gene_conversion
@@ -141,7 +150,12 @@ antismash \
 Extract region from around UTR -1000 to +50 unless intersecting another gene model
 
 ```bash
-/home/armita/git_repos/emr_repos/tools/gene_prediction/promoters/extract_promoters.py --gff gene_pred/braker/F.venenatum/WT_UTR/__braker/augustus.hints_utr.gff3 --fasta repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_unmasked.fa --prefix WT_promoters
+ProgDir=/home/armita/git_repos/emr_repos/tools/gene_prediction/promoters
+Gff=$(ls gene_pred/braker/F.venenatum/WT_UTR/__braker/augustus.hints_utr.gff3)
+Assembly=$(ls repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_unmasked.fa)
+OutDir=analysis/promoters/F.venenatum/WT_UTR
+mkdir -p $OutDir
+$ProgDir/extract_promoters.py --gff $Gff --fasta $Assembly --prefix $OutDir/WT_promoters
 ```
 
 ```
