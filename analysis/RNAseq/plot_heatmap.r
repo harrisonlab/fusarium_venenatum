@@ -96,3 +96,19 @@ x <- levels(annotTab_df$Cluster_ID)
 
 lapply(x[-1], plot_level_all)
 # lapply(x[-1], plot_level_sig)
+
+
+#---
+# Plot primary metabolism expression
+#---
+
+vit_df <- subset(annotTab_df, Vitamin_pathway!="" & DEG!="", select=c(1,49:56))
+vit_mat <- as.matrix(tf_df[c(3,4,5,6,7,8,9)])
+rownames(vit_mat) <- tf_df[,1]
+colnames(vit_mat) <- c('02793', 'F55', '10170', 'MWT', 'MLO', 'MKO', 'TJ')
+
+plot_heatmap(vit_mat, "primary_metabolism")
+
+vit_df2 <- subset(annotTab_df, Vitamin_pathway!="" & DEG!="")
+summary(annotTab_df$Vitamin_pathway)
+summary(vit_df2$Vitamin_pathway)
