@@ -19,9 +19,10 @@ for File in $(ls analysis/genome_alignment/bwa/*/*/vs_WT/*_vs_WT_depth_10kb.tsv)
   echo $Strain
   cat $File | awk '{print $1,$2-1000,$2,$3,$4}' OFS='\t' | cut -f1,2,3,4 > $OutDir/${Strain}_vs_ref_unmasked_scatterplot.tsv
 done
-````
+```
 
 ```bash
+OutDir=analysis/genome_alignment/circos/Fg_vs_Fv_cov_plot
 ProgDir=/home/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/identify_LS_regions/circos
 circos -conf $ProgDir/Fg_vs_Fv_circos.conf -outputdir $OutDir
 mv $OutDir/circos.png $OutDir/Fg_vs_Fv_cov_unmasked_circos.png
