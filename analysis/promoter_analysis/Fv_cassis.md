@@ -57,6 +57,78 @@ for File in $(ls out/g2085.t1/*/CLUSTER/*/*/fimo/fimo.txt); do
 done | sort -k4
 ```
 
+
+Results for each cluster were summarised:
+
+```bash
+  cd /newhome/armita/tmp/cassis_Fv
+AnnotTab=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+for Results in $(ls out/*/*_log.txt | grep -v 'g6640'); do
+Anchor=$(echo $Results | cut -f2 -d '/')
+SortID=$(echo $Anchor | tr -d /g/ | cut -f1 -d '.')
+Cluster=$(cat $AnnotTab | cut -f1,7 | grep "$Anchor" | cut -f2)
+if [[ $Cluster == "" ]]; then
+  Cluster="NA"
+fi
+if grep 'No cluster prediction' $Results; then
+printf "${SortID}\t${Anchor}\t${Cluster}\tNA\tNA\n"
+else
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Fimo=$(ls out/$Anchor/$Anchor/fimo/$Best/fimo.txt)
+Motif=$(cat $Fimo | head -n2 | tail -n1 | cut -f1)
+printf "${SortID}\t${Anchor}\t${Cluster}\t${Best}\t${Motif}\n"
+fi
+done | grep -v ':(' | sort -n -k1 | cut -f2-
+```
+
+```
+g10578.t1	+2_-7	TACBTACCTAC
+g1114.t1	+10_-4	ACGATGTCCA
+g11163.t1	NA	NA
+g1181.t1	+3_-7	GYCCRCCMVYMC
+g12148.t1	+3_-3	YGGRGAAWTGRG
+g12540.t1	+0_-4	GGMCCCGBCCCC
+g12555.t1	+1_-2	TGABCGTCGCC
+g1968.t1	NA	NA
+g1976.t1	+2_-4	TCAAMGAACC
+g2085.t1	+1_-6	YYGAAGGATC
+g2817.t1	+1_-2	CACAARCTGCC
+g2902.t1	+0_-10	CGCCTGGMATTG
+g3971.t1	+0_-3	GARCSGCATMTT
+g4399.t1	+2_-2	SGGACCGAAGG
+g4406.t1	+4_-0	ACCCKRCGGAC
+g4783.t1	+3_-0	YGSRMGSGAG
+g4921.t1	NA	NA
+g5005.t1	+1_-8	CATCSGCYATGG
+g5605.t1	+0_-15	AAAACTACTATT
+g6008.t1	+1_-2	MCAGATGCATC
+g6374.t1	+0_-5	AKVGYRGGGAT
+g6376.t1	+15_-7	AAAATTGCAGTG
+g6417.t1	+0_-3	CYKTGTCTTAC
+g6648.t1	+0_-4	CGYGAAGGAWAA
+g7068.t1	+5_-0	CBTKATTCAA
+g717.t1	+2_-3	BTCAGCTCRY
+g7393.t1	+0_-8	CGACAAWKCSAA
+g7509.t1	+2_-2	TGWTATTGACA
+g755.t1	+2_-3	CGCYAYGGCCCG
+g8047.t1	+2_-11	ACTGGGACTRGG
+g9021.t1	+3_-1	RGTGKGGKWGKC
+g9373.t1	+0_-6	TCAAGKCATCSK
+g9515.t1	+1_-2	KCYGTTGRTC
+```
+
+Cassis results were copied to the project directory
+
+```bash
+  WorkDir=/newhome/armita/tmp/cassis_Fv
+  OutDir=/home/groups/harrisonlab/project_files/fusarium_venenatum/analysis/secondary_metabolites/cassis
+  mkdir $OutDir
+
+  cp -r $WorkDir/out $OutDir/.
+  cp -r $WorkDir/*anchor_gene* $OutDir/.
+  cp -r $WorkDir/cassis.tsv $OutDir/.
+```
+
 This did not include the Tri5 cluster, so these genes were run seperately:
 
 ```bash
