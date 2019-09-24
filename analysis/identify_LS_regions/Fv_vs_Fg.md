@@ -164,7 +164,7 @@ LS regions were identified in Fv
 cd /data/scratch/armita/fusarium/venenatum
 for Reference in $(ls ../../../../../home/groups/harrisonlab/project_files/fusarium_venenatum/repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_unmasked.fa ../../../../../home/groups/harrisonlab/project_files/fusarium_venenatum/repeat_masked/F.venenatum/WT_minion/minion_submission/*_contigs_unmasked.fa | grep 'minion'); do
 RefStrain=$(echo $Reference | rev | cut -f3 -d '/' | rev)
-for StrainPath in $(ls -d raw_dna/paired/*/* | grep 'F335'); do
+for StrainPath in $(ls -d raw_dna/paired/*/*); do
 Strain=$(echo $StrainPath | rev | cut -f1 -d '/' | rev)
 Organism=$(echo $StrainPath | rev | cut -f2 -d '/' | rev)
 # F_Read=$(ls $StrainPath/F/*.fastq.gz)
@@ -205,7 +205,7 @@ done
 Identify read coverage over each bp
 
 ```bash
-  for Bam in $(ls analysis/genome_alignment/bwa/*/*/vs_*/*_sorted.bam); do
+  for Bam in $(ls analysis/genome_alignment/bwa/*/*/vs_*/*_sorted.bam | grep 'F335'); do
     Target=$(echo $Bam | rev | cut -f2 -d '/' | rev)
     Strain=$(echo $Bam | rev | cut -f3 -d '/' | rev)
     Organism=$(echo $Bam | rev | cut -f4 -d '/' | rev)
