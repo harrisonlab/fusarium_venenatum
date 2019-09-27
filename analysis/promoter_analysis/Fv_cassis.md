@@ -61,8 +61,8 @@ done | sort -k4
 Results for each cluster were summarised:
 
 ```bash
-  cd /newhome/armita/tmp/cassis_Fv
-AnnotTab=$(ls /home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+cd ~/tmp/cassis_Fv
+AnnotTab=$(ls /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
 for Results in $(ls out/*/*_log.txt | grep -v 'g6640'); do
 Anchor=$(echo $Results | cut -f2 -d '/')
 SortID=$(echo $Anchor | tr -d /g/ | cut -f1 -d '.')
@@ -82,39 +82,58 @@ done | grep -v ':(' | sort -n -k1 | cut -f2-
 ```
 
 ```
-g10578.t1	+2_-7	TACBTACCTAC
-g1114.t1	+10_-4	ACGATGTCCA
-g11163.t1	NA	NA
-g1181.t1	+3_-7	GYCCRCCMVYMC
-g12148.t1	+3_-3	YGGRGAAWTGRG
-g12540.t1	+0_-4	GGMCCCGBCCCC
-g12555.t1	+1_-2	TGABCGTCGCC
-g1968.t1	NA	NA
-g1976.t1	+2_-4	TCAAMGAACC
-g2085.t1	+1_-6	YYGAAGGATC
-g2817.t1	+1_-2	CACAARCTGCC
-g2902.t1	+0_-10	CGCCTGGMATTG
-g3971.t1	+0_-3	GARCSGCATMTT
-g4399.t1	+2_-2	SGGACCGAAGG
-g4406.t1	+4_-0	ACCCKRCGGAC
-g4783.t1	+3_-0	YGSRMGSGAG
-g4921.t1	NA	NA
-g5005.t1	+1_-8	CATCSGCYATGG
-g5605.t1	+0_-15	AAAACTACTATT
-g6008.t1	+1_-2	MCAGATGCATC
-g6374.t1	+0_-5	AKVGYRGGGAT
-g6376.t1	+15_-7	AAAATTGCAGTG
-g6417.t1	+0_-3	CYKTGTCTTAC
-g6648.t1	+0_-4	CGYGAAGGAWAA
-g7068.t1	+5_-0	CBTKATTCAA
-g717.t1	+2_-3	BTCAGCTCRY
-g7393.t1	+0_-8	CGACAAWKCSAA
-g7509.t1	+2_-2	TGWTATTGACA
-g755.t1	+2_-3	CGCYAYGGCCCG
-g8047.t1	+2_-11	ACTGGGACTRGG
-g9021.t1	+3_-1	RGTGKGGKWGKC
-g9373.t1	+0_-6	TCAAGKCATCSK
-g9515.t1	+1_-2	KCYGTTGRTC
+g717.t1	NA	+2_-3	BTCAGCTCRY
+g755.t1	SecMet_cluster_2	+2_-3	CGCYAYGGCCCG
+g1114.t1	SecMet_cluster_6	+10_-4	ACGATGTCCA
+g1181.t1	SecMet_cluster_7	+3_-7	GYCCRCCMVYMC
+g1968.t1	NA	NA	NA
+g1976.t1	NA	+2_-4	TCAAMGAACC
+g2085.t1	SecMet_cluster_10	+1_-6	YYGAAGGATC
+g2143.t1	SecMet_cluster_11	+15_-9	CCCASTAGCYTM
+g2729.t1	NA	+0_-3	AGACTTTRMA
+g2817.t1	SecMet_cluster_13	+1_-2	CACAARCTGCC
+g2902.t1	SecMet_cluster_14	+0_-10	CGCCTGGMATTG
+g3649.t1	SecMet_cluster_17	+4_-6	YTCGGANKCCG
+g3842.t1	SecMet_cluster_18	+1_-6	TGGGGTGTCWTG
+g3971.t1	SecMet_cluster_19	+0_-3	GARCSGCATMTT
+g4399.t1	SecMet_cluster_20	+2_-2	SGGACCGAAGG
+g4406.t1	SecMet_cluster_20	+4_-0	ACCCKRCGGAC
+g4464.t1	SecMet_cluster_21	+3_-0	TCAAGGTCSTC
+g4783.t1	NA	+3_-0	YGSRMGSGAG
+g4921.t1	SecMet_cluster_23	NA	NA
+g5005.t1	NA	+1_-8	CATCSGCYATGG
+g5605.t1	SecMet_cluster_24	+0_-15	AAAACTACTATT
+g6008.t1	NA	+1_-2	MCAGATGCATC
+g6374.t1	NA	+0_-5	AKVGYRGGGAT
+g6376.t1	NA	+15_-7	AAAATTGCAGTG
+g6417.t1	SecMet_cluster_26	+0_-3	CYKTGTCTTAC
+g6459.t1	NA	+14_-1	CAACCCCTSCT
+g6648.t1	SecMet_cluster_29	+0_-4	CGYGAAGGAWAA
+g7068.t1	SecMet_cluster_31	+5_-0	CBTKATTCAA
+g7393.t1	NA	+0_-8	CGACAAWKCSAA
+g7496.t1	NA	+2_-3	CAAWGCCKAC
+g7509.t1	SecMet_cluster_32	+2_-2	TGWTATTGACA
+g7513.t1	SecMet_cluster_32	+0_-4	TGWTATTGACA
+g8047.t1	SecMet_cluster_34	+2_-11	ACTGGGACTRGG
+g8510.t1	NA	+0_-4	TYGGRGCTYCGG
+g8877.t1	SecMet_cluster_37	+5_-0	GCCGCGGA
+g9021.t1	NA	+3_-1	RGTGKGGKWGKC
+g9129.t1	NA	+5_-6	TGGATCTTCRAG
+g9373.t1	SecMet_cluster_40	+0_-6	TCAAGKCATCSK
+g9515.t1	SecMet_cluster_41	+1_-2	KCYGTTGRTC
+g9634.t1	NA	+7_-0	SCATGGC
+g10233.t1	NA	+9_-9	CGYSRCTGGCG
+g10406.t1	NA	+2_-9	AAGCCWCTCGMT
+g10578.t1	NA	+2_-7	TACBTACCTAC
+g11163.t1	SecMet_cluster_47	NA	NA
+g11164.t1	NA	+6_-11	ACACTMCCCTM
+g11190.t1	NA	+3_-2	CCAGAWGCCATG
+g12093.t1	SecMet_cluster_49	+14_-12	TAARTAGYATAA
+g12106.t1	SecMet_cluster_49	+6_-14	TTATGCTATTTA
+g12148.t1	SecMet_cluster_50	+3_-3	YGGRGAAWTGRG
+g12225.t1	NA	+2_-1	CMCCAAGTCTA
+g12540.t1	SecMet_cluster_51	+0_-4	GGMCCCGBCCCC
+g12555.t1	NA	+1_-2	TGABCGTCGCC
 ```
 
 Cassis results were copied to the project directory
@@ -185,6 +204,102 @@ g3133.t1        g3124.t1_to_g3135.t1    +1_-4   TGGTHGGCCTA
 g3134.t1        g3118.t1_to_g3135.t1    downstream_border_+1_-4 TGGTHGGCCTA
 g3134.t1        g3124.t1_to_g3135.t1    +1_-4   TGGTHGGCCTA
 g3135.t1        g3124.t1_to_g3135.t1    +0_-5   TGGTHGGCCTA
+```
+
+### Cassis on all genes in genome
+
+
+```bash
+# screen -a
+# ssh compute02
+# srun -p medium --mem=4gb --pty bash
+
+conda activate meme-v4
+OldProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
+
+# WorkDir=~/tmp/cassis_Fv/all_genes
+WorkDir=$OldProjDir/analysis/promoters/cassis/all_genes
+mkdir -p $WorkDir
+cd $WorkDir
+
+AnnotTab=$(ls $OldProjDir/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+Assembly=$(ls $OldProjDir/repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+Genes=$(ls $OldProjDir/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3)
+Interpro=$(ls $OldProjDir/gene_pred/interproscan/F.venenatum/WT/WT_interproscan.tsv)
+
+cat $Genes | grep 'mRNA' | sed 's/ID=//g' | sed "s/;.*//g" | awk '{ print $9 "\t" $1 "\t" $4 "\t" $5 "\t" $7}' > cassis.tsv
+
+for Cluster in $(cat $AnnotTab | cut -f7 | grep 'SecMet_cluster' | sort -n -k3 -t'_' | uniq); do
+echo $Cluster
+mkdir $WorkDir/$Cluster
+cat $AnnotTab | cut -f1,7 | grep -w "$Cluster" | cut -f1 | grep '.t1' > $WorkDir/$Cluster/headers.txt
+for GeneID in $(cat $WorkDir/$Cluster/headers.txt); do
+  echo $GeneID
+  mkdir -p $WorkDir/$Cluster/$GeneID
+  ProgDir=/projects/oldhome/armita/git_repos/emr_repos/scripts/fusarium_venenatum/analysis/promoter_analysis
+  CassisTSV=cassis.tsv
+  OutDir=$WorkDir/$Cluster
+  Jobs=$(squeue -u ${USER} --noheader --array | wc -l)
+  while [ $Jobs -gt 60 ]; do
+    sleep 5m
+    printf "."
+    Jobs=$(squeue -u ${USER} --noheader --array | wc -l)
+  done		
+  printf "\n"
+  sbatch $ProgDir/cassis_SLURM.sh $Assembly $CassisTSV $GeneID $OutDir
+  # cassis \
+  #   --annotation cassis.tsv \
+  #   --genome $Assembly \
+  #   --anchor $GeneID \
+  #   --dir $WorkDir/$Cluster/$GeneID \
+  #   --mismatches 0 \
+  #   -v \
+  #   --prediction \
+  #   --num-cpus 30 \
+  #   | tee 2>&1 $WorkDir/$Cluster/$GeneID/${GeneID}_log.txt
+done
+done
+```
+
+```bash
+ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
+cd $ProjDir
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/SecMet_cluster_* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+echo ""
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+# if [[ $Cluster == "" ]]; then
+# Cluster="NA"
+# fi
+if $(grep -q 'No cluster prediction' $Results); then
+printf "${Cluster}\t${Anchor}\tNA\tNA\n"
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Fimo=$(ls $ClusterDir/$Anchor/$Anchor/fimo/$Best/fimo.txt)
+Motif=$(cat $Fimo | head -n2 | tail -n1 | cut -f1)
+printf "${Cluster}\t${Anchor}\t${Best}\t${Motif}\n"
+else
+  printf "${Cluster}\t${Anchor}\tNA\tNA\n"
+fi
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
+done > analysis/promoters/cassis/all_genes/cassis_summary.tsv
+```
+
+SecMet genes with transcription factor annotations were identified
+
+```bash
+ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
+AnnotTab=$(ls $ProjDir/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+cat $AnnotTab | grep 'SecMet_cluster' | cut -f1,7,14 | grep -v  "\s$"
+```
+
+Differentially expressed SecMet genes were identified:
+
+```bash
+ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
+AnnotTab=$(ls $ProjDir/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+cat $AnnotTab | grep 'SecMet_cluster' | cut -f1,7,49 | grep -v  "\s$"
 ```
 
 ## Confirmation of results
@@ -591,18 +706,19 @@ ls $OutDir/glam_${ListLen}/glam2.txt
 
 ### Tri genes
 
-Attempt to identify common elements in similarly regulated transcription factors.
+Attempt to identify common elements in similarly regulated Tri cluster genes.
 
 
 ```bash
 screen -a
-ssh compute02
+# ssh compute02
+srun -p medium --mem=4gb --pty bash
 
 
 WorkDir=~/tmp/cassis_Fv
 mkdir $WorkDir
 cd $WorkDir
-ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
 Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
 OutDir=tri_meme_UTR_out
 mkdir -p $OutDir/meme
@@ -695,16 +811,23 @@ Attempt to identify common elements in similarly regulated transcription factors
 
 ```bash
 screen -a
-ssh compute02
+# ssh compute02
+# srun -p medium --mem=4gb --pty bash
+qlogin -pe smp=4
 
 
-WorkDir=~/tmp/cassis_Fv
+# Promoters=$(ls out/g*.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
+# ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+ProjDir=$(ls -d /home/groups/harrisonlab/project_files/fusarium_venenatum)
+Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
+
+# WorkDir=~/tmp/cassis_Fv
+WorkDir=$ProjDir
 mkdir $WorkDir
 cd $WorkDir
-# Promoters=$(ls out/g*.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
-ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
-Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
-OutDir=tri_meme_UTR_TF_out
+
+# OutDir=tri_meme_UTR_TF_out
+OutDir=analysis/promtoers/TF/meme_UTR_TF_out
 mkdir -p $OutDir/meme
 
 # GeneList="g10.t1 g1967.t1 g1528.t1 g3130.t1 g10338.t1"
@@ -719,6 +842,12 @@ for GeneID in $GeneList; do
   # printf "${GeneID} $NewGeneID\n"
 cat $Promoters | sed -n "/^>${NewGeneID}_/,/^>/p" | grep -v "^$" | head -n -1
 done > $SubPromoters
+
+meme $SubPromoters -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/meme_${ListLen}
+
+cat $OutDir/meme_${ListLen}/meme.txt | grep -C2 'regular expression'
+
+# Poor motif - just T's
 
 GeneList="g3130 g1528"
 ListLen=$(echo $GeneList | grep -o 'g' | wc -l)
@@ -735,6 +864,7 @@ meme $SubPromoters -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+
 
 cat $OutDir/meme_${ListLen}/meme.txt | grep -C2 'regular expression'
 
+
 # From g3130.t1 g1528.t1"
 # Motif GGMCATRCAAAG MEME-1 regular expression
 # GG[AC]CAT[AG]CAAAG
@@ -743,7 +873,9 @@ cat $OutDir/meme_${ListLen}/meme.txt | grep -C2 'regular expression'
 # Running MAST
 #---
 
-mast $OutDir/meme_${ListLen}/meme.xml $SubPromoters -oc $OutDir/mast
+mast $OutDir/meme_${ListLen}/meme.xml $SubPromoters -oc $OutDir/meme_${ListLen}/mast_${ListLen}
+mast $OutDir/meme_${ListLen}/meme.xml $OutDir/TF_promoters_50.fa -oc $OutDir/meme_${ListLen}/mast_50
+
 ls $OutDir/mast/mast.txt
 
 #---
