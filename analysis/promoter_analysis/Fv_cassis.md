@@ -400,7 +400,83 @@ please, enter output file's location (full path, for example, C:\MyDocuments\ fo
 /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/analysis/promoters/cassis/all_genes/motifsim/
 ```
 
-### Motifs of cassis results were summarised:
+#### Motifs summary of all genes in clusters using TOM TOM
+
+TOM TOM was run for each gene in a secmet cluster.
+
+A motif database was built from cassis results in all other secmet clusters.
+
+TOM TOM was run using one gene at a time, recording any *highly* significant
+results for motif similarity to motifs from other clusters. A stringent cuttoff
+was used as default settings resulted in highly similar motifs.
+
+First build a global set of motifs:
+```bash
+cd /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum
+mkdir analysis/promoters/cassis/all_genes/motif_similarity
+printf "MEME version 4\n\nALPHABET= ACGT\n\nstrands: + -\n\n" > analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/SecMet_cluster_* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+if $(grep -q 'No cluster prediction' $Results); then
+continue
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Best_ed=$(echo $Best | tr -d '+' | tr -d '-')
+MotifFile=$(ls $ClusterDir/$Anchor/$Anchor/meme/$Best/meme.txt)
+cat $MotifFile | grep "^MOTIF" | grep -v "MOTIF DIAGRAM" | sed "s/MOTIF/MOTIF ${Cluster}_${Anchor}_${Best}/g" | sed "s/MEME-1\\s//g"
+cat $MotifFile | awk '/letter-probability matrix/,/---/' | head -n-1
+echo ""
+else
+continue
+fi
+done
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':(' >> analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt
+```
+
+
+
+```bash
+cd /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum
+
+AllMotifs=$(ls analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt)
+printf "MEME version 4\n\nALPHABET= ACGT\n\nstrands: + -\n\n" > analysis/secondary_metabolites/cassis/out/best_motifs_meme.txt
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/SecMet_cluster_* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+echo "$Cluster"
+OutDir=analysis/promoters/cassis/all_genes/motif_similarity/$Cluster
+mkdir $OutDir
+cat $AllMotifs | awk "/${Cluster}/,/^$/{next}{print}" > $OutDir/all_motifs_excl_${Cluster}.txt
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+if $(grep -q 'No cluster prediction' $Results); then
+continue
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+MotifFile=$(ls $ClusterDir/$Anchor/$Anchor/meme/$Best/meme.txt)
+mkdir $OutDir/$Anchor
+tomtom -oc $OutDir/$Anchor/tomtom $MotifFile $OutDir/all_motifs_excl_${Cluster}.txt
+echo ""
+else
+continue
+fi
+done
+done
+
+
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/motif_similarity/SecMet_cluster_* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/motif_similarity/${Cluster})
+for TomTom in $(ls $ClusterDir/*/tomtom/tomtom.tsv); do
+Anchor=$(echo $TomTom | rev | cut -f3 -d '/' | rev)
+cat $TomTom | cut -f1,2,4,9,10 | grep 'cluster' | grep -v '#' | sed "s/_g.*_-[0-9]*//g" | sort | uniq | sed "s/^/$Cluster\t$Anchor\t/g"
+done
+done > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv
+cat analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv | grep 'e-' > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits_high_score.tsv
+```
+
+
+### Motifs of just cassis results were summarised:
 
 ```bash
 cd /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum
