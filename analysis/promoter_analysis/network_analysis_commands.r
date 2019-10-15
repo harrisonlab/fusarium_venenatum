@@ -1,5 +1,6 @@
-#Network diagram
-#Make matrix
+# Network diagram for common regulatory motifs between SecMet clusters.
+# Commands as run from my local computer.
+
 ​
 install.packages('igraph')
 install.packages('network')
