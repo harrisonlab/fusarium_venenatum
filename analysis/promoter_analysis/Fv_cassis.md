@@ -12,7 +12,7 @@ conda active meme-v4
 WorkDir=~/tmp/cassis_Fv
 mkdir $WorkDir
 cd $WorkDir
-OldProjDir=/oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum
+OldProjDir=/projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum
 Assembly=$(ls $OldProjDir/repeat_masked/F.venenatum/WT/illumina_assembly_ncbi/WT_contigs_softmasked_repeatmasker_TPSI_appended.fa)
 Genes=$(ls $OldProjDir/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3)
 # Genes=$(ls $OldProjDir/gene_pred/braker/F.venenatum/WT_UTR/*/augustus_extracted.gff)
@@ -574,7 +574,7 @@ echo "this covers the following genes:"
 cat tri_meme_out/fimo/fimo.txt | cut -f3 | sort | uniq | grep -o -P "g.*?\.t\d" > tri_meme_out/fimo/gene_containing_motifs.txt
 cat tri_meme_out/fimo/gene_containing_motifs.txt | wc -l
 
-AnnotTab=$(ls /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+AnnotTab=$(ls /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
 for GeneID in $(cat tri_meme_out/fimo/gene_containing_motifs.txt); do
 cat $AnnotTab | grep  "^${GeneID}"
 done > tri_meme_out/fimo/gene_containing_motifs_annots.tsv
@@ -678,7 +678,7 @@ for Motif in $(cat $OutDir/fimo_${ListLen}/fimo.tsv | grep 'contig' | cut -f1 | 
   cat $OutDir/fimo_${ListLen}/gene_containing_motifs.txt | wc -l
 done
 
-# AnnotTab=$(ls /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+# AnnotTab=$(ls /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
 # for GeneID in $(cat tri_meme_out/fimo/gene_containing_motifs.txt); do
 # cat $AnnotTab | grep  "^${GeneID}"
 # done > tri_meme_out/fimo/gene_containing_motifs_annots.tsv
@@ -823,7 +823,7 @@ echo "this covers the following genes:"
 cat $OutDir/fimo_${ListLen}/fimo.tsv | cut -f3 | sort | uniq | grep -o -P "g.*?\.t\d" > $OutDir/fimo_${ListLen}/gene_containing_motifs.txt
 cat $OutDir/fimo_${ListLen}/gene_containing_motifs.txt | wc -l
 
-# AnnotTab=$(ls /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
+# AnnotTab=$(ls /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/annotation/F.venenatum/WT/WT_annotation_ncbi_expression.tsv)
 # for GeneID in $(cat tri_meme_out/fimo/gene_containing_motifs.txt); do
 # cat $AnnotTab | grep  "^${GeneID}"
 # done > tri_meme_out/fimo/gene_containing_motifs_annots.tsv
@@ -1060,7 +1060,7 @@ qlogin -pe smp=4
 
 
 # Promoters=$(ls out/g*.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
-# ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+# ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
 ProjDir=$(ls -d /home/groups/harrisonlab/project_files/fusarium_venenatum)
 Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
 
@@ -1194,7 +1194,7 @@ WorkDir=~/tmp/cassis_Fv
 mkdir $WorkDir
 cd $WorkDir
 # Promoters=$(ls out/g*.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
-ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
 Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
 OutDir=meme_UTR_TF_out
 mkdir -p $OutDir/meme
@@ -1274,7 +1274,7 @@ ssh compute02
 WorkDir=~/tmp/cassis_Fv
 mkdir $WorkDir
 cd $WorkDir
-ProjDir=$(ls -d /oldhpc/home/groups/harrisonlab/project_files/fusarium_venenatum)
+ProjDir=$(ls -d /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum)
 Promoters=$(ls $ProjDir/analysis/promoters/F.venenatum/WT_UTR/WT_promoters.fa)
 OutDir=fusarin_meme_UTR_out
 mkdir -p $OutDir/meme
