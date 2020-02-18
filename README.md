@@ -1251,3 +1251,12 @@ This included:
 * Vitamin pathway genes
 * Primary metabolism
 * highly expressed genes
+
+# Carotenoid pathway backbone genes
+
+
+This search was performed on the annotation table from my local computer:
+
+```bash
+cat /Volumes/GGB/Harrison/Projects/BBSRC\ IPA\ QUORN\ C300045/Science/Obj1\ Reference\ generation/2019/WT_annotation_ncbi_expression.tsv  | grep -e 'gene_id' -e 'K00626' -e 'K01641' -e 'K00021' -e 'K00869' -e 'K00938' -e 'K01597' -e 'K01823' -e 'K00804' > /Volumes/GGB/Harrison/Projects/BBSRC\ IPA\ QUORN\ C300045/Science/Obj1\ Reference\ generation/2019/carotenoid_backbone.tsv
+```

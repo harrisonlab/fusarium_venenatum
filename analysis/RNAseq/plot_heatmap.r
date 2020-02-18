@@ -103,8 +103,8 @@ lapply(x[-1], plot_level_all)
 #---
 
 vit_df <- subset(annotTab_df, Vitamin_pathway!="" & DEG!="", select=c(1,49:56))
-vit_mat <- as.matrix(tf_df[c(3,4,5,6,7,8,9)])
-rownames(vit_mat) <- tf_df[,1]
+vit_mat <- as.matrix(vit_df[c(3,4,5,6,7,8,9)])
+rownames(vit_mat) <- vit_df[,1]
 colnames(vit_mat) <- c('02793', 'F55', '10170', 'MWT', 'MLO', 'MKO', 'TJ')
 
 plot_heatmap(vit_mat, "primary_metabolism")
@@ -112,3 +112,26 @@ plot_heatmap(vit_mat, "primary_metabolism")
 vit_df2 <- subset(annotTab_df, Vitamin_pathway!="" & DEG!="")
 summary(annotTab_df$Vitamin_pathway)
 summary(vit_df2$Vitamin_pathway)
+
+
+
+#---
+# Plot terpenoid backbone genes alongside VitA synthesis genes
+#---
+
+vitA_df <- subset(annotTab_df, 
+ gene_id=="g9369.t1"
+ | gene_id=="g9370.t1"
+ | gene_id=="g1771.t1"
+ | gene_id=="g1794.t1"
+ | gene_id=="g3564.t1"
+ | gene_id=="g3632.t1"
+ | gene_id=="g4105.t1"
+ | gene_id=="g5742.t1"
+ | gene_id=="g6942.t1"
+, select=c(1,49:56))
+vitA_mat <- as.matrix(vitA_df[c(3,4,5,6,7,8,9)])
+rownames(vitA_mat) <- vitA_df[,1]
+colnames(vitA_mat) <- c('02793', 'F55', '10170', 'MWT', 'MLO', 'MKO', 'TJ')
+
+plot_heatmap(vitA_mat, "VitA_metabolism")
