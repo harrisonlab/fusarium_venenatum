@@ -1,4 +1,4 @@
-# F. gramminearium
+# F.gramminearium
 
 Informatics on the downloaded genome of Fusarium gramminearium
 
