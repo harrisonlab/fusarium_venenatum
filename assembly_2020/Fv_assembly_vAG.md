@@ -157,6 +157,57 @@ Quast and busco were run to assess the effects of racon on assembly quality:
   done
 ```
 
+Quast, busco and kat were run to assess the assembly quality.
+
+```bash
+# Python 2.7 is needed to install Quast
+  ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
+  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT/WT_smartdenovo.dmo.lay.utg); do
+    OutDir=$(dirname $Assembly)
+    sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
+  done
+```
+
+```bash
+  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT/WT_smartdenovo.dmo.lay.utg); do
+    ReadsFq=$(ls qc_dna/minion/F.venenatum/WT/WT_minion_allfiles.fastq.gz)
+    Iterations=10
+    OutDir=$(dirname $Assembly)"/racon_$Iterations"
+    ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/racon
+    sbatch $ProgDir/sub_racon.sh $Assembly $ReadsFq $Iterations $OutDir
+  done
+```
+
+## Assembly correction with nanopolish
+
+```bash
+ReadDir=rawdata4nanopolish/F.venenatum/WT
+mkdir -p $ReadDir
+Strain=WT_minion
+ReadsFq1=$(ls /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/F.venenatum/WT/F.venenatum_WT_07-03-17_albacore_v2.02.fastq.gz)
+ReadsFq2=$(ls /projects/oldhome/groups/harrisonlab/project_files/fusarium_venenatum/raw_dna/minion/F.venenatum/WT/F.venenatum_WT_18-07-17_albacore_v2.02.fastq.gz)
+cat $ReadsFq1 $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_concatenated_reads.fastq
+
+/home/gomeza/git_repos/tools/seq_tools/assemblers/nanopolish/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_concatenated_reads.fastq --out $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
+```
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/*/*/racon/racon_min_500bp_renamed.fasta | grep 'WT' | grep 'albacore'); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+echo "$Organism - $Strain"
+ReadDir=rawdata4nanopolish/F.venenatum/WT
+ScratchDir=/data/scratch/nanopore_tmp_data/Fven
+Fast5Dir1=$ScratchDir/F.venenatum_WT_07-03-17/workspace/pass
+Fast5Dir2=$ScratchDir/F.venenatum_WT_18-07-17/workspace/pass
+nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
+OutDir=$(dirname $ReadDir)
+#mkdir -p $OutDir
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/nanopolish
+qsub $ProgDir/sub_bwa_nanopolish.sh $Assembly $ReadDir/"$Strain"_concatenated_reads_filtered.fastq.fa.gz $OutDir/nanopolish
+done
+```
+
+
 
 ## Canu
 
@@ -169,6 +220,29 @@ Quast and busco were run to assess the effects of racon on assembly quality:
   	OutDir=assembly/canu/$Organism/"$Strain"
   	ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/canu
   	sbatch $ProgDir/submit_canu_minion.sh $Reads $GenomeSz $Prefix $OutDir
+  done
+```
+
+Quast and busco were run to assess the effects of racon on assembly quality:
+
+```bash
+# Python 2.7 is needed to install Quast
+  ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
+  for Assembly in $(ls assembly/canu/F.venenatum/WT/WT_canu.contigs.fasta); do
+    OutDir=$(dirname $Assembly)
+    sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
+  done
+```
+
+```bash
+  for Assembly in $(ls assembly/canu/F.venenatum/WT/WT_canu.contigs.fasta); do
+    Strain=WT
+    Organism=F.venenatum
+    echo "$Organism - $Strain"
+    ProgDir=/home/gomeza/git_repos/tools/gene_prediction/busco
+    BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+    OutDir=$(dirname $Assembly)/busco
+    sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
   done
 ```
 
@@ -185,4 +259,26 @@ Quast and busco were run to assess the effects of racon on assembly quality:
     $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/Hg199_racon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
   done
   rm tmp.txt
+```
+
+## Previous assemblies qc
+
+Quast, busco and kat were run to assess the assembly quality.
+
+```bash
+# Python 2.7 is needed to install Quast
+  ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
+  for Assembly in $(ls assembly/previous_versions/F.venenatum/*/*.fa); do
+    OutDir=$(dirname $Assembly)
+    sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
+  done
+```
+
+```bash
+  for Assembly in $(ls assembly/previous_versions/F.venenatum/*/*.fa); do
+    ProgDir=/home/gomeza/git_repos/tools/gene_prediction/busco
+    BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+    OutDir=$(dirname $Assembly)/busco
+    sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
+  done
 ```
