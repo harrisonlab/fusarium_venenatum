@@ -150,6 +150,34 @@ rm tmp.txt
   done
 ```
 
+Assemblies were polished using Pilon
+Although three libraries were available, the first contained a relatively small amount of data and was not used for correction.
+
+
+```bash
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta); do
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | sed 's/_minion//g')
+IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+TrimF2_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)
+Iterations=10
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/pilon
+sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+```
+
+
+
 
 ## SMARTdenovo
 
@@ -219,7 +247,31 @@ rm tmp.txt
 
 
 
+Assemblies were polished using Pilon
+Although three libraries were available, the first contained a relatively small amount of data and was not used for correction.
 
+
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta); do
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | sed 's/_minion//g')
+IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+TrimF2_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/*_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/*_trim.fq.gz | head -n3 | tail -n1);
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)
+Iterations=10
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/pilon
+sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+```
 
 
 
@@ -364,16 +416,6 @@ Quast and busco were run to assess the effects of racon on assembly quality:
 
 
 
-
-```bash
-  ProgDir=/home/gomeza/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
-  touch tmp.txt
-  for Assembly in $(ls assembly_vAG/miniasm/N.ditissima/Hg199/racon_10/*10.fasta); do
-    OutDir=$(dirname $Assembly)
-    $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/Hg199_racon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
-  done
-  rm tmp.txt
-```
 
 ## Previous assemblies qc
 
