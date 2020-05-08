@@ -295,9 +295,20 @@ done
 ```
 
 ```bash
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+touch tmp.txt
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/pilon_10.fasta); do
+  OutDir=$(dirname $Assembly)
+  $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_miniasm_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+
+
+```bash
 # Python 2.7 is needed to install Quast
   ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
-  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/pilon_6.fasta); do
+  for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/pilon/WT_miniasm_pilon10_renamed.fasta); do
     OutDir=$(dirname $Assembly)/pilon6
     sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
   done
@@ -305,10 +316,40 @@ done
 
 
 ```bash
-  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/pilon_6.fasta); do
-    Strain=WT_minion
-    Organism=F.venenatum
-    echo "$Organism - $Strain"
+  for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/pilon/WT_miniasm_pilon10_renamed.fasta); do
+    #Strain=WT_minion
+    #Organism=F.venenatum
+    #echo "$Organism - $Strain"
+    ProgDir=/home/gomeza/git_repos/tools/gene_prediction/busco
+    BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+    OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
+    sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
+  done
+```
+```bash
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+touch tmp.txt
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/pilon/pilon_10.fasta); do
+  OutDir=$(dirname $Assembly)
+  $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_SMART_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+
+
+
+```bash
+# Python 2.7 is needed to install Quast
+  ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
+  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/pilon/WT_SMART_pilon10_renamed.fasta); do
+    OutDir=$(dirname $Assembly)/pilon6
+    sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
+  done
+```
+
+
+```bash
+  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/pilon/WT_SMART_pilon10_renamed.fasta); do
     ProgDir=/home/gomeza/git_repos/tools/gene_prediction/busco
     BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
     OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
