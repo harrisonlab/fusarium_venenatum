@@ -13,9 +13,12 @@ conda install repeatmasker
 #conda install rmblast
 conda install -c bioconda transposonpsi
 
-#No nucleotide repeat library is included in RepeatMasker.
-cp /home/gomeza/miniconda3/envs/general_tools/share/RepeatMasker/Libraries/RepeatMasker.lib ${CONDA_PREFIX}/share/RepeatMasker/Libraries
-makeblastdb -dbtype nucl -in ${CONDA_PREFIX}/share/RepeatMasker/Libraries/RepeatMasker.lib
+# After installing RepeatMasker, run configure. Bioconda does not do this.
+/home/gomeza/miniconda3/envs/general_tools/share/RepeatMasker/.configure
+
+#No nucleotide repeat library is included in RepeatMasker.If needed this can be done with the following commands
+#cp /home/gomeza/miniconda3/envs/general_tools/share/RepeatMasker/Libraries/RepeatMasker.lib ${CONDA_PREFIX}/share/RepeatMasker/Libraries
+#makeblastdb -dbtype nucl -in ${CONDA_PREFIX}/share/RepeatMasker/Libraries/RepeatMasker.lib
 ```
 
 ## Rename contigs
@@ -36,8 +39,8 @@ rm tmp.txt
 
 ```bash
   ProgDir=/home/gomeza/git_repos/tools/seq_tools/repeat_masking
-  BestAssembly=assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_pilon10_renamed.fasta
-  OutDir=repeat_masked2/F.venenatum/WT_minion/miniasm
+  BestAssembly=assembly/miniasm/F.venenatum/WT_minion/racon_10/pilon/WT_miniasm_pilon10_renamed.fasta
+  OutDir=repeat_masked3/F.venenatum/WT_minion/miniasm
   sbatch $ProgDir/rep_modeling.sh $BestAssembly $OutDir
   sbatch $ProgDir/transposonPSI.sh $BestAssembly $OutDir
 ```
