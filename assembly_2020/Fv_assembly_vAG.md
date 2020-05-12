@@ -427,31 +427,31 @@ done
 Split the assembly into 50Kb fragments an submit each to the cluster for nanopolish correction
 
 ```bash
-for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_minion_racon_round_10.fasta); do
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta ); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 echo "$Organism - $Strain"
-OutDir=$(dirname $Assembly)
-RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq)
+OutDir=$(dirname $Assembly/nanopolish_variants)
+RawReads=$(ls ../../home/gomeza/rawdata4nanopolish/F.venenatum/WT_minion/"$Strain"_concatenated_reads_filtered.fastq)
 AlignedReads=$(ls $OutDir/nanopolish/reads.sorted.bam)
 
-NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
-python $NanoPolishDir/nanopolish_makerange.py $Assembly > $OutDir/nanopolish/nanopolish_range.txt
+#NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
+#nanopolish_makerange.py $Assembly > $OutDir/nanopolish/nanopolish_range.txt
 
 Ploidy=1
-echo "nanopolish log:" > nanopolish_log.txt
-for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | head -n1); do
-Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
-while [ $Jobs -gt 1 ]; do
-sleep 1m
-printf "."
-Jobs=$(qstat | grep 'sub_nanopo' | grep 'qw' | wc -l)
-done		
-printf "\n"
-echo $Region
-echo $Region >> nanopolish_log.txt
-ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/assemblers/nanopolish
-qsub $ProgDir/sub_nanopolish_variants.sh $Assembly $RawReads $AlignedReads $Ploidy $Region $OutDir/$Region
+#echo "nanopolish log:" > nanopolish_log.txt
+#for Region in $(cat $OutDir/nanopolish/nanopolish_range.txt | head -n1); do
+#Jobs=$(squeue | grep 'nanopo' | grep 'qw' | wc -l)
+#while [ $Jobs -gt 1 ]; do
+#sleep 1m
+#printf "."
+#Jobs=$(squeue | grep 'nanopo' | grep 'qw' | wc -l)
+#done		
+#printf "\n"
+#echo $Region
+#echo $Region >> nanopolish_log.txt
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/nanopolish
+sbatch --array=1-1000%50 $ProgDir/sub_nanopolish_variants.sh $Assembly $RawReads $AlignedReads $Ploidy $Region $OutDir/$Region
 done
 done
 ```
