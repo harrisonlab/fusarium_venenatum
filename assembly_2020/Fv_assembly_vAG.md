@@ -18,6 +18,7 @@ mkdir -p qc_dna/minion/F.venenatum/WT
 cat F.venenatum_WT_07-03-17_albacore_v2.02_trim.fastq.gz F.venenatum_WT_18-07-17_albacore_v2.02_trim.fastq.gz > /projects/fusarium_venenatum/qc_dna/minion/F.venenatum/WT/WT_minion_allfiles.fastq.gz
 ```
 
+
 ## Miniasm
 
 ```bash
