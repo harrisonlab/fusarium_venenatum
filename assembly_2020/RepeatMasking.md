@@ -21,6 +21,7 @@ conda install -c bioconda transposonpsi
 #makeblastdb -dbtype nucl -in ${CONDA_PREFIX}/share/RepeatMasker/Libraries/RepeatMasker.lib
 ```
 
+
 ## Rename contigs
 
 Rename the sequences in assembly fasta file to have simple names.
@@ -36,6 +37,7 @@ rm tmp.txt
 ```
 
 ## RepeatMasker and transposonPSI
+
 
 ```bash
   ProgDir=/home/gomeza/git_repos/tools/seq_tools/repeat_masking
