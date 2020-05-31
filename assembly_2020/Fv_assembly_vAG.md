@@ -600,6 +600,17 @@ done
     ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/nanopolish
     sbatch $ProgDir/sub_bwa_nanopolish.sh $Assembly $ReadDir/"$Strain"_concatenated_reads_filtered.fastq $OutDir/nanopolish
   done
+
+  for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
+  Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+  Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+  echo "$Organism - $Strain"
+  ReadDir=raw_dna/nanopolish/F.venenatum/WT_minion
+  OutDir=$(dirname $Assembly)/nanopolish_bwa
+  mkdir -p $OutDir
+  ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/nanopolish
+  sbatch $ProgDir/sub_bwa_nanopolish.sh $Assembly $ReadDir/"$Strain"_concatenated_reads_filtered.fastq $OutDir/nanopolish
+done
 ```
 
 ```bash
@@ -626,7 +637,19 @@ done
     AlignedReads=$(ls $OutDir/reads.sorted.bam)
     Ploidy=1
     ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers
-    sbatch $ProgDir/nanopolish_variants.sh $Assembly $RawReads $AlignedReads $Ploidy $OutDir/variants
+    sbatch $ProgDir/nanopolish_variants2.sh $Assembly $RawReads $AlignedReads $Ploidy $OutDir/variants
+  done
+
+    for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=$(dirname $Assembly)/nanopolish
+    RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq)
+    AlignedReads=$(ls $OutDir/reads.sorted.bam)
+    Ploidy=1
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers
+    sbatch $ProgDir/nanopolish_variants2.sh $Assembly $RawReads $AlignedReads $Ploidy $OutDir/variants
   done
 ```
 
