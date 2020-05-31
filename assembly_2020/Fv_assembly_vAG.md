@@ -535,3 +535,148 @@ Quast, busco and kat were run to assess the assembly quality.
     sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
   done
 ```
+
+flye
+  for TrimReads in $(ls qc_dna/minion/F.venenatum/WT/WT_minion_allfiles.fastq.gz); do
+    Organism=$(echo $TrimReads | rev | cut -f3 -d '/' | rev)
+    Strain=WT_minion
+    Prefix="$Strain"_flye
+    OutDir=assembly/flye/F.venenatum/"$Strain"
+    mkdir -p $OutDir
+    Size=
+    ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/SMARTdenovo
+    sbatch $ProgDir/flye.sh $TrimReads $Prefix $OutDir $Size
+  done
+
+  ```bash
+# Python 2.7 is needed to install Quast
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
+for Assembly in $(ls flye/assembly.fasta); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
+done
+```
+
+```bash
+for Assembly in $(ls flye/assembly.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/tools/gene_prediction/busco
+BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
+sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+
+## Assembly correction with nanopolish
+
+```bash
+  ReadDir=rawdata4nanopolish/$Organism/$Strain
+  mkdir -p $ReadDir
+  ReadsFq1=$(ls /path/to/raw/basecalled/minion/reads/e.g./F.venenatum_WT_07-03-17_albacore_v2.02.fastq.gz)
+  ReadsFq2=$(ls /path/to/raw/basecalled/minion/reads/e.g./F.venenatum_WT_18-07-17_albacore_v2.02.fastq.gz)
+  cat $ReadsFq1 $ReadsFq2 | gunzip -cf > $ReadDir/"$Strain"_concatenated_reads.fastq
+
+# Remove duplicate reads
+  /home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assembler/nanopolish_remove_dup_reads.py --fastq $ReadDir/"$Strain"_concatenated_reads.fastq --out $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
+
+# Build an index mapping from basecalled reads to the signals measured by the sequencer
+  ScratchDir=/data/scratch/nanopore_tmp_data/$Organism/$Strain
+  Fast5Dir1=$ScratchDir/path/to/Fast5Files/workspace/pass
+  Fast5Dir2=$ScratchDir/path/to/Fast5Files/workspace/pass
+  nanopolish index -d $Fast5Dir1 -d $Fast5Dir2 $ReadDir/"$Strain"_concatenated_reads_filtered.fastq
+```
+
+```bash
+  for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_minion_racon_round_10.fasta); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+    echo "$Organism - $Strain"
+    ReadDir=../../home/gomeza/rawdata4nanopolish/F.venenatum/WT
+    OutDir=nanopolish_bwa
+    mkdir -p $OutDir
+    ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/nanopolish
+    sbatch $ProgDir/sub_bwa_nanopolish.sh $Assembly $ReadDir/"$Strain"_concatenated_reads_filtered.fastq $OutDir/nanopolish
+  done
+```
+
+```bash
+  for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=$(dirname $Assembly)/nanopolish
+    RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq)
+    AlignedReads=$(ls $OutDir/reads.sorted.bam)
+    Ploidy=1
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers
+    sbatch $ProgDir/nanopolish_variants.sh $Assembly $RawReads $AlignedReads $Ploidy $OutDir/variants
+  done
+```
+
+```bash
+  for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta); do
+    Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+    Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=$(dirname $Assembly)/nanopolish
+    RawReads=$(ls raw_dna/nanopolish/$Organism/$Strain/"$Strain"_concatenated_reads_filtered.fastq)
+    AlignedReads=$(ls $OutDir/reads.sorted.bam)
+    Ploidy=1
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers
+    sbatch $ProgDir/nanopolish_variants.sh $Assembly $RawReads $AlignedReads $Ploidy $OutDir/variants
+  done
+```
+
+
+
+
+
+
+
+
+```bash
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+
+```bash
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+touch tmp.txt
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/racon_round_10.fasta); do
+OutDir=$(dirname $Assembly)
+$ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_flye_racon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+```bash
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | sed 's/_minion//g')
+IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+TrimF2_Read=$(ls $IlluminaDir/F/FvenWT_S2_L001_R1_001_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/FvenWT_S2_L001_R2_001_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/FvenWT_S3_L001_R1_001_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/FvenWT_S3_L001_R2_001_trim.fq.gz | head -n3 | tail -n1);
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)
+Iterations=10
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
+sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+```
