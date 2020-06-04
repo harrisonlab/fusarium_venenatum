@@ -662,12 +662,37 @@ Ploidy=1
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers
 sbatch $ProgDir/nanopolish_variants2.sh $Assembly $RawReads $AlignedReads $Ploidy $OutDir/variants
 done
+
+
+faix error
+nanopolish_makerange.py assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta | parallel --results nanopolish.results -P 8 \
+nanopolish variants --consensus -o polished.{1}.vcf -w {1} -r raw_dna/nanopolish/F.venenatum/WT_minion/WT_minion_concatenated_reads_filtered.fastq \
+--ploidy 1 \
+--max-haplotypes 100000 \
+--fix-homopolymers \
+--min-candidate-frequency 0.2 \
+-b assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/reads.sorted.bam \
+-g assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta -t 4
+
 ```
+nanopolish vcf2fasta -g assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/variants/polished* > polished_genome.fa
 
+```bash
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta); do
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+OutDir=assembly/miniasm/$Organism/$Strain/nanopolish
+mkdir -p $OutDir
+# cat "" > $OutDir/"$Strain"_nanoplish.fa
+InDir=$(dirname $Assembly)
+NanoPolishDir=/home/armita/prog/nanopolish/nanopolish/scripts
+python $NanoPolishDir/nanopolish_merge.py $InDir/*:*-*/*.fa > $OutDir/"$Strain"_nanoplish.fa
 
-
-
-
+echo "" > tmp.txt
+ProgDir=~/git_repos/emr_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
+$ProgDir/remove_contaminants.py --keep_mitochondria --inp $OutDir/"$Strain"_nanoplish.fa --out $OutDir/"$Strain"_nanoplish_min_500bp_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+```
 
 
 
