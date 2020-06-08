@@ -666,6 +666,14 @@ done
 
 faix error
 nanopolish_makerange.py assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta | parallel --results nanopolish.results -P 8 \
+nanopolish variants --consensus -o polished.contig_1:0-50200.vcf -w contig_1:0-50200 -r raw_dna/nanopolish/F.venenatum/WT_minion/WT_minion_concatenated_reads_filtered.fastq \
+--ploidy 1 \
+--max-haplotypes 100000 \
+--fix-homopolymers \
+--min-candidate-frequency 0.2 \
+-b assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/reads.sorted.bam \
+-g assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta -t 4
+
 nanopolish variants --consensus -o polished.{1}.vcf -w {1} -r raw_dna/nanopolish/F.venenatum/WT_minion/WT_minion_concatenated_reads_filtered.fastq \
 --ploidy 1 \
 --max-haplotypes 100000 \
@@ -674,8 +682,9 @@ nanopolish variants --consensus -o polished.{1}.vcf -w {1} -r raw_dna/nanopolish
 -b assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/reads.sorted.bam \
 -g assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta -t 4
 
+
 ```
-nanopolish vcf2fasta -g assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/variants/polished* > polished_genome.fa
+nanopolish vcf2fasta -g assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/variants/polished* > polished_genome.fa
 
 ```bash
 for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta); do
@@ -719,9 +728,9 @@ done
 rm tmp.txt
 ```
 ```bash
-for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
-Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev | sed 's/_minion//g')
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa); do
+Organism=$(echo $Assembly | rev | cut -f6 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f5 -d '/' | rev | sed 's/_minion//g')
 IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
 echo $Strain
 echo $Organism
@@ -737,5 +746,96 @@ OutDir=$(dirname $Assembly)
 Iterations=10
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
 sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+```
+
+
+nanopolish variants --consensus -o polished.contig_1:0-50200.vcf -w contig_1:0-50200 -r raw_dna/nanopolish/F.venenatum/WT_minion/WT_minion_concatenated_reads_filtered.fastq \
+--ploidy 1 \
+--max-haplotypes 100000 \
+--fix-homopolymers \
+--min-candidate-frequency 0.2 \
+-b assembly/miniasm/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/reads.sorted.bam \
+-g assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta -t 4
+
+
+nanopolish vcf2fasta -g assembly/miniasm/F.venenatum/WT_minion/racon_10/WT_miniasm_racon10_renamed.fasta assembly/miniasm/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/variants/polished* > polished_miniasm_genome.fa
+
+
+```bash
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_miniasm_genome.fa); do
+Organism=$(echo $Assembly | rev | cut -f6 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f5 -d '/' | rev | sed 's/_minion//g')
+IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+TrimF2_Read=$(ls $IlluminaDir/F/FvenWT_S2_L001_R1_001_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/FvenWT_S2_L001_R2_001_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/FvenWT_S3_L001_R1_001_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/FvenWT_S3_L001_R2_001_trim.fq.gz | head -n3 | tail -n1);
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)
+Iterations=10
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
+sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+```
+
+
+nanopolish variants --consensus -o polished.contig_1:0-50200.vcf -w contig_1:0-50200 -r raw_dna/nanopolish/F.venenatum/WT_minion/WT_minion_concatenated_reads_filtered.fastq \
+--ploidy 1 \
+--max-haplotypes 100000 \
+--fix-homopolymers \
+--min-candidate-frequency 0.2 \
+-b assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/reads.sorted.bam \
+-g assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta -t 4
+
+
+nanopolish vcf2fasta -g assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/variants/polished* > polished_SMARTdenovo_genome.fa
+
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/polished_SMARTdenovo_genome.fa); do
+Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev | sed 's/_minion//g')
+IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+TrimF2_Read=$(ls $IlluminaDir/F/FvenWT_S2_L001_R1_001_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/FvenWT_S2_L001_R2_001_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/FvenWT_S3_L001_R1_001_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/FvenWT_S3_L001_R2_001_trim.fq.gz | head -n3 | tail -n1);
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)
+Iterations=10
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
+sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+```
+
+
+
+```bash
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/nanopolish/*genome.fa); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+```bash
+# Python 2.7 is needed to install Quast
+ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/*genome.fa); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
 done
 ```
