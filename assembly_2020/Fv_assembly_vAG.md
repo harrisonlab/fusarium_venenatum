@@ -797,9 +797,9 @@ nanopolish variants --consensus -o polished.contig_1:0-50200.vcf -w contig_1:0-5
 nanopolish vcf2fasta -g assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/variants/polished* > polished_SMARTdenovo_genome.fa
 
 ```bash
-for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/polished_SMARTdenovo_genome.fa); do
-Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev | sed 's/_minion//g')
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa); do
+Organism=$(echo $Assembly | rev | cut -f6 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f5 -d '/' | rev | sed 's/_minion//g')
 IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
 echo $Strain
 echo $Organism
@@ -811,7 +811,7 @@ echo $TrimF2_Read
 echo $TrimR2_Read
 echo $TrimF3_Read
 echo $TrimR3_Read
-OutDir=$(dirname $Assembly)
+OutDir=$(dirname $Assembly)/pilon
 Iterations=10
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
 sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
@@ -837,5 +837,210 @@ ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
 for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/*genome.fa); do
 OutDir=$(dirname $Assembly)
 sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
+done
+```
+
+```bash
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+```bash
+# Python 2.7 is needed to install Quast
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/WT_flye_racon10_renamed.fasta); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/quast.sh $Assembly $OutDir
+done
+```
+```bash
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd9
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+```bash
+# Python 2.7 is needed to install Quast
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/quast.sh $Assembly $OutDir
+done
+```
+
+```bash
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/assembly.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+
+busco -o test_busco -i assembly/flye/F.venenatum/WT_minion/assembly.fasta -l /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9 -m geno -c 8 -sp fusarium_graminearum
+
+busco -o nanopolished_flye -i assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa -l /projects/dbBusco/sordariomycetes_odb10 -m geno -c 8 --augustus_species fusarium_graminearum
+
+
+run_BUSCO.py -o nanopolished_flye -i assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa -l /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9 -m geno -c 8 --species fusarium_graminearum 
+
+conda install -c bioconda -c conda-forge busco=4.0.6
+```
+
+```bash
+for Assembly in $(ls assembly/previous_versions/F.venenatum/WT_minion/WT_albacore_v2_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/pilon/WT_miniasm_pilon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+touch tmp.txt
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/pilon_10.fasta); do
+  OutDir=$(dirname $Assembly)
+  $ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_miniasm_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/polished_SMARTdenovo_genome.fa); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/medaka/medaka/consensus.fasta); do
+Organism=$(echo $Assembly | rev | cut -f6 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f5 -d '/' | rev | sed 's/_minion//g')
+IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/$Organism/$Strain)
+echo $Strain
+echo $Organism
+TrimF2_Read=$(ls $IlluminaDir/F/FvenWT_S2_L001_R1_001_trim.fq.gz | head -n2 | tail -n1);
+TrimR2_Read=$(ls $IlluminaDir/R/FvenWT_S2_L001_R2_001_trim.fq.gz | head -n2 | tail -n1);
+TrimF3_Read=$(ls $IlluminaDir/F/FvenWT_S3_L001_R1_001_trim.fq.gz | head -n3 | tail -n1);
+TrimR3_Read=$(ls $IlluminaDir/R/FvenWT_S3_L001_R2_001_trim.fq.gz | head -n3 | tail -n1);
+echo $TrimF2_Read
+echo $TrimR2_Read
+echo $TrimF3_Read
+echo $TrimR3_Read
+OutDir=$(dirname $Assembly)/pilon
+Iterations=10
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
+sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
+done
+
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/medaka/medaka/consensus.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/medaka/medaka/consensus.fasta); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/quast.sh $Assembly $OutDir
+
+```
+
+```bash
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/pilon/WT_miniasm_pilon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+```bash
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+touch tmp.txt
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/pilon/pilon_10.fasta); do
+OutDir=$(dirname $Assembly)
+$ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_SMARTdenovo_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+```bash
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+touch tmp.txt
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/pilon/pilon_10.fasta); do
+OutDir=$(dirname $Assembly)
+$ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_flye_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+```bash
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/pilon/WT_flye_pilon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+```bash
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/pilon/WT_SMARTdenovo_pilon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+
+```bash
+# Python 2.7 is needed to install Quast
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/pilon/WT_SMARTdenovo_pilon10_renamed.fasta); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/quast.sh $Assembly $OutDir
 done
 ```
