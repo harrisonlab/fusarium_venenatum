@@ -1044,3 +1044,52 @@ OutDir=$(dirname $Assembly)
 sbatch $ProgDir/quast.sh $Assembly $OutDir
 done
 ```
+
+
+```bash
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+touch tmp.txt
+for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/pilon_10.fasta); do
+OutDir=$(dirname $Assembly)
+$ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_SMARTdenovo_medaka_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+touch tmp.txt
+for Assembly in $(ls assembly/miniasm/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/pilon_10.fasta); do
+OutDir=$(dirname $Assembly)
+$ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_miniasm_medaka_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+touch tmp.txt
+for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/pilon_10.fasta); do
+OutDir=$(dirname $Assembly)
+$ProgDir/remove_contaminants.py --inp $Assembly --out $OutDir/WT_flye_medaka_pilon10_renamed.fasta --coord_file tmp.txt > $OutDir/log.txt
+done
+rm tmp.txt
+```
+
+```bash
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/*_medaka_pilon10_renamed.fasta); do
+Strain=WT_minion
+Organism=F.venenatum
+echo "$Organism - $Strain"
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
+OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
+sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+done
+```
+
+
+```bash
+# Python 2.7 is needed to install Quast
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
+for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/*_medaka_pilon10_renamed.fasta); do
+OutDir=$(dirname $Assembly)
+sbatch $ProgDir/quast.sh $Assembly $OutDir
+done
+```
