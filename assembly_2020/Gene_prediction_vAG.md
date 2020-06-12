@@ -13,8 +13,8 @@ conda activate general_tools
 
 ```bash
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Repeat_masking
-BestAssembly=assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/pilon/WT_SMARTdenovo_pilon10_renamed.fasta
-OutDir=repeat_masked/F.venenatum/WT_minion/SMARTdenovo
+BestAssembly=assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/WT_SMARTdenovo_medaka_pilon10_renamed.fasta
+OutDir=repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka
 sbatch $ProgDir/rep_modeling.sh $BestAssembly $OutDir
 sbatch $ProgDir/transposonPSI.sh $BestAssembly $OutDir
 ```
@@ -25,7 +25,7 @@ repeatmasker / repeatmodeller softmasked and hardmasked files.
 
 
 ```bash
-for File in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/*_contigs_softmasked.fa); do
+for File in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked.fa); do
 OutDir=$(dirname $File)
 TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
 OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
@@ -51,12 +51,13 @@ conda install star
 ### Typical run
 
 ```bash
-for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/*_contigs_unmasked.fa)
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa)
 do
-Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev) 
-Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev) 
+Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
+echo $Assembly
 echo "$Organism - $Strain"
-for FileF in $(ls -d ../oldhome/groups/harrisonlab/project_files/quorn/filtered/WTCHG_258646_224.1.fq)
+for FileF in $(ls -d ../oldhome/groups/harrisonlab/project_files/quorn/filtered/WTCHG_259732_224.1.fq)
 do
 FileR=$(echo $FileF | sed 's&/F/&/R/&g'| sed 's/1.fq/2.fq/g')
 echo $FileF
@@ -64,7 +65,7 @@ echo $FileR
 #Timepoint=$(echo $FileF | rev | cut -d '/' -f3 | rev)
 #echo "$Timepoint"
 Sample_Name=$(echo $FileF | rev | cut -d '/' -f1 | rev | sed 's/.1.fq//g')
-OutDir=alignment/star/$Organism/$Strain/$Sample_Name
+OutDir=alignment/star/$Organism/$Strain/medaka_assembly/$Sample_Name
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_aligners
 sbatch $ProgDir/star.sh $Assembly $FileF $FileR $OutDir
 done
@@ -74,15 +75,17 @@ done
 If multiple RNAseq samples are used, alignment outputs can be concatenated using samtools. 
 
 ```bash
-  Strain="Strain name"
-  Organism="Organism name"
-  mkdir -p alignment/star/$Organism/$Strain/$Timepoint/concatenated # e.g.
-  samtools merge -f alignment/star/$Organism/$Strain/$Timepoint/concatenated/concatenated.bam \
-  alignment/star/$Organism/$Strain/$Timepoint/"Sample_1"/star_aligmentAligned.sorted.out.bam \
-  alignment/star/$Organism/$Strain/$Timepoint/"Sample_2"/star_aligmentAligned.sorted.out.bam \
-  alignment/star/$Organism/$Strain/$Timepoint/"Sample_3"/star_aligmentAligned.sorted.out.bam
-```
+# For all alignments
+BamFiles=$(ls alignment/star/F.venenatum/WT_minion/medaka_assembly/*/*.sorted.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=/data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated
+mkdir -p $OutDir
+samtools merge -f $OutDir/concatenated.bam $BamFiles
 
+BamFiles=$(ls ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/alignment/star/F.venenatum/WT/treatment/*/*.sortedByCoord.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=/data/scratch/gomeza/fusarium_venenatum/previous_alignment/star/F.venenatum/WT/concatenated
+mkdir -p $OutDir
+samtools merge -f $OutDir/concatenated.bam $BamFiles
+```
 
 # Gene prediction 
 
@@ -99,9 +102,20 @@ Braker requires the instalation of multiple perl libraries, Augustus and Genemar
 ```bash
 conda activate gene_pred # e.g.
 
-  for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev) 
-    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev) 
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+OutDir=gene_pred/braker/$Organism/$Strain
+AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated.bam
+GeneModelName="$Organism"_"$Strain"_braker_medaka
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
+done
+
+    for Assembly in $(ls assembly/previous_versions/F.venenatum/WT/WT_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f2 | rev) 
+    Organism=$(echo $Assembly | rev | cut -d '/' -f3 | rev)
     echo "$Organism - $Strain"
     OutDir=gene_pred/braker/$Organism/$Strain
     AcceptedHits=path/to/your/spliced/aligments/files/*_aligmentAligned.sortedByCoord.out.bam # STAR output, see Genome_aligners folder
@@ -145,7 +159,7 @@ vPATH=${PATH}:/data/scratch/gomeza/prog/signalp/signalp-5.0b/bin
 #### Stringtie RNA-seq alignments assembler
 
 ```bash
-  for Assembly in $(ls path/to/unmasked/genome/*_contigs_unmasked.fa); do
+  for Assembly in $(ls assembly/previous_versions/F.venenatum/WT/*_contigs_unmasked.fa); do
     Strain=$(echo $Assembly| rev | cut -d '/' -f5 | rev) # Edit to set your ouput directory
     Organism=$(echo $Assembly| rev | cut -d '/' -f6 | rev) # Edit to set your ouput directory
     echo "$Organism - $Strain"
