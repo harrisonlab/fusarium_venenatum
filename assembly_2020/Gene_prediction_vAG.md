@@ -85,6 +85,18 @@ BamFiles=$(ls ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/ali
 OutDir=/data/scratch/gomeza/fusarium_venenatum/previous_alignment/star/F.venenatum/WT/concatenated
 mkdir -p $OutDir
 samtools merge -f $OutDir/concatenated.bam $BamFiles
+
+# One block
+BamFiles=$(ls alignment/star/F.venenatum/WT_minion/medaka_assembly/Rep1/*/*.sorted.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated
+mkdir -p $OutDir
+samtools merge -f $OutDir/concatenated_258646_1rep.bam $BamFiles
+
+# One group
+BamFiles=$(ls alignment/star/F.venenatum/WT_minion/medaka_assembly/WTCHG_258647*/*.sorted.out.bam | tr -d '\n' | sed 's/.bam/.bam /g')
+OutDir=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated_258647
+mkdir -p $OutDir
+samtools merge -f $OutDir/concatenated_258647.bam $BamFiles
 ```
 
 # Gene prediction 
@@ -108,22 +120,33 @@ Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 OutDir=gene_pred/braker/$Organism/$Strain
 AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated.bam
-GeneModelName="$Organism"_"$Strain"_braker_medaka
+GeneModelName="$Organism"_"$Strain"_braker_all
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
 sbatch $ProgDir/braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
 done
 
-    for Assembly in $(ls assembly/previous_versions/F.venenatum/WT/WT_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f2 | rev) 
-    Organism=$(echo $Assembly | rev | cut -d '/' -f3 | rev)
-    echo "$Organism - $Strain"
-    OutDir=gene_pred/braker/$Organism/$Strain
-    AcceptedHits=path/to/your/spliced/aligments/files/*_aligmentAligned.sortedByCoord.out.bam # STAR output, see Genome_aligners folder
-    #AcceptedHits=alignment/concatenated.bam # Concatenatented alignment files can be used
-    GeneModelName="$Organism"_"$Strain"_braker 
-    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-    sbatch $ProgDir/braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
-  done
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev) 
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+OutDir=gene_pred/braker/$Organism/$Strain/Rep1
+AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated_258646_1rep.bam
+GeneModelName="$Organism"_"$Strain"_braker_medaka_rep1
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/braker_fungi_v2.sh $Assembly $OutDir $AcceptedHits $GeneModelName
+done
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly | rev | cut -d '/' -f5 | rev)
+echo "$Organism - $Strain"
+OutDir=gene_pred/braker/$Organism/$Strain/group_47
+AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated_258647/concatenated_258647.bam
+GeneModelName="$Organism"_"$Strain"_braker_medaka_47
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/braker_fungi_v2.sh $Assembly $OutDir $AcceptedHits $GeneModelName
+done
+
 ```
 
 
@@ -159,16 +182,73 @@ vPATH=${PATH}:/data/scratch/gomeza/prog/signalp/signalp-5.0b/bin
 #### Stringtie RNA-seq alignments assembler
 
 ```bash
-  for Assembly in $(ls assembly/previous_versions/F.venenatum/WT/*_contigs_unmasked.fa); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f5 | rev) # Edit to set your ouput directory
-    Organism=$(echo $Assembly| rev | cut -d '/' -f6 | rev) # Edit to set your ouput directory
-    echo "$Organism - $Strain"
-    OutDir=gene_pred/stringtie/$Organism/$Strain/concatenated_prelim
-    mkdir -p $OutDir
-    AcceptedHits=path/to/your/spliced/aligments/files.bam
-    ProgDir=/home/gomeza/git_repos/emr_repos/tools/seq_tools/RNAseq
-    qbatch $ProgDir/stringties.sh $AcceptedHits $OutDir
-   done
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+echo "$Organism - $Strain"
+OutDir=gene_pred/stringtie/$Organism/$Strain/concatenated_prelim
+mkdir -p $OutDir
+AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated.bam
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/stringtie.sh $AcceptedHits $OutDir
+done
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+echo "$Organism - $Strain"
+OutDir=gene_pred/stringtie/$Organism/$Strain/concatenated_prelim_Rep1
+mkdir -p $OutDir
+AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated_258646_1rep.bam
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/stringtie.sh $AcceptedHits $OutDir
+done
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+echo "$Organism - $Strain"
+OutDir=gene_pred/stringtie/$Organism/$Strain/concatenated_prelim_47
+mkdir -p $OutDir
+AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated_258647/concatenated_258647.bam
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/stringtie.sh $AcceptedHits $OutDir
+done
+
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+echo "$Organism - $Strain"
+OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated_prelim_47
+mkdir -p $OutDir
+AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated_258647/concatenated_258647.bam
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/cufflinks.sh $AcceptedHits $OutDir
+done
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+echo "$Organism - $Strain"
+OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated_prelim_all
+mkdir -p $OutDir
+AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated.bam
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/cufflinks2.sh $AcceptedHits $OutDir
+done
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+echo "$Organism - $Strain"
+OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated_prelim_Rep1
+mkdir -p $OutDir
+AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated_258646_1rep.bam
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/cufflinks2.sh $AcceptedHits $OutDir
+done
+
 ```
 
 
@@ -177,16 +257,27 @@ vPATH=${PATH}:/data/scratch/gomeza/prog/signalp/signalp-5.0b/bin
 Note: run_CQ-PM_stranded.sh and run_CQ-PM_unstranded.sh scripts are included in cndigquarry scripts are used to run CQ pathogen mode using signalp 4.1. The script in this folder was edited to use signalp5. 
 
 ```bash
-  for Assembly in $(ls path/to/unmasked/genome/*_contigs_unmasked.fa); do
-    Strain=$(echo $Assembly| rev | cut -d '/' -f5 | rev) # Edit to set your ouput directory
-    Organism=$(echo $Assembly| rev | cut -d '/' -f6 | rev) # Edit to set your ouput directory
+  for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+    Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev)
     echo "$Organism - $Strain"
-    OutDir=gene_pred/codingquary/$Organism/$Strain/
+    OutDir=gene_pred/codingquary/$Organism/$Strain/Rep1
     mkdir -p $OutDir
-    GTF=path/to/RNAseq/alignment/assembly/*.gtf # GFT file from stringtie/cufflinks output. See Genome-guided_assemblers scripts
+    GTF=gene_pred/stringtie/F.venenatum/WT_minion/concatenated_prelim_Rep1/out.gtf
     ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
     sbatch $ProgDir/codingquarry.sh $Assembly $GTF $OutDir
   done
+
+  for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+  Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev)
+  echo "$Organism - $Strain"
+  OutDir=gene_pred/codingquary/$Organism/$Strain/Rep1_sig4
+  mkdir -p $OutDir
+  GTF=gene_pred/stringtie/F.venenatum/WT_minion/concatenated_prelim_Rep1/out.gtf
+  ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+  sbatch $ProgDir/codingquarry2.sh $Assembly $GTF $OutDir
+done
 ```
 
 #### Add additional transcripts to Braker gene models.
@@ -199,61 +290,61 @@ Additional transcripts predicted by CodingQuarry are added to the final gene mod
   # Install the required libraries (if any) using cpanm
   # cpanm Bio::Perl
 
-  BrakerGff=$(ls path/to/braker/gene/models/augustus.hints.gff3)
-	Strain=$(echo $BrakerGff| rev | cut -d '/' -f2 | rev)
-	Organism=$(echo $BrakerGff | rev | cut -d '/' -f3 | rev)
-	echo "$Organism - $Strain"
-	Assembly=$(ls path/to/softmasked/genome/assembly/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
-	CodingQuarryGff=path/to/codingquarry/gff3/$Organism/$Strain/out/PredictedPass.gff3
-	PGNGff=path/to/codingquarry/pathogen/mode/gff3/$Organism/$Strain/out/PGN_predictedPass.gff3
-	AddDir=gene_pred/codingquary/$Organism/$Strain/additional # Additional transcripts directory
-	FinalDir=gene_pred/codingquary/$Organism/$Strain/final # Final directory
-	AddGenesList=$AddDir/additional_genes.txt
-	AddGenesGff=$AddDir/additional_genes.gff
-	FinalGff=$AddDir/combined_genes.gff
-	mkdir -p $AddDir
-	mkdir -p $FinalDir
+BrakerGff=gene_pred/braker/F.venenatum/WT_minion/Rep1/augustus.hints.gff3
+Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+CodingQuarryGff=gene_pred/codingquary/F.venenatum/WT_minion/Rep1_sig4/out/PredictedPass.gff3
+PGNGff=gene_pred/codingquary/F.venenatum/WT_minion/Rep1_sig4/out/PGN_predictedPass.gff3
+AddDir=gene_pred/codingquary/$Organism/$Strain/Rep1_sig4/additional
+FinalDir=gene_pred/codingquary/$Organism/$Strain/Rep1_sig4/final
+AddGenesList=$AddDir/additional_genes.txt
+AddGenesGff=$AddDir/additional_genes.gff
+FinalGff=$AddDir/combined_genes.gff
+mkdir -p $AddDir
+mkdir -p $FinalDir
 
   # Create a list with the additional transcripts in CondingQuarry gff (and CQPM) vs Braker gene models
-	bedtools intersect -v -a $CodingQuaryGff -b $BrakerGff | grep 'gene'| cut -f2 -d'=' | cut -f1 -d';' > $AddGenesList
-	bedtools intersect -v -a $PGNGff -b $BrakerGff | grep 'gene'| cut -f2 -d'=' | cut -f1 -d';' >> $AddGenesList
+bedtools intersect -v -a $CodingQuarryGff -b $BrakerGff | grep 'gene'| cut -f2 -d'=' | cut -f1 -d';' > $AddGenesList
+bedtools intersect -v -a $PGNGff -b $BrakerGff | grep 'gene'| cut -f2 -d'=' | cut -f1 -d';' >> $AddGenesList
   
   # Creat Gff file with the additional transcripts
-	ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-	$ProgDir/gene_list_to_gff.pl $AddGenesList $CodingQuaryGff CodingQuarry_v2.0 ID CodingQuary > $AddGenesGff
-	$ProgDir/gene_list_to_gff.pl $AddGenesList $PGNGff PGNCodingQuarry_v2.0 ID CodingQuary >> $AddGenesGff
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+$ProgDir/gene_list_to_gff.pl $AddGenesList $CodingQuaryGff CodingQuarry_v2.0 ID CodingQuary > $AddGenesGff
+$ProgDir/gene_list_to_gff.pl $AddGenesList $PGNGff PGNCodingQuarry_v2.0 ID CodingQuary >> $AddGenesGff
 	
   # Create a final Gff file with gene features
 	$ProgDir/add_CodingQuary_features.pl $AddGenesGff $Assembly > $FinalDir/final_genes_CodingQuary.gff3
 
   # Create fasta files from each gene feature in the CodingQuarry gff3
-	$ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_CodingQuary.gff3 $FinalDir/final_genes_CodingQuary
+$ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_CodingQuary.gff3 $FinalDir/final_genes_CodingQuary
 
   # Create fasta files from each gene feature in the Braker gff3
-	cp $BrakerGff $FinalDir/final_genes_Braker.gff3
-  $ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
+cp $BrakerGff $FinalDir/final_genes_Braker.gff3
+$ProgDir/gff2fasta.pl $Assembly $FinalDir/final_genes_Braker.gff3 $FinalDir/final_genes_Braker
 
   # Combine both fasta files
-	cat $FinalDir/final_genes_Braker.pep.fasta $FinalDir/final_genes_CodingQuary.pep.fasta | sed -r 's/\*/X/g' > $FinalDir/final_genes_combined.pep.fasta
-	cat $FinalDir/final_genes_Braker.cdna.fasta $FinalDir/final_genes_CodingQuary.cdna.fasta > $FinalDir/final_genes_combined.cdna.fasta
-	cat $FinalDir/final_genes_Braker.gene.fasta $FinalDir/final_genes_CodingQuary.gene.fasta > $FinalDir/final_genes_combined.gene.fasta
-	cat $FinalDir/final_genes_Braker.upstream3000.fasta $FinalDir/final_genes_CodingQuary.upstream3000.fasta > $FinalDir/final_genes_combined.upstream3000.fasta
+cat $FinalDir/final_genes_Braker.pep.fasta $FinalDir/final_genes_CodingQuary.pep.fasta | sed -r 's/\*/X/g' > $FinalDir/final_genes_combined.pep.fasta
+cat $FinalDir/final_genes_Braker.cdna.fasta $FinalDir/final_genes_CodingQuary.cdna.fasta > $FinalDir/final_genes_combined.cdna.fasta
+cat $FinalDir/final_genes_Braker.gene.fasta $FinalDir/final_genes_CodingQuary.gene.fasta > $FinalDir/final_genes_combined.gene.fasta
+cat $FinalDir/final_genes_Braker.upstream3000.fasta $FinalDir/final_genes_CodingQuary.upstream3000.fasta > $FinalDir/final_genes_combined.upstream3000.fasta
 
   # Combine both gff3 files
-	GffBraker=$FinalDir/final_genes_CodingQuary.gff3
-	GffQuary=$FinalDir/final_genes_Braker.gff3
-	GffAppended=$FinalDir/final_genes_appended.gff3
-	cat $GffBraker $GffQuary > $GffAppended
+GffBraker=$FinalDir/final_genes_CodingQuary.gff3
+GffQuary=$FinalDir/final_genes_Braker.gff3
+GffAppended=$FinalDir/final_genes_appended.gff3
+cat $GffBraker $GffQuary > $GffAppended
 
   # Check the final number of genes
 
-	for DirPath in $(ls -d $FinalDir); do
-    echo $DirPath;
-    cat $DirPath/final_genes_Braker.pep.fasta | grep '>' | wc -l;
-    cat $DirPath/final_genes_CodingQuary.pep.fasta | grep '>' | wc -l;
-    cat $DirPath/final_genes_combined.pep.fasta | grep '>' | wc -l;
-    echo "";
-	done
+for DirPath in $(ls -d $FinalDir); do
+echo $DirPath;
+cat $DirPath/final_genes_Braker.pep.fasta | grep '>' | wc -l;
+cat $DirPath/final_genes_CodingQuary.pep.fasta | grep '>' | wc -l;
+cat $DirPath/final_genes_combined.pep.fasta | grep '>' | wc -l;
+echo "";
+done
   ```
 
   #### Remove duplicate and rename genes.
