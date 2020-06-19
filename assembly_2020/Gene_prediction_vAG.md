@@ -461,12 +461,12 @@ for Proteome in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/fin
 Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
 OutDir=gene_pred/swissprot/$Organism/$Strain
-SwissDbDir=/projects/dbUniprot/swissprot_2020_June
-SwissDbName=uniprot_sprot
+SwissDbDir=../dbUniprot/swissprot_2020_June
+SwissDbName=uniprot_sprot.db
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
 sbatch $ProgDir/sub_swissprot.sh $Proteome $OutDir $SwissDbDir $SwissDbName
 done
-
+```
 ```
 
 ## Effector genes
@@ -605,3 +605,4 @@ for File in $(ls analysis/effectorP/*/*/*_EffectorP.txt); do
   cat $EffectorP_Gff | grep -w 'gene' | wc -l
 done > tmp.txt
 ```
+
