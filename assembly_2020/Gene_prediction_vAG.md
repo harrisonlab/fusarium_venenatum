@@ -444,12 +444,12 @@ Following interproscan annotation split files were combined using the following 
 
 ```bash
   ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
-  for Proteins in $(ls path/to/the/final_genes_appended_renamed.pep.fasta); do
+  for Proteins in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
     Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
     echo $Strain
-    InterProRaw=gene_pred/interproscan/$Organism/$Strain/raw
+    InterProRaw=gene_pred/interproscan/AG_medaka_47/raw
     $ProgDir/append_interpro.sh $Proteins $InterProRaw
   done
 ```
@@ -606,3 +606,43 @@ for File in $(ls analysis/effectorP/*/*/*_EffectorP.txt); do
 done > tmp.txt
 ```
 
+
+```bash
+for AntiSmash in $(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_vAG/*appended.gbk); do
+Organism=$(echo $AntiSmash | rev | cut -f3 -d '/' | rev)
+Strain=$(echo $AntiSmash | rev | cut -f2 -d '/' | rev)
+echo "$Organism - $Strain"
+OutDir=analysis/secondary_metabolites/antismash/$Organism/$Strain
+Prefix=$OutDir/WT_antismash_results
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/antismash2gffv5.py --inp_antismash $AntiSmash --out_prefix $Prefix
+
+# Identify secondary metabolites within predicted clusters
+printf "Number of secondary metabolite detected:\t"
+cat "$Prefix"_secmet_clusters.gff | wc -l
+GeneGff=gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3
+bedtools intersect -u -a $GeneGff -b "$Prefix"_secmet_clusters.gff > "$Prefix"_secmet_genes.gff
+cat "$Prefix"_secmet_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > "$Prefix"_antismash_secmet_genes.txt
+bedtools intersect -wo -a $GeneGff -b "$Prefix"_secmet_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -e "s/;Parent=g\w+//g" | perl -p -e "s/;Notes=.*//g" > "$Prefix"_secmet_genes.tsv
+printf "Number of predicted proteins in secondary metabolite clusters:\t"
+cat "$Prefix"_secmet_genes.txt | wc -l
+printf "Number of predicted genes in secondary metabolite clusters:\t"
+cat "$Prefix"_secmet_genes.gff | grep -w 'gene' | wc -l
+done
+
+
+F) Genes with transcription factor annotations:
+A list of PFAM domains, superfamily annotations used as part of the DBD database and a further set of interproscan annotations listed by Shelest et al 2017 were made http://www.transcriptionfactor.org/index.cgi?Domain+domain:all https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5415576/
+
+  for Interpro in $(ls gene_pred/interproscan/AG_medaka_47/F.venenatum/WT_minion/WT_minion_interproscan.tsv); do
+    Organism=$(echo $Interpro | rev | cut -f3 -d '/' | rev)
+    Strain=$(echo $Interpro | rev | cut -f2 -d '/' | rev)
+    echo "$Organism - $Strain"
+    OutDir=analysis/transcription_factors/vAG/$Organism/$Strain
+    mkdir -p $OutDir
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+    $ProgDir/interpro2TFs.py --InterPro $Interpro > $OutDir/"$Strain"_TF_domains.tsv
+    echo "total number of transcription factors"
+    cat $OutDir/"$Strain"_TF_domains.tsv | cut -f1 | sort | uniq > $OutDir/"$Strain"_TF_gene_headers.txt
+    cat $OutDir/"$Strain"_TF_gene_headers.txt | wc -l
+  done
