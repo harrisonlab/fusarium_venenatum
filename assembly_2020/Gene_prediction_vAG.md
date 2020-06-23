@@ -631,6 +631,51 @@ cat "$Prefix"_secmet_genes.gff | grep -w 'gene' | wc -l
 done
 
 
+SMURF was also run to identify secondary metabolite gene clusters.
+
+Genes needed to be parsed into a specific tsv format prior to submission on the SMURF webserver.
+
+Gff=$(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3)
+OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT_minion
+mkdir -p $OutDir
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/gff2smurf.py --gff $Gff > $OutDir/WT_minion_genes_smurf.tsv
+SMURF output was received by email and downloaded to the cluster in the output directory above.
+
+Output files were parsed into gff format:
+
+  OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT
+  Prefix="WT"
+  GeneGff=gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3
+  SmurfClusters=$OutDir/Secondary-Metabolite-Clusters.txt
+  SmurfBackbone=$OutDir/Backbone-genes.txt
+  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
+  $ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
+  bedtools intersect -wo -a $GeneGff -b $OutDir/Smurf_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -i -e "s/;Parent=g\w+//g" | perl -p -i -e "s/;Notes=.*//g" > $OutDir/"$Prefix"_smurf_secmet_genes.tsv
+Total number of secondary metabolite clusters:
+
+for Assembly in $(ls repeat_masked/*/*/illumina_assembly_ncbi/*_contigs_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
+Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+OutDir=analysis/secondary_metabolites/antismash/$Organism/$Strain
+mkdir -p $OutDir
+GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
+AntismashClusters=$(ls analysis/secondary_metabolites/antismash/$Organism/$Strain/*_secmet_clusters.gff)
+SmurfClusters=$(ls analysis/secondary_metabolites/smurf/$Organism/$Strain/Smurf_clusters.gff)
+echo "Total number of Antismash clusters"
+cat $AntismashClusters | wc -l
+echo "Total number of SMURF clusters"
+cat $SmurfClusters | wc -l
+echo "number of Antismash clusters intersecting Smurf clusters"
+bedtools intersect -a $AntismashClusters -b $SmurfClusters | wc -l
+echo "number of Antismash clusters not intersecting Smurf clusters"
+bedtools intersect -v -a $AntismashClusters -b $SmurfClusters | wc -l
+echo "number of smurf clusters intersecting antismash clusters"
+bedtools intersect -a $SmurfClusters -b $AntismashClusters | wc -l
+echo "number of smurf clusters not intersecting antismash clusters"
+bedtools intersect -v -a $SmurfClusters -b $AntismashClusters | wc -l
+done
+
 F) Genes with transcription factor annotations:
 A list of PFAM domains, superfamily annotations used as part of the DBD database and a further set of interproscan annotations listed by Shelest et al 2017 were made http://www.transcriptionfactor.org/index.cgi?Domain+domain:all https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5415576/
 
@@ -646,3 +691,10 @@ A list of PFAM domains, superfamily annotations used as part of the DBD database
     cat $OutDir/"$Strain"_TF_domains.tsv | cut -f1 | sort | uniq > $OutDir/"$Strain"_TF_gene_headers.txt
     cat $OutDir/"$Strain"_TF_gene_headers.txt | wc -l
   done
+
+
+
+
+  faidx -d '|' final_genes_appended_renamed.cdna.fasta $(tr '\n' ' ' < Tri5_genes.txt ) > Tri5_genes.fasta
+
+  

@@ -32,6 +32,19 @@ done
 
 >g6431.t1
 
+g6427.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single 
+g6428.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+g6429.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+g6430.t1        contig_2        terpene contig_2_Cluster_10;Kind=single
+g6431.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+g6432.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+g6433.t1        contig_2        terpene contig_2_Cluster_10;Kind=single
+g6434.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+g6435.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+g6436.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+
+
+
 ```
 
 
