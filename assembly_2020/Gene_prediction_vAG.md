@@ -322,6 +322,24 @@ Note: run_CQ-PM_stranded.sh and run_CQ-PM_unstranded.sh scripts are included in 
   #sbatch $ProgDir/codingquarry2.sh $Assembly $GTF $OutDir
 #done
 ```
+
+## Codingquarry 
+
+```bash
+conda activate antismash_py27
+
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+  Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+  Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
+  echo "$Organism - $Strain"
+  OutDir=gene_pred/codingquarry/$Organism/$Strain
+  mkdir -p $OutDir
+  GTF=gene_pred/cufflinks/F.venenatum/WT_minion/concatenated_prelim_vAG/transcripts.gtf
+  ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+  sbatch $ProgDir/codingquarry2.sh $Assembly $GTF $OutDir
+done
+```
+
 #### Add additional transcripts to Braker gene models.
 
 
