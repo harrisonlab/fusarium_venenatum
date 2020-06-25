@@ -176,6 +176,20 @@ conda activate gene_pred
 #done
 ```
 
+## Braker
+
+```bash
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
+Organism=$(echo $Assembly | rev | cut -d '/' -f5 | rev)
+echo "$Organism - $Strain"
+OutDir=gene_pred/braker/$Organism/$Strain/All_vAG
+AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/concatenated/concatenated.bam
+GeneModelName="$Organism"_"$Strain"_braker
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
+sbatch $ProgDir/braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
+done
+```
 
 ## Genome-guided assembly and CodingQuarry
 
@@ -350,15 +364,15 @@ Additional transcripts predicted by CodingQuarry are added to the final gene mod
   # Install the required libraries (if any) using cpanm
   # cpanm Bio::Perl
 
-BrakerGff=gene_pred/braker/F.venenatum/WT_minion/group_47/augustus.hints.gff3
+BrakerGff=gene_pred/braker/F.venenatum/WT_minion/All_vAG/augustus.hints.gff3
 Strain=$(echo $BrakerGff| rev | cut -d '/' -f3 | rev)
 Organism=$(echo $BrakerGff | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
-CodingQuarryGff=gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/out/PredictedPass.gff3
-PGNGff=gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/out/PGN_predictedPass.gff3
-AddDir=gene_pred/codingquary_cuff/$Organism/$Strain/47/additional
-FinalDir=gene_pred/codingquary_cuff/$Organism/$Strain/47/final
+CodingQuarryGff=gene_pred/codingquarry/F.venenatum/WT_minion/out/PredictedPass.gff3
+PGNGff=gene_pred/codingquarry/F.venenatum/WT_minion/out/PGN_predictedPass.gff3
+AddDir=gene_pred/codingquarry/F.venenatum/WT_minion/additional
+FinalDir=gene_pred/codingquarry/F.venenatum/WT_minion/final
 AddGenesList=$AddDir/additional_genes.txt
 AddGenesGff=$AddDir/additional_genes.gff
 FinalGff=$AddDir/combined_genes.gff
@@ -408,50 +422,63 @@ done
 ```
 
 ```
-gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final
-12529
-1415
-13944
+#gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final
+#12529
+#1415
+#13944
+
+gene_pred/codingquarry/F.venenatum/WT_minion/final
+12590
+1232
+13822
 ```
 
 
   #### Remove duplicate and rename genes.
 
   ```bash
-  for GffAppended in $(ls gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended.gff3);
+  for GffAppended in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended.gff3);
   do
-    Strain=$(echo $GffAppended | rev | cut -d '/' -f4 | rev)
-    Organism=$(echo $GffAppended | rev | cut -d '/' -f5 | rev)
+    Strain=$(echo $GffAppended | rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $GffAppended | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
-    FinalDir=gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final
+    FinalDir=gene_pred/codingquarry/F.venenatum/WT_minion/final
     # Remove duplicated genes
-    GffFiltered=gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/filtered_duplicates.gff
+    GffFiltered=gene_pred/codingquarry/F.venenatum/WT_minion/final/filtered_duplicates.gff
     ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
     $ProgDir/remove_dup_features.py --inp_gff $GffAppended --out_gff $GffFiltered
     # Rename genes
-    GffRenamed=gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended_renamed.gff3
-    LogFile=gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended_renamed.log
+    GffRenamed=gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3
+    LogFile=gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.log
     $ProgDir/gff_rename_genes.py --inp_gff $GffFiltered --conversion_log $LogFile > $GffRenamed
     rm $GffFiltered
     # Create renamed fasta files from each gene feature   
     Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
-    $ProgDir/gff2fasta.pl $Assembly $GffRenamed gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended_renamed
+    $ProgDir/gff2fasta.pl $Assembly $GffRenamed gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed
     # The proteins fasta file contains * instead of Xs for stop codons, these should be changed
-    sed -i 's/\*/X/g' gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended_renamed.pep.fasta
+    sed -i 's/\*/X/g' gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta
   done 
 ```
 
 ## Busco
 
 ```bash
-  for Assembly in $(ls gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended_renamed.gene.fasta); do
+  for Fasta in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gene.fasta); do
     ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
     BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
-    OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
-    sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
+    OutDir=$(dirname $Fasta)/busco_sordariomycetes_obd10
+    sbatch $ProgDir/busco.sh $Fasta $BuscoDB $OutDir
   done
 ```
-
+```
+C:98.8%[S:98.6%,D:0.2%],F:0.8%,M:0.4%,n:3817       
+        3771    Complete BUSCOs (C)                        
+        3764    Complete and single-copy BUSCOs (S)        
+        7       Complete and duplicated BUSCOs (D)         
+        30      Fragmented BUSCOs (F)                      
+        16      Missing BUSCOs (M)                         
+        3817    Total BUSCO groups searched
+```
 ## Interproscan
 
 Interproscan was used to give gene models functional annotations.
@@ -460,14 +487,11 @@ Interproscan was used to give gene models functional annotations.
 ```bash
 # This command will split your gene fasta file and run multiple interproscan jobs.
   ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
-  for Genes in $(ls gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final/final_genes_appended_renamed.pep.fasta); do
+  for Genes in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
     echo $Genes
     $ProgDir/interproscan.sh $Genes
   done 2>&1 | tee -a interproscan_submisison.log
 ```
-
-
-
 
 Following interproscan annotation split files were combined using the following commands:
 
