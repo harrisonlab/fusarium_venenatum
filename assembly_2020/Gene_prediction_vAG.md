@@ -688,7 +688,7 @@ SMURF was also run to identify secondary metabolite gene clusters.
 
 Genes needed to be parsed into a specific tsv format prior to submission on the SMURF webserver.
 
-Gff=$(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3)
+Gff=$(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3)
 OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT_minion
 mkdir -p $OutDir
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
