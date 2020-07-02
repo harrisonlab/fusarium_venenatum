@@ -48,6 +48,8 @@ mv "$Taxon_code".fasta $WorkDir/formatted/"$Taxon_code".fasta
 
 ## using orthofinder
 
+
+
 ```bash
 
 srun --partition long --mem 200G --cpus-per-task 20 --pty bash
@@ -64,6 +66,7 @@ mkdir -p $WorkDir
 mkdir -p $WorkDir/formatted
 mkdir -p $WorkDir/goodProteins
 mkdir -p $WorkDir/badProteins  
+
 
 ### for Fv WT MiSeq genome (strain name A3/5)
 ```bash

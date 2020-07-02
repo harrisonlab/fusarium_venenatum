@@ -26,11 +26,9 @@ done
 # Cassis on all genes 
 
 ```bash
-# screen -a
-# ssh compute02
-# srun -p medium --mem=4gb --pty bash
 
-conda activate meme_suite
+# meme version 4 required
+conda activate meme_v4
 
 ProjDir=$(ls -d /projects/fusarium_venenatum)
 
@@ -47,14 +45,11 @@ cat $Genes | grep 'mRNA' | sed 's/ID=//g' | sed "s/;.*//g" | awk '{ print $9 "\t
 
 CassisTSV=cassis.tsv
 
-
-
-
 for Cluster in $(cat $AnnotTab | cut -f13 | grep 'contig' | sort -n -k3 -t'_' | sed 's/;.*//p' | uniq); do
 echo $Cluster
 mkdir $WorkDir/$Cluster
 cat $AnnotTab | cut -f1,13 | grep -w "$Cluster" | cut -f1 | grep '.t1' > $WorkDir/$Cluster/headers.txt
-for GeneID in $(cat $WorkDir/*/headers.txt); do
+for GeneID in $(cat $WorkDir/$Cluster/headers.txt); do
 echo $GeneID
 mkdir -p $WorkDir/$Cluster/$GeneID
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Promoter_analysis
@@ -64,22 +59,42 @@ while [ $Jobs -gt 60 ]; do
 sleep 5m
 printf "."
 Jobs=$(squeue -u ${USER} --noheader --array | wc -l)
-done		
+done
 printf "\n"
 sbatch $ProgDir/cassis.sh $Assembly $CassisTSV $GeneID $OutDir
 done
- 
 done
 done
+
 ```
 
-  cassis \
-     --annotation cassis.tsv \
-     --genome $Assembly \
-     --anchor g13451.t1 \
-     --dir contig_4_Cluster_9/g13459.t1 \
-     --mismatches 0 \
-     -v \
-     --prediction \
-     --num-cpus 30 \
-     | tee 2>&1 $WorkDir/$Cluster/$GeneID/${GeneID}_log.txt
+
+
+
+
+
+  
+
+```bash
+ProjDir=$(ls -d /projects/fusarium_venenatum)
+cd $ProjDir
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+echo ""
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+# if [[ $Cluster == "" ]]; then
+# Cluster="NA"
+# fi
+if $(grep -q 'No cluster prediction' $Results); then
+printf "${Cluster}\t${Anchor}\tNA\tNA\n"
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Fimo=$(ls $ClusterDir/$Anchor/$Anchor/fimo/$Best/fimo.txt)
+Motif=$(cat $Fimo | head -n2 | tail -n1 | cut -f1)
+printf "${Cluster}\t${Anchor}\t${Best}\t${Motif}\n"
+else
+printf "${Cluster}\t${Anchor}\tNA\tNA\n"
+fi
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
+done > analysis/promoters/cassis/all_genes/cassis_summary.tsv

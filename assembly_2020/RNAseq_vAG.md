@@ -21,14 +21,50 @@ done
 ```bash
 
 
-for Assembly in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
-Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev)
-Organism=$(echo $Assembly | rev | cut -d '/' -f5 | rev)
+for Assembly in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
 echo "$Organism - $Strain"
 Query=../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/analysis/genbank/g.zea_Tri5.fasta
+OutDir=analysis/blast_homology/$Organism/$Strain
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
-sbatch $ProgDir/blast_pipe.sh $Query protein $Assembly
+sbatch $ProgDir/blast_pipe.sh $Query protein $Assembly $OutDir
 done
+
+for BlastHits in $(ls analysis/blast_homology/*/*/*_homologs.csv); do
+Organism=$(echo $BlastHits | rev | cut -f3 -d '/' | rev)  
+Strain=$(echo $BlastHits | rev | cut -f2 -d '/' | rev) 
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+HitsGff=analysis/blast_homology/$Organism/$Strain/"$Strain"_homologs.gff
+Column2=BLAST_hit
+NumHits=1
+$ProgDir/blast2gff.pl $Column2 $NumHits $BlastHits > $HitsGff
+done
+
+SCRIPT_DIR=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$SCRIPT_DIR/blast_self.pl ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/analysis/genbank/g.zea_Tri5.fasta blastp > g.zea_Tri5_self.csv
+
+#-------------------------------------------------------
+# 		Step 2.		simplify hits table into homolog groups
+#-------------------------------------------------------
+
+$SCRIPT_DIR/blast_parse.pl g.zea_Tri5_self.csv > g.zea_Tri5_simplified.csv
+
+#-------------------------------------------------------
+# 		Step 3.		blast queries against genome
+#-------------------------------------------------------
+
+makeblastdb -in ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/analysis/genbank/g.zea_Tri5.fasta -input_type fasta -dbtype proteins -title exons_for_blastall -parse_seqids -out exons_for_blastall
+
+$SCRIPT_DIR/blast2csv2.pl g.zea_Tri5.fasta tblastn final_genes_appended_renamed.gene.fasta 5 > g.zea_Tri5_hits.csv
+
+#-------------------------------------------------------
+# 		Step 4.		combine the homolog group table
+#					 with the blast result table
+#-------------------------------------------------------
+
+paste -d '\t' "$QUERY"_simplified.csv <(cut -f 2- "$OUTNAME"_hits.csv) > "$OUTNAME"_homologs.csv
+
 
 >g6431.t1
 
