@@ -64,22 +64,13 @@ printf "\n"
 sbatch $ProgDir/cassis.sh $Assembly $CassisTSV $GeneID $OutDir
 done
 done
-done
-
 ```
-
-
-
-
-
-
-  
 
 ```bash
 ProjDir=$(ls -d /projects/fusarium_venenatum)
 cd $ProjDir
-for Cluster in $(ls -d analysis/promoters/cassis/all_genes/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
-ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes3/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes3/${Cluster})
 echo ""
 for Results in $(ls $ClusterDir/*/*_log.txt); do
 Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
@@ -97,4 +88,4 @@ else
 printf "${Cluster}\t${Anchor}\tNA\tNA\n"
 fi
 done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
-done > analysis/promoters/cassis/all_genes/cassis_summary.tsv
+done > analysis/promoters/cassis/all_genes3/cassis_summary.tsv
