@@ -89,3 +89,158 @@ printf "${Cluster}\t${Anchor}\tNA\tNA\n"
 fi
 done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
 done > analysis/promoters/cassis/all_genes3/cassis_summary.tsv
+
+ProjDir=$(ls -d /projects/fusarium_venenatum)
+cd $ProjDir
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes3/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes3/${Cluster})
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+if $(grep -q 'No cluster prediction' $Results); then
+continue
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Best_ed=$(echo $Best | tr -d '+' | tr -d '-')
+# Fimo=$(ls $ClusterDir/$Anchor/$Anchor/fimo/$Best/fimo.txt)
+# Motif=$(cat $Fimo | head -n2 | tail -n1 | cut -f1)
+MotifFile=$(ls $ClusterDir/$Anchor/$Anchor/meme/$Best/meme.txt)
+echo '--------------------------------------------------------------------------------'
+cat $MotifFile | awk '/position-specific probability matrix/,/expression/' | head -n-4 | sed "s/MEME-1/${Anchor}_${Best_ed}_MEME-1/g"
+echo ""
+else
+continue
+fi
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
+done > analysis/promoters/cassis/all_genes3/best_motifs_meme.txt
+```
+
+```
+Please, enter number of files to read (must be > 0):
+1
+Please, enter number of top significant motifs (must be > 0 and <= 50):
+10
+Please, enter number of best matches (must be > 0 and <= 50):
+10
+Please, select a cutoff for similarity (>= 0.5, >= 0.6, >= 0.7, >= 0.75, >= 0.8, >= 0.85, >= 0.9):
+0.8
+Please, enter number of threads (must be >= 1):
+4
+Maximum number of threads available on your machine is 24.
+This is the maximum number of threads can be allocated to run this program.
+
+Please, enter input file's location (full path, for example, C:\MyDocuments\ for Windows and /home/MyFolder/ for Linux):
+/projects/fusarium_venenatum/analysis/promoters/cassis/all_genes3/
+
+Enter input file names and formats (for example: 1). See the user manual for each format:
+
+(1) TRANSFAC
+(2) TRANSFAC-like
+(3) PSSM
+(4) Jaspar
+(5) MEME output
+(6) Consensus sequence
+(7) Sequence Alignment
+(8) Matrices (Horizonal)
+(9) Matrices (Vertical)
+(10) Unspecified
+
+Please, enter file name (in text format .txt, name without spaces):
+best_motifs_meme.txt
+Please, enter file format:
+5
+
+Enter database name by selecting a number in the list below:
+
+(1) Jaspar 2016 (All)
+(2) Jaspar 2016 (Fungi)
+(3) Jaspar 2016 (Insects)
+(4) Jaspar 2016 (Nematodes)
+(5) Jaspar 2016 (Plants)
+(6) Jaspar 2016 (Urochordates)
+(7) Jaspar 2016 (Vertebrates)
+(8) Transfac (Free version)
+(9) UniPROBE (Human)
+(10) UniPROBE (Mouse)
+(11) UniPROBE (Parasite)
+(12) UniPROBE (Worm)
+(13) UniPROBE (Yeast)
+(14) None
+
+2
+Would you like to generate motif tree? (Y or N):
+Y
+Would you like to combine similar motifs? (Y or N):
+Y
+Please, enter an output file type (Global-Only, All):
+All
+Please, enter an output file format (Text, HTML, PDF, All):
+All
+please, enter output file's location (full path, for example, C:\MyDocuments\ for Windows and /home/MyFolder/ for Linux):
+/projects/fusarium_venenatum/analysis/promoters/cassis/
+```
+
+```bash
+cd /projects/fusarium_venenatum
+mkdir analysis/promoters/cassis/all_genes3/motif_similarity
+printf "MEME version 4\n\nALPHABET= ACGT\n\nstrands: + -\n\n" > analysis/promoters/cassis/all_genes3/motif_similarity/all_motifs.txt
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes3/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes3/${Cluster})
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+if $(grep -q 'No cluster prediction' $Results); then
+continue
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Best_ed=$(echo $Best | tr -d '+' | tr -d '-')
+MotifFile=$(ls $ClusterDir/$Anchor/$Anchor/meme/$Best/meme.txt)
+cat $MotifFile | grep "^MOTIF" | grep -v "MOTIF DIAGRAM" | sed "s/MOTIF/MOTIF ${Cluster}_${Anchor}_${Best}/g" | sed "s/MEME-1\\s//g"
+cat $MotifFile | awk '/letter-probability matrix/,/---/' | head -n-1
+echo ""
+else
+continue
+fi
+done
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':(' >> analysis/promoters/cassis/all_genes3/motif_similarity/all_motifs.txt
+```
+
+```bash
+AllMotifs=$(ls analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt)
+# Create a file with the following lines
+printf "MEME version 4\n\nALPHABET= ACGT\n\nstrands: + -\n\n" > analysis/promoters/cassis/all_genes/out/best_motifs_meme.txt
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+echo "$Cluster"
+OutDir=analysis/promoters/cassis/all_genes/motif_similarity/$Cluster
+mkdir $OutDir
+cat $AllMotifs | awk "/${Cluster}/,/^$/{next}{print}" > $OutDir/all_motifs_excl_${Cluster}.txt
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+if $(grep -q 'No cluster prediction' $Results); then
+continue
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+MotifFile=$(ls $ClusterDir/$Anchor/$Anchor/meme/$Best/meme.txt)
+mkdir $OutDir/$Anchor
+tomtom -oc $OutDir/$Anchor/tomtom $MotifFile $OutDir/all_motifs_excl_${Cluster}.txt
+echo ""
+else
+continue
+fi
+done
+done
+
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/motif_similarity/contig_* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/motif_similarity/${Cluster})
+for TomTom in $(ls $ClusterDir/*/tomtom/tomtom.txt); do
+Anchor=$(echo $TomTom | rev | cut -f3 -d '/' | rev)
+cat $TomTom | cut -f1,2,4,9,10 | grep 'Cluster' | grep -v '#' | sed "s/_g.*_-[0-9]*//g" | sort | uniq | sed "s/^/$Cluster\t$Anchor\t/g"
+done
+done > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv
+cat analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv | grep 'e-' > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits_high_score.tsv
+```
+
+
+Promoters=$(ls analysis/promoters/cassis/all_genes/conti*/*/PROMOTERS/all_promoter_sequences.fasta)
+for AnchorGene in $(cat analysis/promoters/anchor_genes.txt); do
+cat $Promoters | awk "/$AnchorGene/,/^$/" | head -n-1
+done > analysis/promoters/anchor_genes.fa
