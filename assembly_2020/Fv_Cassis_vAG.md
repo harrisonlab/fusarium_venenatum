@@ -19,8 +19,6 @@ for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_gen
     ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Annotation_tables
     $ProgDir/build_annot_v1.py --gff_format gff3 --gene_gff $GeneGff --gene_fasta $GeneFasta --TFs $TFs --InterPro $InterPro --Antismash $Antismash --Swissprot $SwissProt > $OutDir/"$Strain"_noDEGs_gene_table.tsv
 done
-
-
 ```
 
 # Cassis on all genes 
@@ -45,10 +43,10 @@ cat $Genes | grep 'mRNA' | sed 's/ID=//g' | sed "s/;.*//g" | awk '{ print $9 "\t
 
 CassisTSV=cassis.tsv
 
-for Cluster in $(cat $AnnotTab | cut -f13 | grep 'contig' | sort -n -k3 -t'_' | sed 's/;.*//p' | uniq); do
+for Cluster in $(cat $AnnotTab | cut -f13 | grep 'contig' | sort -n -k3 -t'_' | sed 's/;.*//p' | uniq); do # Extract cluster names
 echo $Cluster
 mkdir $WorkDir/$Cluster
-cat $AnnotTab | cut -f1,13 | grep -w "$Cluster" | cut -f1 | grep '.t1' > $WorkDir/$Cluster/headers.txt
+cat $AnnotTab | cut -f1,13 | grep -w "$Cluster" | cut -f1 | grep '.t1' > $WorkDir/$Cluster/headers.txt # Create a headers file per cluster
 for GeneID in $(cat $WorkDir/$Cluster/headers.txt); do
 echo $GeneID
 mkdir -p $WorkDir/$Cluster/$GeneID
@@ -74,9 +72,6 @@ ClusterDir=$(ls -d analysis/promoters/cassis/all_genes3/${Cluster})
 echo ""
 for Results in $(ls $ClusterDir/*/*_log.txt); do
 Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
-# if [[ $Cluster == "" ]]; then
-# Cluster="NA"
-# fi
 if $(grep -q 'No cluster prediction' $Results); then
 printf "${Cluster}\t${Anchor}\tNA\tNA\n"
 elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
@@ -89,6 +84,10 @@ printf "${Cluster}\t${Anchor}\tNA\tNA\n"
 fi
 done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
 done > analysis/promoters/cassis/all_genes3/cassis_summary.tsv
+```
+
+```bash
+# Extract best motifs meme format
 
 ProjDir=$(ls -d /projects/fusarium_venenatum)
 cd $ProjDir
@@ -111,7 +110,32 @@ else
 continue
 fi
 done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
-done > analysis/promoters/cassis/all_genes3/best_motifs_meme.txt
+done > analysis/promoters/cassis/all_genes/best_motifs_meme.txt
+
+
+
+ProjDir=$(ls -d /projects/fusarium_venenatum)
+cd $ProjDir
+printf "MEME version 4\n\nALPHABET= ACGT\n\nstrands: + -\n\n" > analysis/promoters/cassis/all_genes/best_motifs_meme_for_mast.txt
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
+for Results in $(ls $ClusterDir/*/*_log.txt); do
+Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
+if $(grep -q 'No cluster prediction' $Results); then
+continue
+elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Best_ed=$(echo $Best | tr -d '+' | tr -d '-')
+MotifFile=$(ls $ClusterDir/$Anchor/$Anchor/meme/$Best/meme.txt)
+#echo '--------------------------------------------------------------------------------'
+cat $MotifFile | awk '/position-specific probability matrix/,/expression/' | head -n-4 | sed "s/MEME-1/${Anchor}_${Best_ed}_MEME-1/g"
+echo ""
+else
+continue
+fi
+done
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':(' >> analysis/promoters/cassis/all_genes/best_motifs_meme_for_mast.txt
+
 ```
 
 ```
@@ -179,6 +203,8 @@ please, enter output file's location (full path, for example, C:\MyDocuments\ fo
 /projects/fusarium_venenatum/analysis/promoters/cassis/
 ```
 
+Motif similarity 
+
 ```bash
 cd /projects/fusarium_venenatum
 mkdir analysis/promoters/cassis/all_genes3/motif_similarity
@@ -239,8 +265,13 @@ done > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv
 cat analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv | grep 'e-' > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits_high_score.tsv
 ```
 
-
-Promoters=$(ls analysis/promoters/cassis/all_genes/conti*/*/PROMOTERS/all_promoter_sequences.fasta)
-for AnchorGene in $(cat analysis/promoters/anchor_genes.txt); do
+```bash
+Promoters=$(ls analysis/promoters/cassis/all_genes/contig_2_Cluster_8/g6184.t1/PROMOTERS/all_promoter_sequences.fasta)
+for AnchorGene in $(cat analysis/promoters/mast/anchor_genes.txt); do
 cat $Promoters | awk "/$AnchorGene/,/^$/" | head -n-1
 done > analysis/promoters/anchor_genes.fa
+
+
+mast analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt analysis/promoters/mast/anchor_genes.fa -oc analysis/promoters/mast -comp
+
+analysis/promoters/cassis/all_genes/best_motifs_meme_for_mast.txt 
