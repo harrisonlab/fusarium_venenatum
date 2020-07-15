@@ -4,7 +4,6 @@ ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analys
 gene_table=analysis/coexpression/TPM.txt
 column_start=2
 column_end=121
-
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/WGCNA_script.r --gene_table $gene_table --out_dir $OutDir --column_start $column_start --column_end $column_end
 
 
@@ -14,3 +13,23 @@ ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analys
 max_SFT=40
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/softthreshold_power.r --out_dir $OutDir --max_SFT $max_SFT
 
+
+OutDir=analysis/coexpression
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+SFT=9
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir $OutDir --sft $SFT --min_module_size 30 --merging_threshold 0.25
+
+OutDir=analysis/coexpression
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export_genes.r --out_dir $OutDir --unmerge Y
+
+grep -E 'g6431.t1' analysis/coexpression/*/Genes_in_*
+analysis/coexpression/merged_modules/Genes_in_yellow.txt:"g6431.t1"
+analysis/coexpression/unmerged_modules/Genes_in_midnightblue.txt:"g6431.t1"
+
+3851 genes in yellow
+231 genes in midnightblue
+
+OutDir=analysis/coexpression
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export2cytoscape.r --out_dir $OutDir --module yellow
