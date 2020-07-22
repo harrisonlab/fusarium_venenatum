@@ -85,6 +85,23 @@ fi
 done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':('
 done > analysis/promoters/cassis/all_genes3/cassis_summary.tsv
 ```
+```
+Tri5 cluster
+contig_2_Cluster_10     g6427.t1        +8_-0   GRDAGGCCTRA
+contig_2_Cluster_10     g6428.t1        +7_-1   GRDAGGCCTRA
+contig_2_Cluster_10     g6429.t1        +6_-2   GRDAGGCCTRA
+contig_2_Cluster_10     g6430.t1        +6_-2   GRDAGGCCTRA
+contig_2_Cluster_10     g6431.t1        +5_-3   GRDAGGCCTRA
+contig_2_Cluster_10     g6432.t1        +4_-1   GRKAGGCCTDR
+contig_2_Cluster_10     g6433.t1        +3_-0   YYAGGCCTCYC
+contig_2_Cluster_10     g6434.t1        +2_-1   YYAGGCCTCYC
+contig_2_Cluster_10     g6435.t1        +1_-2   YYAGGCCTCYC
+contig_2_Cluster_10     g6436.t1        +0_-3   YYAGGCCTCYC
+```
+
+cat analysis/annotation_tables/F.venenatum/WT_minion/WT_minion_noDEGs_gene_table.tsv | grep 'Cluster' | cut -f1,11,13 | grep -v  "\s$"
+
+
 
 ```bash
 # Extract best motifs meme format
@@ -263,15 +280,96 @@ cat $TomTom | cut -f1,2,4,9,10 | grep 'Cluster' | grep -v '#' | sed "s/_g.*_-[0-
 done
 done > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv
 cat analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits.tsv | grep 'e-' > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits_high_score.tsv
+
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/motif_similarity/contig_* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/motif_similarity/${Cluster})
+for TomTom in $(ls $ClusterDir/*/tomtom/tomtom.txt); do
+Anchor=$(echo $TomTom | rev | cut -f3 -d '/' | rev)
+cat $TomTom | grep 'Cluster' | grep -v '#' | sed "s/_g.*_-[0-9]*//g" | sort | uniq | sed "s/^/$Cluster\t$Anchor\t/g"
+done
+done > analysis/promoters/cassis/all_genes/motif_similarity/tomtom_hits_full.tsv
 ```
 
+
+
+MAST
 ```bash
+cd analysis/promoters/mast
+/data/scratch/gomeza/prog/smips WT_minion_interproscan.tsv 
+cat WT_minion_interproscan.tsv.anchor_genes.csv |  grep -v "^#" | cut -f1 > anchor_genes.txt
+
 Promoters=$(ls analysis/promoters/cassis/all_genes/contig_2_Cluster_8/g6184.t1/PROMOTERS/all_promoter_sequences.fasta)
 for AnchorGene in $(cat analysis/promoters/mast/anchor_genes.txt); do
 cat $Promoters | awk "/$AnchorGene/,/^$/" | head -n-1
 done > analysis/promoters/anchor_genes.fa
+```
+
+
 
 
 mast analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt analysis/promoters/mast/anchor_genes.fa -oc analysis/promoters/mast -comp
 
 analysis/promoters/cassis/all_genes/best_motifs_meme_for_mast.txt 
+
+-----------------
+
+Extract promotor regions:
+Promotor regions upstream of all genes were extracted:
+
+```bash
+for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3); do
+Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
+Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+OutDir=analysis/meme/promotor_regions/$Organism/$Strain
+mkdir -p $OutDir
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Promoter_analysis
+$ProgDir/extract_promotor.pl --fasta $Assembly --gff $GeneGff --prefix $OutDir/${Strain} --ranges 1:100 101:200 201:300 301:400 401:500
+done
+```
+Extract Tri5 genes promotors regions
+
+```bash
+
+cat gene_pred/codingquarry/F.venenatum/WT_minion/final/Tri5_genes.txt | sed "s/.t.//g" > analysis/meme/promotor_regions/F.venenatum/WT_minion/Tri5_headers.txt
+
+OutDir=analysis/meme/promotor_regions/F.venenatum/WT_minion/tri
+mkdir -p $OutDir
+
+for Upstream in $(ls analysis/meme/promotor_regions/F.venenatum/WT_minion/*.upstream*.fasta); do
+Region=$(basename ${Upstream%.fasta} | sed 's/promotor_regions.upstream//g')
+mkdir $OutDir/$Region
+RegionPromotors=$OutDir/$Region/F.venenatum_WT_${Region}_promotors.fa
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/extract_from_fasta.py --fasta $Upstream --headers analysis/meme/promotor_regions/F.venenatum/WT_minion/Tri5_headers.txt > $RegionPromotors
+done
+```
+
+```bash
+srun --partition medium --mem 10G --cpus-per-task 10 --pty bash
+conda activate meme_v4
+
+for Query in $(ls analysis/meme/promotor_regions/F.venenatum/WT_minion/tri/*/*_promotors.fa); do
+Region=$(basename ${Query%.fa} | sed 's/.*upstream//g' | sed "s/_prom.*//g")
+echo $Region
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/meme
+meme $Query -dna -oc $OutDir/meme -nostatus -mod zoops -nmotifs 5 -minw 6 -maxw 20 -revcomp
+ls $OutDir/meme/meme.txt
+mast $OutDir/meme/meme.xml $Query -oc $OutDir/meme -nostatus
+mv $OutDir/meme/mast.txt $OutDir/meme/${Region}_mast.txt
+mv $OutDir/meme/mast.html $OutDir/meme/${Region}_mast.html
+done
+
+for Query in $(ls analysis/meme/promotor_regions/F.venenatum/WT_minion/tri/*/*_promotors.fa); do
+Region=$(basename ${Query%.fa} | sed 's/.*upstream//g' | sed "s/_prom.*//g")
+echo $Region
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/dreme
+dreme -verbosity 1 -oc $OutDir/dreme -dna -p $Query -e 0.05
+ls $OutDir/dreme/dreme.txt
+mast $OutDir/dreme/dreme.xml $Query -oc $OutDir/dreme -nostatus
+mv $OutDir/dreme/mast.txt $OutDir/dreme/${Region}_mast.txt
+mv $OutDir/dreme/mast.html $OutDir/dreme/${Region}_mast.html
+done
+```
