@@ -33,3 +33,7 @@ analysis/coexpression/unmerged_modules/Genes_in_midnightblue.txt:"g6431.t1"
 OutDir=analysis/coexpression
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export2cytoscape.r --out_dir $OutDir --module yellow
+
+OutDir=analysis/coexpression
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export2cytoscape.r --out_dir $OutDir --module midnightblue
