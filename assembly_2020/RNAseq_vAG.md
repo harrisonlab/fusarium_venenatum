@@ -472,31 +472,30 @@ done
 # Generating an TSV file with sequencing information
 
 ```bash
-for GeneGff in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3); do
-    Strain=WT_minion
-    Organism=F.venenatum
-    Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
-    TFs=$(ls analysis/transcription_factors/vAG/F.venenatum/WT_minion/WT_minion_TF_domains.tsv )
-    InterPro=$(ls gene_pred/interproscan/AG_medaka_47/F.venenatum/WT_minion/WT_minion_interproscan.tsv)
-    #Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT/geneclusters.txt)
-    Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_vAG/WT_antismash_results_secmet_genes.tsv)
-    SwissProt=$(ls gene_pred/swissprot/F.venenatum/WT_minion/swissprot_vJun2020_tophit_parsed.tbl)
-    OutDir=analysis/annotation_tables
-    GeneFasta=$(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta)
-    Dir1=$(ls -d RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/Contrasts)
-    DEG_Files=$(ls \
-        $Dir1/RH2_vs_RH1.txt \
-        $Dir1/RH3_vs_RH1.txt \
-        $Dir1/RH4_vs_RH1.txt \
-        $Dir1/RH5_vs_RH1.txt \
-		$Dir1/RH6_vs_RH1.txt \
-		$Dir1/RH7_vs_RH1.txt \
-		$Dir1/RH8_vs_RH1.txt \
-        $Dir1/RH7_vs_RH5.txt \
-          | sed -e "s/$/ /g" | tr -d "\n")
-    ProgDir=/home/gomeza/git_repos
-    $ProgDir/Nd_annotation_tables4.py  --gff_format gff3 --gene_gff $GeneGff --gene_fasta $GeneFasta --DEG_files $DEG_Files --TFs $TFs --InterPro $InterPro --Antismash $Antismash --Swissprot $SwissProt > $OutDir/"$Strain"_gene_table.tsv
+for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3); do
+  Strain=WT_minion
+  Organism=F.venenatum
+  Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+  TFs=$(ls analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_domains.tsv )
+  InterPro=$(ls gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv)
+  #Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT/geneclusters.txt)
+  Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_vAG/WT_antismash_results_secmet_genes.tsv)
+  SwissProt=$(ls gene_pred/swissprot/F.venenatum/WT_minion/swissprot_vJun2020_tophit_parsed.tbl)
+  OutDir=analysis/annotation_tables
+  GeneFasta=$(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta)
+  Dir1=$(ls -d RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/Contrasts)
+  DEG_Files=$(ls \
+      $Dir1/RH2_vs_RH1.txt \
+      $Dir1/RH3_vs_RH1.txt \
+      $Dir1/RH4_vs_RH1.txt \
+      $Dir1/RH5_vs_RH1.txt \
+  $Dir1/RH6_vs_RH1.txt \
+  $Dir1/RH7_vs_RH1.txt \
+  $Dir1/RH8_vs_RH1.txt \
+      $Dir1/RH7_vs_RH5.txt \
+        | sed -e "s/$/ /g" | tr -d "\n")
+  ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Annotation_tables
+  $ProgDir/build_annot_RNAseq.py  --gff_format gff3 --gene_gff $GeneGff --gene_fasta $GeneFasta --DEG_files $DEG_Files --TFs $TFs --InterPro $InterPro --Antismash $Antismash --Swissprot $SwissProt > $OutDir/"$Strain"_gene_table_v2.tsv
 done
-
 
 ```

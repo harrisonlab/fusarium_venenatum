@@ -97,6 +97,17 @@ contig_2_Cluster_10     g6433.t1        +3_-0   YYAGGCCTCYC
 contig_2_Cluster_10     g6434.t1        +2_-1   YYAGGCCTCYC
 contig_2_Cluster_10     g6435.t1        +1_-2   YYAGGCCTCYC
 contig_2_Cluster_10     g6436.t1        +0_-3   YYAGGCCTCYC
+
+contig_4_Cluster_10     g13595.t1       +4_-0   CGRTCAGGCCC
+contig_4_Cluster_10     g13596.t1       +1_-2   GGCTCASCTKS
+contig_4_Cluster_10     g13597.t1       +0_-3   GGCTCASCTKS
+contig_4_Cluster_10     g13598.t1       +0_-3   GGCTCASCTKS
+contig_4_Cluster_10     g13599.t1       +5_-0   TGCCSGMATYK
+contig_4_Cluster_10     g13600.t1       +0_-4   CGRTCAGGCCC
+contig_4_Cluster_10     g13601.t1       +1_-2   GCKATCCTWCGC
+contig_4_Cluster_10     g13602.t1       +1_-2   GCKATCCTWCGC
+contig_4_Cluster_10     g13603.t1       +0_-3   GCKATCCTWCGC
+contig_4_Cluster_10     g13604.t1       +0_-3   GCKATCCTWCGC
 ```
 
 cat analysis/annotation_tables/F.venenatum/WT_minion/WT_minion_noDEGs_gene_table.tsv | grep 'Cluster' | cut -f1,11,13 | grep -v  "\s$"
@@ -373,3 +384,61 @@ mv $OutDir/dreme/mast.txt $OutDir/dreme/${Region}_mast.txt
 mv $OutDir/dreme/mast.html $OutDir/dreme/${Region}_mast.html
 done
 ```
+
+
+
+
+
+
+Run meme and fimo separated
+
+```bash
+Promoters=$(ls analysis/promoters/cassis/all_genes/contig_2_Cluster_8/g6184.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
+OutDir=analysis/promoters/tri_meme_out
+mkdir -p $OutDir/meme
+TriPromoters=analysis/promoters/tri_meme_out/tri_promoters.fa
+cat $Promoters | sed -n '/^>g6426.t1/,/^>g6438.t1/p' | grep -v "^$" |head -n -1 > $TriPromoters
+
+meme $TriPromoters -dna -mod anr -nmotifs 1 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/meme
+
+cat analysis/promoters/tri_meme_out/meme/meme.txt | grep -C2 'regular expression'
+```
+
+```bash
+#---
+# Running FIMO
+#---
+Thresh=0.00006 #CASSIS (trained for secmet clusters)
+# Thresh=1e-4 #Default
+fimo -thresh $Thresh -oc analysis/promoters/tri_meme_out/fimo analysis/promoters/tri_meme_out/meme/meme.html $Promoters
+echo "Promoters containing motif:"
+cat analysis/promoters/tri_meme_out/fimo/fimo.txt | cut -f3 | sort | uniq | wc -l
+echo "Total number found in these promoters:"
+cat analysis/promoters/tri_meme_out/fimo/fimo.txt | cut -f3 | sort | wc -l
+echo "this covers the following genes:"
+cat analysis/promoters/tri_meme_out/fimo/fimo.txt | cut -f3 | sort | uniq | grep -o -P "g.*?\.t\d" > analysis/promoters/tri_meme_out/fimo/gene_containing_motifs.txt
+cat analysis/promoters/tri_meme_out/fimo/gene_containing_motifs.txt | wc -l
+
+AnnotTab=$(ls analysis/annotation_tables/WT_minion_gene_table.tsv)
+for GeneID in $(cat analysis/promoters/tri_meme_out/fimo/gene_containing_motifs.txt); do
+cat $AnnotTab | grep  "^${GeneID}"
+done > analysis/promoters/tri_meme_out/fimo/gene_containing_motifs_annots.tsv
+
+#cat analysis/promoters/tri_meme_out/fimo/gene_containing_motifs_annots.tsv | grep -i 'DEG:' | wc -l
+#cat $AnnotTab | grep -i 'DEG:' | wc -l
+# 183 of 2199 DEGs contain this motif.
+```
+
+#---
+# Running MAST
+#---
+
+mast analysis/promoters/tri_meme_out/meme/meme.xml $TriPromoters -oc $OutDir/mast -comp
+ls tri_meme_out/mast/mast.txt
+
+
+OutDir=analysis/promoters/tri_glam_out
+mkdir -p $OutDir/glam
+TriPromoters=analysis/promoters/tri_meme_out/tri_promoters.fa
+glam2 n -O $OutDir/glam -2 -n 10000 $TriPromoters
+ls tri_glam_out/glam/glam2.txt
