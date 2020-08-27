@@ -20,15 +20,15 @@ The TransposonPSI masked bases were used to mask additional bases from the repea
 
 
 ```bash
-  for File in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked.fa); do
-    OutDir=$(dirname $File)
-    TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
-    OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
-    echo "$OutFile"
-    bedtools maskfasta -soft -fi $File -bed $TPSI -fo $OutFile
-    echo "Number of masked bases:"
-    cat $OutFile | grep -v '>' | tr -d '\n' | awk '{print $0, gsub("[a-z]", ".")}' | cut -f2 -d ' '
-  done
+for File in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked.fa); do
+OutDir=$(dirname $File)
+TPSI=$(ls $OutDir/*_contigs_unmasked.fa.TPSI.allHits.chains.gff3)
+OutFile=$(echo $File | sed 's/_contigs_softmasked.fa/_contigs_softmasked_repeatmasker_TPSI_appended.fa/g')
+echo "$OutFile"
+bedtools maskfasta -soft -fi $File -bed $TPSI -fo $OutFile
+echo "Number of masked bases:"
+cat $OutFile | grep -v '>' | tr -d '\n' | awk '{print $0, gsub("[a-z]", ".")}' | cut -f2 -d ' '
+done
 # The number of N's in hardmasked sequence are not counted as some may be present within the assembly and were therefore not repeatmasked.
 ```
 
@@ -39,25 +39,6 @@ Spliced Transcripts Alignment to a Reference.
 
 ```bash
 conda install star
-
-#samtools sort used for sorting
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa)
-#do
-#Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev) 
-#Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
-#echo $Assembly
-#echo "$Organism - $Strain"
-#for FileF in $(ls -d ../oldhome/groups/harrisonlab/project_files/quorn/filtered/WTCHG_*.1.fq)
-#do
-#FileR=$(echo $FileF | sed 's&/F/&/R/&g'| sed 's/1.fq/2.fq/g')
-#echo $FileF
-#echo $FileR
-#Sample_Name=$(echo $FileF | rev | cut -d '/' -f1 | rev | sed 's/.1.fq//g')
-#OutDir=alignment/star/$Organism/$Strain/medaka_assembly_samtoolsort/$Sample_Name
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_aligners
-#sbatch $ProgDir/star.sh $Assembly $FileF $FileR $OutDir
-#done
-#done
 
 #Star sortbycoord used
   for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
@@ -132,39 +113,6 @@ Braker is a combination of GeneMark-ET and Augustus used for gene annotation.
 conda activate gene_pred
 
 #for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev) 
-#Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/braker/$Organism/$Strain
-#AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated.bam
-#GeneModelName="$Organism"_"$Strain"_braker_all
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/braker_fungi.sh $Assembly $OutDir $AcceptedHits $GeneModelName
-#done
-
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev) 
-#Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/braker/$Organism/$Strain/Rep1
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated_258646_1rep.bam
-#GeneModelName="$Organism"_"$Strain"_braker_medaka_rep1
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/braker_fungi_v2.sh $Assembly $OutDir $AcceptedHits $GeneModelName
-#done
-
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-#Organism=$(echo $Assembly | rev | cut -d '/' -f5 | rev)
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/braker/$Organism/$Strain/group_47
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated_258647/concatenated_258647.bam
-#GeneModelName="$Organism"_"$Strain"_braker_medaka_47_5
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/braker_fungi_v2.sh $Assembly $OutDir $AcceptedHits $GeneModelName
-#done
-
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
 #Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
 #Organism=$(echo $Assembly | rev | cut -d '/' -f5 | rev)
 #echo "$Organism - $Strain"
@@ -196,45 +144,10 @@ done
 CodingQuarry in pathogen mode is used to predict aditional genes and added to braker predictions
 
 
-#### Stringtie RNA-seq alignments assembler
-
-```bash
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-#Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/stringtie/$Organism/$Strain/concatenated_prelim_46_1rep
-#mkdir -p $OutDir
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated_258646_1rep.bam
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/stringtie.sh $AcceptedHits $OutDir
-#done
-
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-#Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/stringtie_v2/$Organism/$Strain/concatenated_prelim_32
-#mkdir -p $OutDir
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly_star/concatenated/concatenated_259732.bam
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/stringtie.sh $AcceptedHits $OutDir
-#done
-```
-
 #### Cufflinks RNA-seq alignments assembler
 
 ```bash
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-#Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated_prelim_47
-#mkdir -p $OutDir
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated_258647/concatenated_258647.bam
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/cufflinks.sh $AcceptedHits $OutDir
-#done
+
 
 #for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
 #Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
@@ -245,29 +158,6 @@ CodingQuarry in pathogen mode is used to predict aditional genes and added to br
 #AcceptedHits=../../data/scratch/gomeza/fusarium_venenatum/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated.bam
 #ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
 #sbatch $ProgDir/cufflinks2.sh $AcceptedHits $OutDir
-#done
-
-#or Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-#Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/cufflinks/$Organism/$Strain/concatenated_prelim_Rep1
-#mkdir -p $OutDir
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly/concatenated/concatenated_258646_1rep.bam
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/cufflinks.sh $AcceptedHits $OutDir
-#done
-
-
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-#Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-#Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-#echo "$Organism - $Strain"
-#OutDir=gene_pred/cufflinks_v2/$Organism/$Strain/concatenated_prelim_32
-#mkdir -p $OutDir
-#AcceptedHits=alignment/star/F.venenatum/WT_minion/medaka_assembly_v2/concatenated/concatenated_259732.bam
-#ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-#sbatch $ProgDir/cufflinks.sh $AcceptedHits $OutDir
 #done
 ```
 
@@ -289,53 +179,6 @@ CodingQuarry in pathogen mode is used to predict aditional genes and added to br
 ## CodinQuarry 
 
 Note: run_CQ-PM_stranded.sh and run_CQ-PM_unstranded.sh scripts are included in cndigquarry scripts are used to run CQ pathogen mode using signalp 4.1. The script in this folder was edited to use signalp5. 
-
-```bash
-  #for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-    #Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-    #Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev)
-    #echo "$Organism - $Strain"
-    #OutDir=gene_pred/codingquary/$Organism/$Strain/Rep1
-    #mkdir -p $OutDir
-    #GTF=gene_pred/stringtie/F.venenatum/WT_minion/concatenated_prelim_Rep1/out.gtf
-    #ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-    #sbatch $ProgDir/codingquarry.sh $Assembly $GTF $OutDir
-  #done
-
-  #for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-  #Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-  #Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev)
-  #echo "$Organism - $Strain"
-  #OutDir=gene_pred/codingquary/$Organism/$Strain/Rep1_sig4
-  #mkdir -p $OutDir
-  #GTF=gene_pred/stringtie/F.venenatum/WT_minion/concatenated_prelim_Rep1/out.gtf
-  #ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-  #sbatch $ProgDir/codingquarry2.sh $Assembly $GTF $OutDir
-#done
-```
-```bash
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-  #Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-  #Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-  #echo "$Organism - $Strain"
-  #OutDir=gene_pred/codingquary_cuff/$Organism/$Strain/47
-  #mkdir -p $OutDir
-  #GTF=gene_pred/cufflinks/F.venenatum/WT_minion/concatenated_prelim_47/transcripts.gtf
-  #ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-  #sbatch $ProgDir/codingquarry2.sh $Assembly $GTF $OutDir
-#done
-
-#for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
-  #Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev) 
-  #Organism=$(echo $Assembly| rev | cut -d '/' -f5 | rev) 
-  #echo "$Organism - $Strain"
-  #OutDir=gene_pred/codingquary_cuff/$Organism/$Strain/Rep1
-  #mkdir -p $OutDir
-  #GTF=gene_pred/cufflinks/F.venenatum/WT_minion/concatenated_prelim_Rep1/transcripts.gtf
-  #ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Gene_prediction
-  #sbatch $ProgDir/codingquarry2.sh $Assembly $GTF $OutDir
-#done
-```
 
 ## Codingquarry 
 
@@ -422,11 +265,6 @@ done
 ```
 
 ```
-#gene_pred/codingquary_cuff/F.venenatum/WT_minion/47/final
-#12529
-#1415
-#13944
-
 gene_pred/codingquarry/F.venenatum/WT_minion/final
 12590
 1232
@@ -479,6 +317,7 @@ C:98.8%[S:98.6%,D:0.2%],F:0.8%,M:0.4%,n:3817
         16      Missing BUSCOs (M)                         
         3817    Total BUSCO groups searched
 ```
+
 ## Interproscan
 
 Interproscan was used to give gene models functional annotations.
@@ -487,7 +326,7 @@ Interproscan was used to give gene models functional annotations.
 ```bash
 # This command will split your gene fasta file and run multiple interproscan jobs.
   ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
-  for Genes in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
+  for Genes in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
     echo $Genes
     $ProgDir/interproscan.sh $Genes
   done 2>&1 | tee -a interproscan_submisison.log
@@ -497,12 +336,12 @@ Following interproscan annotation split files were combined using the following 
 
 ```bash
   ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
-  for Proteins in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
+  for Proteins in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
     Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
     Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
     echo "$Organism - $Strain"
     echo $Strain
-    InterProRaw=gene_pred/interproscan/AG_medaka_47/raw
+    InterProRaw=gene_pred/interproscan/F.venenatum/WT_minion/raw
     $ProgDir/append_interpro.sh $Proteins $InterProRaw
   done
 ```
@@ -510,7 +349,7 @@ Following interproscan annotation split files were combined using the following 
 ## B) SwissProt
 
 ```bash
-for Proteome in $(ls gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
+for Proteome in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta); do
 Strain=$(echo $Proteome | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Proteome | rev | cut -f4 -d '/' | rev)
 OutDir=gene_pred/swissprot/$Organism/$Strain
@@ -520,7 +359,7 @@ ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
 sbatch $ProgDir/sub_swissprot.sh $Proteome $OutDir $SwissDbDir $SwissDbName
 done
 ```
-```
+
 
 ## Effector genes
 
@@ -682,39 +521,42 @@ cat "$Prefix"_secmet_genes.txt | wc -l
 printf "Number of predicted genes in secondary metabolite clusters:\t"
 cat "$Prefix"_secmet_genes.gff | grep -w 'gene' | wc -l
 done
-
+```
 
 SMURF was also run to identify secondary metabolite gene clusters.
 
 Genes needed to be parsed into a specific tsv format prior to submission on the SMURF webserver.
-
+```bash
 Gff=$(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3)
 OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT_minion
 mkdir -p $OutDir
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
 $ProgDir/gff2smurf.py --gff $Gff > $OutDir/WT_minion_genes_smurf.tsv
 SMURF output was received by email and downloaded to the cluster in the output directory above.
-
+```
 Output files were parsed into gff format:
+```bash
+OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT_minion
+Prefix="WT_minion"
+GeneGff=gene_pred/final/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3
+SmurfClusters=$OutDir/Secondary-Metabolite-Clusters.txt
+SmurfBackbone=$OutDir/Backbone-genes.txt
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
+bedtools intersect -wo -a $GeneGff -b $OutDir/Smurf_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -i -e "s/;Parent=g\w+//g" | perl -p -i -e "s/;Notes=.*//g" > $OutDir/"$Prefix"_smurf_secmet_genes.tsv
+```
 
-  OutDir=analysis/secondary_metabolites/smurf/F.venenatum/WT
-  Prefix="WT"
-  GeneGff=gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gff3
-  SmurfClusters=$OutDir/Secondary-Metabolite-Clusters.txt
-  SmurfBackbone=$OutDir/Backbone-genes.txt
-  ProgDir=/home/armita/git_repos/emr_repos/tools/seq_tools/feature_annotation/secondary_metabolites
-  $ProgDir/smurf2gff.py --smurf_clusters $SmurfClusters --smurf_backbone $SmurfBackbone > $OutDir/Smurf_clusters.gff
-  bedtools intersect -wo -a $GeneGff -b $OutDir/Smurf_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -i -e "s/;Parent=g\w+//g" | perl -p -i -e "s/;Notes=.*//g" > $OutDir/"$Prefix"_smurf_secmet_genes.tsv
 Total number of secondary metabolite clusters:
 
-for Assembly in $(ls repeat_masked/*/*/illumina_assembly_ncbi/*_contigs_softmasked_repeatmasker_TPSI_appended.fa | grep -w 'WT'); do
-Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
-Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
+```bash
+for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/medaka_contigs_softmasked_repeatmasker_TPSI_appended.fa); do
+Organism=$(echo $Assembly | rev | cut -f5 -d '/' | rev)
+Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 OutDir=analysis/secondary_metabolites/antismash/$Organism/$Strain
 mkdir -p $OutDir
 GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
 AntismashClusters=$(ls analysis/secondary_metabolites/antismash/$Organism/$Strain/*_secmet_clusters.gff)
-SmurfClusters=$(ls analysis/secondary_metabolites/smurf/$Organism/$Strain/Smurf_clusters.gff)
+SmurfClusters=$(ls analysis/secondary_metabolites/smurf/$Organism/$Strain/*lusters.gff)
 echo "Total number of Antismash clusters"
 cat $AntismashClusters | wc -l
 echo "Total number of SMURF clusters"
@@ -728,10 +570,27 @@ bedtools intersect -a $SmurfClusters -b $AntismashClusters | wc -l
 echo "number of smurf clusters not intersecting antismash clusters"
 bedtools intersect -v -a $SmurfClusters -b $AntismashClusters | wc -l
 done
+```
+```
+Total number of Antismash clusters
+48
+Total number of SMURF clusters
+23
+number of Antismash clusters intersecting Smurf clusters
+19
+number of Antismash clusters not intersecting Smurf clusters
+31
+number of smurf clusters intersecting antismash clusters
+19
+number of smurf clusters not intersecting antismash clusters
+12
+```
 
 F) Genes with transcription factor annotations:
 A list of PFAM domains, superfamily annotations used as part of the DBD database and a further set of interproscan annotations listed by Shelest et al 2017 were made http://www.transcriptionfactor.org/index.cgi?Domain+domain:all https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5415576/
 
+
+```bash
   for Interpro in $(ls gene_pred/interproscan/AG_medaka_47/F.venenatum/WT_minion/WT_minion_interproscan.tsv); do
     Organism=$(echo $Interpro | rev | cut -f3 -d '/' | rev)
     Strain=$(echo $Interpro | rev | cut -f2 -d '/' | rev)
@@ -744,10 +603,62 @@ A list of PFAM domains, superfamily annotations used as part of the DBD database
     cat $OutDir/"$Strain"_TF_domains.tsv | cut -f1 | sort | uniq > $OutDir/"$Strain"_TF_gene_headers.txt
     cat $OutDir/"$Strain"_TF_gene_headers.txt | wc -l
   done
-
+```
 
 
 
   faidx -d '|' final_genes_appended_renamed.cdna.fasta $(tr '\n' ' ' < Tri5_genes.txt ) > Tri5_genes.fasta
 
   
+
+  ## 8. Identification of MIMP-flanking genes
+
+Miniature impala (mimp) sequeces are found in promotor regions of SIX genes in fusarium.
+
+```bash
+  for Assembly in $(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_unmasked.fa); do
+    Organism=$(echo "$Assembly" | rev | cut -d '/' -f5 | rev)
+    Strain=$(echo "$Assembly" | rev | cut -d '/' -f4 | rev)
+    GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
+    OutDir=analysis/mimps/$Organism/$Strain
+    mkdir -p "$OutDir"
+    echo "$Organism - $Strain"
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+    $ProgDir/mimp_finder.pl $Assembly $OutDir/"$Strain"_mimps.fa $OutDir/"$Strain"_mimps.gff > $OutDir/"$Strain"_mimps.log
+    $ProgDir/gffexpander.pl +- 2000 $OutDir/"$Strain"_mimps.gff > $OutDir/"$Strain"_mimps_exp.gff
+    echo "The number of mimps identified:"
+    cat $OutDir/"$Strain"_mimps.fa | grep '>' | wc -l
+    bedtools intersect -u -a $GeneGff -b $OutDir/"$Strain"_mimps_exp.gff > $OutDir/"$Strain"_genes_in_2kb_mimp.gff
+    echo "The following transcripts intersect mimps:"
+    MimpProtsTxt=$OutDir/"$Strain"_prots_in_2kb_mimp.txt
+    MimpGenesTxt=$OutDir/"$Strain"_genes_in_2kb_mimp.txt
+    cat $OutDir/"$Strain"_genes_in_2kb_mimp.gff | grep -w 'mRNA' | cut -f9 | cut -f1 -d';' | cut -f2 -d'=' | sort | uniq > $MimpProtsTxt
+    cat $OutDir/"$Strain"_genes_in_2kb_mimp.gff | grep -w 'mRNA' | cut -f9 | cut -f1 -d';' | cut -f2 -d'=' | cut -f1 -d '.'| sort | uniq > $MimpGenesTxt
+    cat $MimpProtsTxt | wc -l
+    cat $MimpGenesTxt | wc -l
+    echo ""
+  done
+
+    for Assembly in $(ls assembly/previous_versions/F.venenatum/WT/WT_contigs_unmasked.fa); do
+    Organism=$(echo "$Assembly" | rev | cut -d '/' -f3 | rev)
+    Strain=$(echo "$Assembly" | rev | cut -d '/' -f2 | rev)
+    GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
+    OutDir=analysis/mimps/$Organism/$Strain
+    mkdir -p "$OutDir"
+    echo "$Organism - $Strain"
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+    $ProgDir/mimp_finder.pl $Assembly $OutDir/"$Strain"_mimps.fa $OutDir/"$Strain"_mimps.gff > $OutDir/"$Strain"_mimps.log
+    $ProgDir/gffexpander.pl +- 2000 $OutDir/"$Strain"_mimps.gff > $OutDir/"$Strain"_mimps_exp.gff
+    echo "The number of mimps identified:"
+    cat $OutDir/"$Strain"_mimps.fa | grep '>' | wc -l
+    bedtools intersect -u -a $GeneGff -b $OutDir/"$Strain"_mimps_exp.gff > $OutDir/"$Strain"_genes_in_2kb_mimp.gff
+    echo "The following transcripts intersect mimps:"
+    MimpProtsTxt=$OutDir/"$Strain"_prots_in_2kb_mimp.txt
+    MimpGenesTxt=$OutDir/"$Strain"_genes_in_2kb_mimp.txt
+    cat $OutDir/"$Strain"_genes_in_2kb_mimp.gff | grep -w 'mRNA' | cut -f9 | cut -f1 -d';' | cut -f2 -d'=' | sort | uniq > $MimpProtsTxt
+    cat $OutDir/"$Strain"_genes_in_2kb_mimp.gff | grep -w 'mRNA' | cut -f9 | cut -f1 -d';' | cut -f2 -d'=' | cut -f1 -d '.'| sort | uniq > $MimpGenesTxt
+    cat $MimpProtsTxt | wc -l
+    cat $MimpGenesTxt | wc -l
+    echo ""
+  done
+```
