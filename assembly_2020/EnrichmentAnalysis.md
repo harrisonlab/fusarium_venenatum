@@ -61,3 +61,190 @@ cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' 
 cat $Set1Genes $Set2Genes > $AllGenes
 $ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots_geneid.tsv --out_dir $OutDir > $OutDir/output.txt
 ```
+
+
+ ls analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/Clusters_Objects.tsv | cut -f1 | sed "1,2d" > Cluster1.txt
+ ls analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/Clusters_Objects.tsv | cut -f2 | sed "1,2d" > Cluster2.txt
+
+```bash
+OutDir=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C0
+mkdir -p $OutDir
+InterProTSV=gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/GO_table.py --interpro $InterProTSV > $OutDir/experiment_all_gene_GO_annots.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | sed 's/.t.*//g' > $OutDir/temp1.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | cut -f2 > $OutDir/temp2.tsv
+paste $OutDir/temp1.tsv $OutDir/temp2.tsv > $OutDir/experiment_all_gene_GO_annots_geneid.tsv
+rm $OutDir/temp1.tsv
+rm $OutDir/temp2.tsv
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C0.txt
+cat $DEGs | sed 's/.t.*//g' > $OutDir/C0_gene.txt
+DEG2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C0/C0_gene.txt
+AllGenes=$OutDir/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir/score1.txt
+Set2Genes=$OutDir/score2.txt
+AllGenes=$OutDir/Cluster0.txt
+cat $DEG2 | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots_geneid.tsv --out_dir $OutDir > $OutDir/output.txt
+
+
+OutDir=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C1
+mkdir -p $OutDir
+InterProTSV=gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/GO_table.py --interpro $InterProTSV > $OutDir/experiment_all_gene_GO_annots.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | sed 's/.t.*//g' > $OutDir/temp1.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | cut -f2 > $OutDir/temp2.tsv
+paste $OutDir/temp1.tsv $OutDir/temp2.tsv > $OutDir/experiment_all_gene_GO_annots_geneid.tsv
+rm $OutDir/temp1.tsv
+rm $OutDir/temp2.tsv
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C1.txt
+cat $DEGs | sed 's/.t.*//g' > $OutDir/C1_gene.txt
+DEG2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C1/C1_gene.txt
+AllGenes=$OutDir/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir/score1.txt
+Set2Genes=$OutDir/score2.txt
+AllGenes=$OutDir/Cluster0.txt
+cat $DEG2 | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots_geneid.tsv --out_dir $OutDir > $OutDir/output.txt
+
+OutDir=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C2
+mkdir -p $OutDir
+InterProTSV=gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/GO_table.py --interpro $InterProTSV > $OutDir/experiment_all_gene_GO_annots.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | sed 's/.t.*//g' > $OutDir/temp1.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | cut -f2 > $OutDir/temp2.tsv
+paste $OutDir/temp1.tsv $OutDir/temp2.tsv > $OutDir/experiment_all_gene_GO_annots_geneid.tsv
+rm $OutDir/temp1.tsv
+rm $OutDir/temp2.tsv
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C2.txt
+cat $DEGs | sed 's/.t.*//g' > $OutDir/C2_gene.txt
+DEG2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C2/C2_gene.txt
+AllGenes=$OutDir/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir/score1.txt
+Set2Genes=$OutDir/score2.txt
+AllGenes=$OutDir/Cluster0.txt
+cat $DEG2 | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots_geneid.tsv --out_dir $OutDir > $OutDir/output.txt
+
+OutDir=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C3
+mkdir -p $OutDir
+InterProTSV=gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/GO_table.py --interpro $InterProTSV > $OutDir/experiment_all_gene_GO_annots.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | sed 's/.t.*//g' > $OutDir/temp1.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | cut -f2 > $OutDir/temp2.tsv
+paste $OutDir/temp1.tsv $OutDir/temp2.tsv > $OutDir/experiment_all_gene_GO_annots_geneid.tsv
+rm $OutDir/temp1.tsv
+rm $OutDir/temp2.tsv
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C3.txt
+cat $DEGs | sed 's/.t.*//g' > $OutDir/C3_gene.txt
+DEG2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C3/C3_gene.txt
+AllGenes=$OutDir/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir/score1.txt
+Set2Genes=$OutDir/score2.txt
+AllGenes=$OutDir/Cluster0.txt
+cat $DEG2 | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots_geneid.tsv --out_dir $OutDir > $OutDir/output.txt
+
+
+
+
+
+
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C1.txt
+OutDir2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C1
+mkdir -p $OutDir2
+AllGenes=$OutDir2/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir2/score1.txt
+Set2Genes=$OutDir2/score2.txt
+AllGenes=$OutDir2/Cluster0.txt
+cat $DEGs | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots.tsv --out_dir $OutDir2 > $OutDir2/output.txt
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C2.txt
+OutDir2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C2
+mkdir -p $OutDir2
+AllGenes=$OutDir2/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir2/score1.txt
+Set2Genes=$OutDir2/score2.txt
+AllGenes=$OutDir2/Cluster2.txt
+cat $DEGs | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | grep -v $Set1Genes | sed -e 's/.t.*//g' | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots.tsv --out_dir $OutDir2 > $OutDir2/output.txt
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+AnnotTable=analysis/annotation_tables/WT_minion_gene_table.tsv
+DEGs=analysis/Coexpression/Clust_Results_m70xq10z2qz49uwe/C3.txt
+OutDir2=analysis/Coexpression/enrichment/F.venenatum/WT_minion/whole_genome/C3
+mkdir -p $OutDir2
+AllGenes=$OutDir2/Allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir2/score1.txt
+Set2Genes=$OutDir2/score2.txt
+AllGenes=$OutDir2/Cluster3.txt
+cat $DEGs | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | cut -d'.' -f1 | grep -v $Set1Genes | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $OutDir/experiment_all_gene_GO_annots.tsv --out_dir $OutDir2 > $OutDir2/output.txt
+
+WorkDir=analysis/enrichment/experiment_WT
+OutDir=analysis/enrichment/experiment_ALL/Wc1/Wc1vsWT53_D/DOWN
+ProgDir=/home/lopeze/git_repos/scripts/verticillium_clocks
+AnnotTable=gene_pred/annotation/V.dahliae/JR2/JR2_gene_table_incl_3.tsv
+DEGs=/home/groups/harrisonlab/project_files/verticillium_dahliae/clocks/RNA_alignment/featureCounts/experiment_all/ALL/Wc1vsWT53_D_down_LFC_names.txt
+AllGenes=$OutDir/Wc1vsWT53_D_down_allgenes.txt
+cat $AnnotTable | tail -n+2  | cut -f1 > $AllGenes
+Set1Genes=$OutDir/Wc1vsWT53_D_down_DEGs.txt
+Set2Genes=$OutDir/Wc1vsWT53_D_down2.txt
+AllGenes=$OutDir/Wc1vsWT53_D_down.txt
+cat $DEGs | sed -e 's/$/\t0.001/g' > $Set1Genes
+cat $AnnotTable | tail -n+2 | cut -f1 | cut -d'.' -f1 | grep -v $Set1Genes | sed -e 's/$/\t1.00/g' > $Set2Genes
+cat $Set1Genes $Set2Genes > $AllGenes
+
+$ProgDir/GO_enrichment.r --all_genes $AllGenes --GO_annotations $WorkDir/experiment_all_gene_GO_annots.tsv --out_dir $OutDir > $OutDir/output.txt
+```
+
+
+grep -w -F -f ../../../../Clust_Results_m70xq10z2qz49uwe/C0.txt ../../../../../../analysis/annotation_tables/WT_minion_gene_table.tsv > C0/C0_annot.txt
+
+grep -w -F -f ../../../../Clust_Results_m70xq10z2qz49uwe/C1.txt ../../../../../../analysis/annotation_tables/WT_minion_gene_table.tsv > C1/C1_annot.txt
+
+grep -w -F -f ../../../../Clust_Results_m70xq10z2qz49uwe/C2.txt ../../../../../../analysis/annotation_tables/WT_minion_gene_table.tsv > C2/C2_annot.txt
+
+grep -w -F -f ../../../../Clust_Results_m70xq10z2qz49uwe/C3.txt ../../../../../../analysis/annotation_tables/WT_minion_gene_table.tsv > C3/C3_annot.txt
