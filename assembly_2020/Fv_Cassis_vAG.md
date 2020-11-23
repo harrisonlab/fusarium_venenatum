@@ -39,11 +39,11 @@ Assembly=$(ls $ProjDir/repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/me
 Genes=$(ls $ProjDir/gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3)
 Interpro=$(ls $ProjDir/gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv)
 
-cat $Genes | grep 'mRNA' | sed 's/ID=//g' | sed "s/;.*//g" | awk '{ print $9 "\t" $1 "\t" $4 "\t" $5 "\t" $7}' > cassis.tsv
+cat $Genes | grep 'mRNA' | sed 's/ID=//g' | sed "s/;.*//g" | awk '{ print $9 "\t" $1 "\t" $4 "\t" $5 "\t" $7}' > cassis.tsv # All genes,contig,location 
 
-CassisTSV=cassis.tsv
+CassisTSV=cassis.tsv 
 
-for Cluster in $(cat $AnnotTab | cut -f13 | grep 'contig' | sort -n -k3 -t'_' | sed 's/;.*//p' | uniq); do # Extract cluster names
+for Cluster in $(cat $AnnotTab | cut -f13 | grep 'contig' | sort -n -k3 -t'_' | sed 's/;.*//p' | uniq); do # Extract secmet cluster names
 echo $Cluster
 mkdir $WorkDir/$Cluster
 cat $AnnotTab | cut -f1,13 | grep -w "$Cluster" | cut -f1 | grep '.t1' > $WorkDir/$Cluster/headers.txt # Create a headers file per cluster
@@ -442,3 +442,45 @@ mkdir -p $OutDir/glam
 TriPromoters=analysis/promoters/tri_meme_out/tri_promoters.fa
 glam2 n -O $OutDir/glam -2 -n 10000 $TriPromoters
 ls tri_glam_out/glam/glam2.txt
+
+
+
+Run ama
+
+```bash
+Promoters=$(ls analysis/promoters/cassis/all_genes/contig_2_Cluster_8/g6184.t1/PROMOTERS/all_promoter_sequences.fasta | head -n1)
+OutDir=analysis/promoters/GOmo
+mkdir -p $OutDir
+
+ama ama_out/ama.xml analysis/promoters/cassis/all_genes/best_motifs_meme.txt $Promoters
+
+cat $Promoters | sed -n '/^>g6426.t1/,/^>g6438.t1/p' | grep -v "^$" |head -n -1 > $TriPromoters
+
+meme $TriPromoters -dna -mod anr -nmotifs 1 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/meme
+
+cat analysis/promoters/tri_meme_out/meme/meme.txt | grep -C2 'regular expression'
+```
+
+
+for Query in $(ls analysis/meme/promotor_regions/F.venenatum/WT_minion/tri/*/*_promotors.fa); do
+Region=$(basename ${Query%.fa} | sed 's/.*upstream//g' | sed "s/_prom.*//g")
+echo $Region
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/meme
+meme $Query -dna -oc $OutDir/meme -nostatus -mod zoops -nmotifs 5 -minw 6 -maxw 20 -revcomp
+ls $OutDir/meme/meme.txt
+mast $OutDir/meme/meme.xml $Query -oc $OutDir/meme -nostatus
+mv $OutDir/meme/mast.txt $OutDir/meme/${Region}_mast.txt
+mv $OutDir/meme/mast.html $OutDir/meme/${Region}_mast.html
+done AQUI igual los motifs
+
+for Query in $(ls analysis/promoters/cassis/all_genes/contig_2_Cluster_8/g6184.t1/PROMOTERS/all_promoter_sequences.fasta)
+
+
+for Query in $(ls analysis/promoters/cassis/all_genes/contig_1_Cluster_3/g35.t1/g35.t1/meme/*/meme.xml); do
+Promoters=analysis/promoters/cassis/all_genes/contig_2_Cluster_8/g6184.t1/PROMOTERS/all_promoter_sequences.fasta
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/ama
+ama -pvalues $Promoters $Query
+done
+g
