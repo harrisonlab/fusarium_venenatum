@@ -439,7 +439,7 @@ pdf("PCA_rld2.pdf")
 data <- plotPCA(rld, intgroup=c("Condition"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
 
-pca_plot<- ggplot(data, aes(PC1, PC2, color=Group, shape=Group)) +
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Condition, shape=Experiment)) +
 geom_point(size=3) +
 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
 ylab(paste0("PC2: ",percentVar[2],"% variance")) +
@@ -449,6 +449,20 @@ panel.border = element_rect(colour = "black", fill = NA, size = 1),
 axis.text = element_text(size = 14), axis.title = element_text(size = 18))
 coord_fixed()
 dev.off()
+
+
+
+
+data <- plotPCA(vst, intgroup="Experiment", returnData=TRUE)
+percentVar <- round(100 * attr(data, "percentVar"))
+
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Experiment)) +
+ geom_point(size=3) +
+ xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+ ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(rld)))
+ coord_fixed()
+
+ggsave("PCA_sample_names2.pdf", pca_plot, dpi=300, height=10, width=12)
 
 # Gene clustering plots
 pdf("Top.pdf")
