@@ -17,7 +17,7 @@
 ```
 
 
-    ```bash
+```bash
     # Run fastq-mcf
     for RNADir in $(ls -d ../../../archives/2021_camb_general/20210128_Fvenenatum_CarbonRNAseq/rawdata); do
     FileNum=$(ls $RNADir/*_1.fq.gz | grep 'FvC4' | wc -l)
@@ -40,31 +40,45 @@
             sbatch -p himem $ProgDir/fastq-mcf_himem.sh $FileF $FileR $IluminaAdapters RNA $OutDir
         done
     done
-    ```
-
-
-
-
-```bash
-# Run fastq-mcf
-FileF=$(ls ../../../archives/2021_camb_general/20210128_Fvenenatum_CarbonRNAseq/rawdata/FvC0T0_1_1.fq.gz)
-FileR=$(ls ../../../archives/2021_camb_general/20210128_Fvenenatum_CarbonRNAseq/rawdata/FvC0T0_1_2.fq.gz)
-echo $FileF
-echo $FileR
-OutDir=qc_rna/RNAseq/Fvenenatum_CarbonRNAseq/FvC0/T0
-IluminaAdapters=/home/gomeza/git_repos/scripts/bioinformatics_tools/SEQdata_qc/illumina_full_adapters.fa
-ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/SEQdata_qc
-sbatch $ProgDir/fastq-mcf_himem.sh $FileF $FileR $IluminaAdapters RNA $OutDir
 ```
 
 ```bash
-    # Run fastqc
-    for RawData in $(ls qc_rna/48DD_experiment2020/WT53/T08/*/*.fq.gz | grep 'WT53_1\|WT53_2\|WT53_3\|WT53_4\|WT53_8') 
-    do
+# Run fastqc
+    for RawData in $(ls qc_rna/RNAseq/Fvenenatum_CarbonRNAseq/*/*/*/*.fq.gz | grep 'FvC4'); do
         echo $RawData
+        Timepoint=$(echo $RawData | rev | cut -d '/' -f3 | rev )
+        echo $Timepoint
+        Condition=$(echo $RawData | rev | cut -d '/' -f4 | rev )
+        echo $Condition
+        OutDir=qc_rna/RNAseq/fastqc/qc_rna/$Condition/$Timepoint
         ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/SEQdata_qc
-        sbatch $ProgDir/fastqc.sh $RawData
+        sbatch -p short $ProgDir/fastqc2.sh $RawData $OutDir
     done
 ```
 
-## Decontamination of rRNA reads i
+## Decontamination of rRNA reads in RNAseq data
+
+```bash
+    for RNADir in $(ls -d qc_rna/RNAseq/Fvenenatum_CarbonRNAseq/C*/T*); do
+        FileNum=$(ls $RNADir/F/*_1_trim.fq.gz | wc -l)
+        for num in $(seq 1 $FileNum); do
+            printf "\n"
+            FileF=$(ls $RNADir/F/*trim.fq.gz | head -n $num | tail -n1)
+            FileR=$(ls $RNADir/R/*trim.fq.gz | head -n $num | tail -n1)
+            echo $FileF
+            echo $FileR
+            Ref=/data/scratch/gomeza/prog/bbmap/ribokmers.fa.gz
+            ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/RNAseq_analysis
+            echo $RNADir
+            Strain=$(echo $FileF | rev | cut -d '/' -f1 | rev | sed 's/_1_trim.fq.gz//g')
+            Timepoint=$(echo $RNADir | rev | cut -f1 -d '/' | rev)
+            Condition=$(echo $RNADir | rev | cut -f2 -d '/' | rev)
+            echo $Condition
+            Sample_Name=$(echo $FileF | rev | cut -d '/' -f1 | rev | sed 's/_1_trim.fq.gz//g')
+            echo $Sample_Name
+            echo $Timepoint
+            echo $Strain
+            sbatch -p himem $ProgDir/bbduk.sh $Ref "$RNADir"/cleaned/$Condition/$Timepoint/$Sample_Name $FileF $FileR $ProgDir $Strain
+        done
+    done
+```
