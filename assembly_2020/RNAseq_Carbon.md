@@ -82,3 +82,36 @@
         done
     done
 ```
+
+## Salmon 
+
+
+```bash
+conda activate salmon
+
+for Transcriptome in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.cdna.fasta); do
+Strain=$(echo $Transcriptome| rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Transcriptome| rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+for RNADir in $(ls -d ../../../data/scratch/gomeza/qc_rna/RNAseq/Fvenenatum_CarbonRNAseq/C*/T*/cleaned/C*/T*/* | grep 'FvC4'); do
+FileNum=$(ls $RNADir/F/*_1_cleaned.fq.gz | wc -l)
+for num in $(seq 1 $FileNum); do
+printf "\n"
+FileF=$(ls $RNADir/F/*cleaned.fq.gz | head -n $num | tail -n1)
+FileR=$(ls $RNADir/R/*cleaned.fq.gz | head -n $num | tail -n1)
+echo $FileF
+echo $FileR
+Prefix=$(echo $RNADir | rev | cut -f3 -d '/' | rev)
+Timepoint=$(echo $RNADir | rev | cut -f2 -d '/' | rev)
+Sample_Name=$(echo $FileF | rev | cut -d '/' -f1 | rev | sed 's/_1_cleaned.fq.gz//g')
+echo "$Prefix"
+echo "$Timepoint"
+echo "$Sample_Name"
+OutDir=alignment/salmon/Fvenenatum_CarbonRNAseq/$Organism/$Strain/$Prefix/$Timepoint/$Sample_Name
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/RNAseq_analysis
+sbatch -p himem $ProgDir/salmon.sh $Transcriptome $FileF $FileR $OutDir
+done
+done
+done
+```
+
