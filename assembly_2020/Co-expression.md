@@ -19,6 +19,14 @@ ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analys
 SFT=9
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir $OutDir --sft $SFT --min_module_size 30 --merging_threshold 0.25
 
+
+OutDir=analysis/coexpression_VAG/min50
+mkdir -p $OutDir
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+SFT=11
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir $OutDir --sft $SFT --min_module_size 50 --merging_threshold 0.25
+
+
 OutDir=analysis/coexpression
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export_genes.r --out_dir $OutDir --unmerge Y
