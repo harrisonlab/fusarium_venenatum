@@ -173,18 +173,19 @@ library(RColorBrewer)
 library(gplots)
 library(ggrepel)
 
-#===============================================================================
-#       Load data from SALMON quasi mapping
-#===============================================================================
+
+# Load data from SALMON quasi mapping
+
+# Analysis in DeSeq2 folder include all samples. Deseq_v2 does not include C0T0 samples.
 
 # import transcript to gene mapping info
 tx2gene <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/trans2gene.txt",header=T,sep="\t")
 
 # import quantification files
-txi.reps <- tximport(paste(list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
+txi.reps <- tximport(paste(list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
 
 # get the sample names from the folders
-mysamples <- list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2",full.names=F,recursive=F)
+mysamples <- list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2",full.names=F,recursive=F)
 
 # summarise to gene level. This can be done in the tximport step (txOut=F), but is easier to understand in two steps.
 txi.genes <- summarizeToGene(txi.reps,tx2gene)
@@ -194,28 +195,41 @@ names(txi.genes)
 # set the sample names for txi.genes
 invisible(sapply(seq(1,3), function(i) {colnames(txi.genes[[i]])<<-mysamples}))
 
+# Get TPM tables
 write.table(txi.genes,"alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/txigenes.txt",sep="\t",na="",quote=F)
 write.table(txi.reps,"alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/txireps.txt",sep="\t",na="",quote=F)
 
+# PCA TPMs
+pca(experiment.table="alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/txigenes_TPMonly.txt", type="TPM",
+legend.position="topleft", covariatesInNames=FALSE, samplesName=TRUE,
+principal.components=c(1,2), pdf = TRUE,
+output.folder=getwd())
 
-#===============================================================================
-#       Read sample metadata and annotations
-#===============================================================================
+pca(experiment.table="alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/txireps_TPMonly.txt", type="TPM",
+legend.position="topleft", covariatesInNames=FALSE, samplesName=TRUE,
+principal.components=c(1,2), pdf = TRUE,
+output.folder=getwd())
 
 # Read sample metadata
 # Data is unordered as it is read in. This means data must be set into the same
 # order as the samples were read into mysamples before integrating metadata and
 # and read counts
 
-unorderedColData <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/FvenCarbon_RNAseq_design2.txt",header=T,sep="\t")
+unorderedColData <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/FvenCarbon_RNAseq_design4.txt",header=T,sep="\t")
 colData <- data.frame(unorderedColData[ order(unorderedColData$Sample),])
 
 # Group column
 colData$Group <- paste0(colData$Condition,'_', colData$Timepoint)
 
+# Group column
+colData$Group2 <- paste0(colData$Condition.1,'_', colData$Timepoint)
+
 # Define the DESeq 'GLM' model
 design <- ~ Group
 dds <- DESeqDataSetFromTximport(txi.genes,colData,design)
+
+keep <- rowSums(counts(dds)) >= 50
+dds <- dds[keep,]
 
 # Library normalisation
 dds <- estimateSizeFactors(dds)
@@ -225,18 +239,109 @@ dds<-DESeq(dds)
 
 resultsNames(dds)
 ###
-"Intercept"          "Condition_C1_vs_C0" "Condition_C2_vs_C0"
-[4] "Condition_C3_vs_C0" "Condition_C4_vs_C0"
+ [1] "Intercept"            "Group_C1_T1_vs_C0_T0" "Group_C1_T2_vs_C0_T0"
+ [4] "Group_C1_T3_vs_C0_T0" "Group_C1_T4_vs_C0_T0" "Group_C1_T5_vs_C0_T0"
+ [7] "Group_C1_T6_vs_C0_T0" "Group_C1_T7_vs_C0_T0" "Group_C2_T1_vs_C0_T0"
+[10] "Group_C2_T2_vs_C0_T0" "Group_C2_T3_vs_C0_T0" "Group_C2_T4_vs_C0_T0"
+[13] "Group_C2_T5_vs_C0_T0" "Group_C2_T6_vs_C0_T0" "Group_C2_T7_vs_C0_T0"
+[16] "Group_C3_T1_vs_C0_T0" "Group_C3_T2_vs_C0_T0" "Group_C3_T3_vs_C0_T0"
+[19] "Group_C3_T4_vs_C0_T0" "Group_C3_T5_vs_C0_T0" "Group_C3_T6_vs_C0_T0"
+[22] "Group_C3_T7_vs_C0_T0" "Group_C4_T1_vs_C0_T0" "Group_C4_T2_vs_C0_T0"
+[25] "Group_C4_T3_vs_C0_T0" "Group_C4_T4_vs_C0_T0" "Group_C4_T5_vs_C0_T0"
+[28] "Group_C4_T6_vs_C0_T0" "Group_C4_T7_vs_C0_T0"
 ###
 
 
-#===============================================================================
-#       Exploring and exporting results
-#===============================================================================
+# Exploring and exporting results
+
+res <- results(dds)
+res
+summary(res)
+
+alpha <- 0.05
+
+res= results(dds, alpha=alpha,contrast=c("Condition","C1","C0"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+out of 4192 with nonzero total read count
+adjusted p-value < 0.05
+LFC > 0 (up)       : 2425, 58%
+LFC < 0 (down)     : 1767, 42%
+outliers [1]       : 0, 0%
+low counts [2]     : 0, 0%
+(mean count < 0)
+###
+write.table(sig.res,"C1_vs_C0.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"C1_vs_C0_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"C1_vs_C0_down.txt",sep="\t",na="",quote=F)
+
+res= results(dds, alpha=alpha,contrast=c("Condition","C2","C0"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+out of 4192 with nonzero total read count
+adjusted p-value < 0.05
+LFC > 0 (up)       : 2425, 58%
+LFC < 0 (down)     : 1767, 42%
+outliers [1]       : 0, 0%
+low counts [2]     : 0, 0%
+(mean count < 0)
+###
+write.table(sig.res,"C2_vs_C0.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"C2_vs_C0_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"C2_vs_C0_down.txt",sep="\t",na="",quote=F)
+
+res= results(dds, alpha=alpha,contrast=c("Condition","C3","C0"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+out of 4192 with nonzero total read count
+adjusted p-value < 0.05
+LFC > 0 (up)       : 2425, 58%
+LFC < 0 (down)     : 1767, 42%
+outliers [1]       : 0, 0%
+low counts [2]     : 0, 0%
+(mean count < 0)
+###
+write.table(sig.res,"C3_vs_C0.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"C3_vs_C0_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"C3_vs_C0_down.txt",sep="\t",na="",quote=F)
+
+res= results(dds, alpha=alpha,contrast=c("Condition","C4","C0"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+out of 4192 with nonzero total read count
+adjusted p-value < 0.05
+LFC > 0 (up)       : 2425, 58%
+LFC < 0 (down)     : 1767, 42%
+outliers [1]       : 0, 0%
+low counts [2]     : 0, 0%
+(mean count < 0)
+###
+write.table(sig.res,"C4_vs_C0.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"C4_vs_C0_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"C4_vs_C0_down.txt",sep="\t",na="",quote=F)
+
 
 # Sample Distances
 
-vst<-varianceStabilizingTransformation(dds)
+vst1<-varianceStabilizingTransformation(dds)
+vst2<-vst(dds,blind=FALSE)
+vst3<-vst(dds,blind=TRUE)
 pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/heatmap_vst.pdf", width=12,height=12)
 sampleDists<-dist(t(assay(vst)))
 sampleDistMatrix <- as.matrix(sampleDists)
@@ -253,7 +358,7 @@ heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45
 dev.off()
 
 # Sample distances measured with rlog transformation:
-# rld <- rlog(dds)
+ rld <- rlog(dds)
 # pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/heatmap_rld.pdf")
 # sampleDists <- dist(t(assay(rld)))
 # sampleDistMatrix <- as.matrix( sampleDists )
@@ -278,25 +383,43 @@ dev.off()
 # dev.off()
 
 # PCA plots
-pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_vst.pdf")
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_vst_group_filtered.pdf")
 plotPCA(vst,intgroup=c("Group"))
 dev.off()
 
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2/PCA_vst_FALSE.pdf")
+plotPCA(vst2,intgroup=c("Group"))
+dev.off()
+
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2/PCA_vst_TRUE.pdf")
+plotPCA(vst3,intgroup=c("Group"))
+dev.off()
+
 #Plot using rlog transformation:
-# pdf("alignment/salmon/N.ditissima/Hg199/DeSeq2/PCA_rld.pdf")
-# plotPCA(rld,intgroup=c("Cultivar", "Timepoint"))
-# dev.off()
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_rld_group.pdf")
+plotPCA(rld,intgroup=c("Timepoint"))
+dev.off()
 
 #Plot using rlog transformation, showing sample names:
 
-data <- plotPCA(rld, intgroup=c("Cultivar","Timepoint"), returnData=TRUE)
+data <- plotPCA(vst, intgroup=c("Condition.1"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
-pca_plot<- ggplot(data, aes(PC1, PC2, color=Cultivar)) +
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Condition.1)) +
+geom_point(size=3) +
+xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(vst)))
+coord_fixed()
+ggsave("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_sample_names4.pdf", pca_plot, dpi=300, height=10, width=12)
+
+data <- plotPCA(rld, intgroup=c("Condition","Timepoint"), returnData=TRUE)
+percentVar <- round(100 * attr(data, "percentVar"))
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Condition)) +
 geom_point(size=3) +
 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
 ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(rld)))
 coord_fixed()
-ggsave("alignment/salmon/N.ditissima/Hg199/DeSeq2/PCA_sample_names.pdf", pca_plot, dpi=300, height=10, width=12)
+ggsave("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_rld_sample_names.pdf", pca_plot, dpi=300, height=10, width=12)
+
 
 # Gene clustering plots
 
@@ -316,24 +439,23 @@ heatmap.2(mat, trace="none", col=colors, dendrogram="column",ColSideColors=sidec
 dev.off()
 ```
 
-
-
-
-#Make a table of raw counts, normalised counts and fpkm values:
+```r
+# Done but not needed
+# Make a table of raw counts, normalised counts and fpkm values:
 raw_counts <- data.frame(counts(dds, normalized=FALSE))
 colnames(raw_counts) <- paste(colData$Sample)
-write.table(raw_counts,"raw_counts.txt",sep="\t",na="",quote=F)
+write.table(raw_counts,"alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/raw_counts.txt",sep="\t",na="",quote=F)
 norm_counts <- data.frame(counts(dds, normalized=TRUE))
 colnames(norm_counts) <- paste(colData$Sample)
-write.table(norm_counts,"normalised_counts.txt",sep="\t",na="",quote=F)
+write.table(norm_counts,"alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/normalised_counts.txt",sep="\t",na="",quote=F)
 
 # robust may be better set at false to normalise based on total counts rather than 'library normalisation factors'
 fpkm_counts <- data.frame(fpkm(dds, robust = TRUE))
 colnames(fpkm_counts) <- paste(colData$Sample)
-write.table(fpkm_counts,"fpkm_norm_counts.txt",sep="\t",na="",quote=F)
+write.table(fpkm_counts,"alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/fpkm_norm_counts.txt",sep="\t",na="",quote=F)
 fpkm_counts <- data.frame(fpkm(dds, robust = FALSE))
 colnames(fpkm_counts) <- paste(colData$Sample)
-write.table(fpkm_counts,"fpkm_counts.txt",sep="\t",na="",quote=F)
+write.table(fpkm_counts,"alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/fpkm_counts.txt",sep="\t",na="",quote=F)
 
 
 pca(experiment.table="raw_counts.txt", type="counts",
@@ -359,27 +481,19 @@ pca(experiment.table="fpkm_norm_counts.txt", type="FPKM",
 
 
 write.csv(vst, file="vst.csv")
+```
 
+```r
+# For cosistently expressed genes
 
+topVarGenes <- head( order( rowVars( assay(vst) ), decreasing=FALSE ), 1000 ) # decreasing=TRUE for most variable genes
+mat <- assay(vst)[ topVarGenes, ]
+write.table(mat,"Topvar2.txt",sep="\t",na="",quote=F)
 
-# Define the DESeq 'GLM' model
-design <- ~ Condition + Experiment
-dds <- DESeqDataSetFromTximport(txi.genes,colData,design)
-
-# Library normalisation
-dds <- estimateSizeFactors(dds)
-
-# Deseq
-dds<-DESeq(dds)
-
-resultsNames(dds)
-resultsNames(dds)
-
-> resultsNames(dds)
- [1] "Intercept"                    "Condition_WT53_16_vs_WT53_12"
- [3] "Condition_WT53_20_vs_WT53_12" "Condition_WT53_24_vs_WT53_12"
- [5] "Condition_WT53_28_vs_WT53_12" "Condition_WT53_32_vs_WT53_12"
- [7] "Condition_WT53_36_vs_WT53_12" "Condition_WT53_4_vs_WT53_12" 
- [9] "Condition_WT53_40_vs_WT53_12" "Condition_WT53_44_vs_WT53_12"
-[11] "Condition_WT53_48_vs_WT53_12" "Condition_WT53_8_vs_WT53_12" 
-[13] "Experiment_B_vs_A"            "Experiment_C_vs_A" 
+# Combine both datasets and look shared genes
+T1<-read.table("Topvar1.txt",header=T,sep="\t")
+T2<-read.table("Topvar2.txt",header=T,sep="\t")
+T3<-merge(T1,T2, by.x="ID",by.y="ID",all.x=TRUE,all.y=TRUE) # Print all
+T3<-merge(T1,T2, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE) # Shared only
+write.table(T3,"common.txt",sep="\t",na="",quote=F)
+```
