@@ -18,7 +18,6 @@ mkdir -p qc_dna/minion/F.venenatum/WT
 cat F.venenatum_WT_07-03-17_albacore_v2.02_trim.fastq.gz F.venenatum_WT_18-07-17_albacore_v2.02_trim.fastq.gz > /projects/fusarium_venenatum/qc_dna/minion/F.venenatum/WT/WT_minion_allfiles.fastq.gz
 ```
 
-
 ## Miniasm
 
 ```bash
@@ -70,9 +69,6 @@ mv assembly/miniasm/F.venenatum/WT_minion/WT_minion.fa assembly/miniasm/F.venena
   done
 ```
 
-
-
-
 Kat tool was used to assess level of error and duplications in the genome assemblies generated. Mapleson et al., 2016.
 
 ```bash
@@ -98,8 +94,6 @@ after KAT jobs have finished running, then remove appended trimmed reads
 rm qc_dna/paired/*/*/*/F_trim_appended.fq.gz
 rm qc_dna/paired/*/*/*/R_trim_appended.fq.gz
 ```
-
-
 
 ## Error correction using racon:
 
@@ -127,7 +121,6 @@ Quast and busco were run to assess the effects of racon on assembly quality:
     sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
   done
 ```
-
 
 ```bash
 ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc/remove_contaminants
@@ -337,8 +330,6 @@ done
 rm tmp.txt
 ```
 
-
-
 ```bash
 # Python 2.7 is needed to install Quast
   ProgDir=/home/gomeza/git_repos/tools/seq_tools/assemblers/assembly_qc
@@ -347,8 +338,6 @@ rm tmp.txt
     sbatch $ProgDir/sub_quast.sh $Assembly $OutDir
   done
 ```
-
-
 ```bash
   for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/pilon/WT_SMART_pilon10_renamed.fasta); do
     ProgDir=/home/gomeza/git_repos/tools/gene_prediction/busco
@@ -357,11 +346,6 @@ rm tmp.txt
     sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
   done
 ```
-
-
-
-
-
 ```bash
 for Assembly in $(ls assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
@@ -380,9 +364,7 @@ done
 ```
 
 
-
 ```bash
-
   for Assembly in $(ls assembly_vAG/canu_2step/canu_minion/N.ditissima/Hg199/pilon/*10.fasta); do
 Strain=$(echo $Assembly | rev | cut -f3 -d '/' | rev)
 Organism=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
@@ -493,11 +475,6 @@ Quast and busco were run to assess the effects of racon on assembly quality:
     sbatch $ProgDir/sub_busco.sh $Assembly $BuscoDB $OutDir
   done
 ```
-
-
-
-
-
 
 ## Previous assemblies qc
 
@@ -784,7 +761,7 @@ sbatch $ProgDir/sub_pilon_2_libs.sh $Assembly $TrimF2_Read $TrimR2_Read $TrimF3_
 done
 ```
 
-
+```bash
 nanopolish variants --consensus -o polished.contig_1:0-50200.vcf -w contig_1:0-50200 -r raw_dna/nanopolish/F.venenatum/WT_minion/WT_minion_concatenated_reads_filtered.fastq \
 --ploidy 1 \
 --max-haplotypes 100000 \
@@ -795,7 +772,7 @@ nanopolish variants --consensus -o polished.contig_1:0-50200.vcf -w contig_1:0-5
 
 
 nanopolish vcf2fasta -g assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/WT_minion_racon10_renamed.fasta assembly/SMARTdenovo/F.venenatum/WT_minion/racon_10/nanopolish/variants/polished* > polished_SMARTdenovo_genome.fa
-
+```
 ```bash
 for Assembly in $(ls assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa); do
 Organism=$(echo $Assembly | rev | cut -f6 -d '/' | rev)
@@ -889,7 +866,8 @@ BuscoDB=$(ls -d /projects/dbBusco/sordariomycetes_odb10)
 OutDir=$(dirname $Assembly)/busco_sordariomycetes_obd10
 sbatch $ProgDir/busco.sh $Assembly $BuscoDB $OutDir
 done
-
+```
+```bash
 busco -o test_busco -i assembly/flye/F.venenatum/WT_minion/assembly.fasta -l /projects/oldhome/groups/harrisonlab/dbBusco/sordariomyceta_odb9 -m geno -c 8 -sp fusarium_graminearum
 
 busco -o nanopolished_flye -i assembly/flye/F.venenatum/WT_minion/racon_10/nanopolish_bwa/nanopolish/polished_flye_genome.fa -l /projects/dbBusco/sordariomycetes_odb10 -m geno -c 8 --augustus_species fusarium_graminearum
@@ -1091,5 +1069,31 @@ ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Assembly_qc
 for Assembly in $(ls assembly/*/F.venenatum/WT_minion/racon_10/medaka/medaka/pilon/*_medaka_pilon10_renamed.fasta); do
 OutDir=$(dirname $Assembly)
 sbatch $ProgDir/quast.sh $Assembly $OutDir
+done
+```
+
+
+```bash
+conda activate medaka
+  for Assembly in $(ls assembly/canu/F.venenatum/WT_minion/*_canu.contigs.fasta); do
+    ReadsFq=$(ls qc_dna/minion/F.venenatum/WT/WT_minion_allfiles.fastq.gz)
+    OutDir=$(dirname $Assembly)/medaka
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers
+    sbatch $ProgDir/medaka.sh $Assembly $ReadsFq $OutDir
+  done
+
+
+for Assembly in $(ls assembly/canu/F.venenatum/WT_minion/medaka/medaka/consensus.fasta); do
+  IlluminaDir=$(ls -d ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/qc_dna/paired/F.venenatum/WT)
+  TrimF1_Read=$(ls $IlluminaDir/F/*S1_L001_R1_001_trim.fq.gz | head -n1)
+  TrimR1_Read=$(ls $IlluminaDir/R/*S1_L001_R2_001_trim.fq.gz | head -n1)
+  TrimF2_Read=$(ls $IlluminaDir/F/*S2_L001_R1_001_trim.fq.gz | head -n1)
+  TrimR2_Read=$(ls $IlluminaDir/R/*S2_L001_R2_001_trim.fq.gz | head -n1)
+  TrimF3_Read=$(ls $IlluminaDir/F/*S3_L001_R1_001_trim.fq.gz | head -n1)
+  TrimR3_Read=$(ls $IlluminaDir/R/*S3_L001_R2_001_trim.fq.gz | head -n1)
+  OutDir=$(dirname $Assembly)/pilon
+  Iterations=10
+  ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Genome_assemblers/pilon
+  sbatch -p himem $ProgDir/pilon_3_libs.sh $Assembly $TrimF1_Read $TrimR1_Read $TrimF2_Read $TrimR2_Read $TrimF3_Read $TrimR3_Read $OutDir $Iterations
 done
 ```
