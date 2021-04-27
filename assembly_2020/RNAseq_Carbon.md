@@ -113,6 +113,32 @@ for Transcriptome in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/fin
         done
     done
 done
+
+# Samples name corrected from Novogene form
+    for Transcriptome in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.cdna.fasta); do
+        Strain=$(echo $Transcriptome| rev | cut -d '/' -f3 | rev)
+        Organism=$(echo $Transcriptome| rev | cut -d '/' -f4 | rev)
+        echo "$Organism - $Strain"
+        for RNADir in $(ls -d ../../../data/scratch/gomeza/qc_rna/RNAseq/Fvenenatum_CarbonRNAseq/corrected/C4/*); do
+        FileNum=$(ls $RNADir/F/*_1_cleaned.fq.gz | wc -l)
+            for num in $(seq 1 $FileNum); do
+                printf "\n"
+                FileF=$(ls $RNADir/F/*cleaned.fq.gz | head -n $num | tail -n1)
+                FileR=$(ls $RNADir/R/*cleaned.fq.gz | head -n $num | tail -n1)
+                echo $FileF
+                echo $FileR
+                Prefix=$(echo $RNADir | rev | cut -f3 -d '/' | rev)
+                Timepoint=$(echo $RNADir | rev | cut -f2 -d '/' | rev)
+                Sample_Name=$(echo $FileF | rev | cut -d '/' -f1 | rev | sed 's/_1_cleaned.fq.gz//g')
+                echo "$Prefix"
+                echo "$Timepoint"
+                echo "$Sample_Name"
+                OutDir=alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/$Organism/$Strain/$Prefix/$Timepoint/$Sample_Name
+                ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/RNAseq_analysis
+                sbatch -p himem $ProgDir/salmon.sh $Transcriptome $FileF $FileR $OutDir
+                done
+        done
+    done
 ```
 
 Convert Salmon quasi-quanitifcations to gene counts using an awk script:
@@ -182,9 +208,14 @@ library(ggrepel)
 tx2gene <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/trans2gene.txt",header=T,sep="\t")
 
 # import quantification files
+
+txi.reps <- tximport(paste(list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
+# No C0T0
 txi.reps <- tximport(paste(list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
 
 # get the sample names from the folders
+
+mysamples <- list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2",full.names=F,recursive=F)
 mysamples <- list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2",full.names=F,recursive=F)
 
 # summarise to gene level. This can be done in the tximport step (txOut=F), but is easier to understand in two steps.
@@ -215,7 +246,7 @@ output.folder=getwd())
 # order as the samples were read into mysamples before integrating metadata and
 # and read counts
 
-unorderedColData <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/FvenCarbon_RNAseq_design4.txt",header=T,sep="\t")
+unorderedColData <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/FvenCarbon_RNAseq_design3.txt",header=T,sep="\t")
 colData <- data.frame(unorderedColData[ order(unorderedColData$Sample),])
 
 # Group column
@@ -480,7 +511,8 @@ pca(experiment.table="fpkm_norm_counts.txt", type="FPKM",
       output.folder=getwd())
 
 
-write.csv(vst, file="vst.csv")
+write.csv(vst, file="vst_all.csv")
+write.csv(assay(vst), file="vst_all.csv")
 ```
 
 ```r
