@@ -596,8 +596,6 @@ library(ggrepel)
 
 # Load data from SALMON quasi mapping
 
-# Analysis in DeSeq2 folder include all samples. Deseq_v2 does not include C0T0 samples.
-
 # import transcript to gene mapping info
 tx2gene <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/trans2gene.txt",header=T,sep="\t")
 
@@ -661,111 +659,154 @@ resultsNames(dds)
 
 # Exploring and exporting results
 
-res <- results(dds)
-res
-summary(res)
+# res <- results(dds)
+# res
+# summary(res)
 
-alpha <- 0.05
+# alpha <- 0.05
 
-res= results(dds, alpha=alpha,contrast=c("Condition","C1","C0"))
-sig.res <- subset(res,padj<=alpha)
-sig.res <- sig.res[order(sig.res$padj),]
-sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
-sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
-summary(sig.res)
-###
-out of 4192 with nonzero total read count
-adjusted p-value < 0.05
-LFC > 0 (up)       : 2425, 58%
-LFC < 0 (down)     : 1767, 42%
-outliers [1]       : 0, 0%
-low counts [2]     : 0, 0%
-(mean count < 0)
-###
-write.table(sig.res,"C1_vs_C0.txt",sep="\t",na="",quote=F)
-write.table(sig.res.upregulated,"C1_vs_C0_up.txt",sep="\t",na="",quote=F)
-write.table(sig.res.downregulated,"C1_vs_C0_down.txt",sep="\t",na="",quote=F)
+# res= results(dds, alpha=alpha,contrast=c("Group","C1_T1","C0_T0"))
+# sig.res <- subset(res,padj<=alpha)
+# sig.res <- sig.res[order(sig.res$padj),]
+# sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+# sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+# summary(sig.res)
+# ###
+# out of 4192 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2425, 58%
+# LFC < 0 (down)     : 1767, 42%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# ###
+# write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/C1_vs_C0.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/C1_vs_C0_up.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/C1_vs_C0_down.txt",sep="\t",na="",quote=F)
 
-res= results(dds, alpha=alpha,contrast=c("Condition","C2","C0"))
-sig.res <- subset(res,padj<=alpha)
-sig.res <- sig.res[order(sig.res$padj),]
-sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
-sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
-summary(sig.res)
-###
-out of 4192 with nonzero total read count
-adjusted p-value < 0.05
-LFC > 0 (up)       : 2425, 58%
-LFC < 0 (down)     : 1767, 42%
-outliers [1]       : 0, 0%
-low counts [2]     : 0, 0%
-(mean count < 0)
-###
-write.table(sig.res,"C2_vs_C0.txt",sep="\t",na="",quote=F)
-write.table(sig.res.upregulated,"C2_vs_C0_up.txt",sep="\t",na="",quote=F)
-write.table(sig.res.downregulated,"C2_vs_C0_down.txt",sep="\t",na="",quote=F)
+# res= results(dds, alpha=alpha,contrast=c("Group","C1_T2","C0_T0"))
+# sig.res <- subset(res,padj<=alpha)
+# sig.res <- sig.res[order(sig.res$padj),]
+# sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+# sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+# summary(sig.res)
+# ###
+# out of 4192 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2425, 58%
+# LFC < 0 (down)     : 1767, 42%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# ###
+# write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/C2_vs_C0.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/C2_vs_C0_up.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/C2_vs_C0_down.txt",sep="\t",na="",quote=F)
 
-res= results(dds, alpha=alpha,contrast=c("Condition","C3","C0"))
-sig.res <- subset(res,padj<=alpha)
-sig.res <- sig.res[order(sig.res$padj),]
-sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
-sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
-summary(sig.res)
-###
-out of 4192 with nonzero total read count
-adjusted p-value < 0.05
-LFC > 0 (up)       : 2425, 58%
-LFC < 0 (down)     : 1767, 42%
-outliers [1]       : 0, 0%
-low counts [2]     : 0, 0%
-(mean count < 0)
-###
-write.table(sig.res,"C3_vs_C0.txt",sep="\t",na="",quote=F)
-write.table(sig.res.upregulated,"C3_vs_C0_up.txt",sep="\t",na="",quote=F)
-write.table(sig.res.downregulated,"C3_vs_C0_down.txt",sep="\t",na="",quote=F)
+# res= results(dds, alpha=alpha,contrast=c("Condition","C3","C0"))
+# sig.res <- subset(res,padj<=alpha)
+# sig.res <- sig.res[order(sig.res$padj),]
+# sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+# sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+# summary(sig.res)
+# ###
+# out of 4192 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2425, 58%
+# LFC < 0 (down)     : 1767, 42%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# ###
+# write.table(sig.res,"C3_vs_C0.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.upregulated,"C3_vs_C0_up.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.downregulated,"C3_vs_C0_down.txt",sep="\t",na="",quote=F)
 
-res= results(dds, alpha=alpha,contrast=c("Condition","C4","C0"))
-sig.res <- subset(res,padj<=alpha)
-sig.res <- sig.res[order(sig.res$padj),]
-sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
-sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
-summary(sig.res)
-###
-out of 4192 with nonzero total read count
-adjusted p-value < 0.05
-LFC > 0 (up)       : 2425, 58%
-LFC < 0 (down)     : 1767, 42%
-outliers [1]       : 0, 0%
-low counts [2]     : 0, 0%
-(mean count < 0)
-###
-write.table(sig.res,"C4_vs_C0.txt",sep="\t",na="",quote=F)
-write.table(sig.res.upregulated,"C4_vs_C0_up.txt",sep="\t",na="",quote=F)
-write.table(sig.res.downregulated,"C4_vs_C0_down.txt",sep="\t",na="",quote=F)
+# res= results(dds, alpha=alpha,contrast=c("Condition","C4","C0"))
+# sig.res <- subset(res,padj<=alpha)
+# sig.res <- sig.res[order(sig.res$padj),]
+# sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+# sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+# summary(sig.res)
+# ###
+# out of 4192 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2425, 58%
+# LFC < 0 (down)     : 1767, 42%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# ###
+# write.table(sig.res,"C4_vs_C0.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.upregulated,"C4_vs_C0_up.txt",sep="\t",na="",quote=F)
+# write.table(sig.res.downregulated,"C4_vs_C0_down.txt",sep="\t",na="",quote=F)
 
 
 # Sample Distances
 
-vst1<-varianceStabilizingTransformation(dds)
+# These two are the same
+vst<-varianceStabilizingTransformation(dds)
+write.csv(assay(vst), file="vst1.csv")
+vst5<-varianceStabilizingTransformation(dds,blind=TRUE)
+write.csv(assay(vst5), file="vst5.csv")
+
+vst4<-varianceStabilizingTransformation(dds,blind=FALSE)
+write.csv(assay(vst4), file="vst4.csv")
+
 vst2<-vst(dds,blind=FALSE)
+write.csv(assay(vst2), file="vst2.csv")
 vst3<-vst(dds,blind=TRUE)
-pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/heatmap_vst.pdf", width=12,height=12)
+write.csv(assay(vst3), file="vst3.csv")
+
+
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/heatmap_vst1.pdf", width=12,height=12)
 sampleDists<-dist(t(assay(vst)))
 sampleDistMatrix <- as.matrix(sampleDists)
 rownames(sampleDistMatrix) <- paste(vst$Condition)
 colnames(sampleDistMatrix) <- paste(vst$Timepoint)
 colours <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45)
-#heatmap( sampleDistMatrix,
-#  trace="none",  # turns off trace lines inside the heat map
-#  col=colours, # use on color palette defined earlier
-#  margins=c(12,12), # widens margins around plot
-#  srtCol=45,
-#  srtCol=45)
 dev.off()
 
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/heatmap_vst2.pdf", width=12,height=12)
+sampleDists<-dist(t(assay(vst2)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vst$Condition)
+colnames(sampleDistMatrix) <- paste(vst$Timepoint)
+colours <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45)
+dev.off()
+
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/heatmap_vst3.pdf", width=12,height=12)
+sampleDists<-dist(t(assay(vst3)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vst$Condition)
+colnames(sampleDistMatrix) <- paste(vst$Timepoint)
+colours <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45)
+dev.off()
+
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/heatmap_vst4.pdf", width=12,height=12)
+sampleDists<-dist(t(assay(vst4)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vst$Condition)
+colnames(sampleDistMatrix) <- paste(vst$Timepoint)
+colours <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45)
+dev.off()
+
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/heatmap_vst5.pdf", width=12,height=12)
+sampleDists<-dist(t(assay(vst5)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vst$Condition)
+colnames(sampleDistMatrix) <- paste(vst$Timepoint)
+colours <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45)
+dev.off()
+
+
 # Sample distances measured with rlog transformation:
- rld <- rlog(dds)
+rld <- rlog(dds)
 # pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/heatmap_rld.pdf")
 # sampleDists <- dist(t(assay(rld)))
 # sampleDistMatrix <- as.matrix( sampleDists )
@@ -790,33 +831,32 @@ dev.off()
 # dev.off()
 
 # PCA plots
-pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_vst_group_filtered.pdf")
-plotPCA(vst,intgroup=c("Group"))
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/PCA_vst5.pdf")
+plotPCA(vst5,intgroup=c("Group"))
 dev.off()
 
-pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2/PCA_vst_FALSE.pdf")
-plotPCA(vst2,intgroup=c("Group"))
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/PCA_vst4.pdf")
+plotPCA(vst4,intgroup=c("Group"))
 dev.off()
 
-pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2_v2/PCA_vst_TRUE.pdf")
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/PCA_vst3.pdf")
 plotPCA(vst3,intgroup=c("Group"))
 dev.off()
 
-#Plot using rlog transformation:
-pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_rld_group.pdf")
-plotPCA(rld,intgroup=c("Timepoint"))
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/PCA_vst2.pdf")
+plotPCA(vst2,intgroup=c("Group"))
 dev.off()
 
-#Plot using rlog transformation, showing sample names:
+pdf("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/PCA_vst1.pdf")
+plotPCA(vst,intgroup=c("Group"))
+dev.off()
 
-data <- plotPCA(vst, intgroup=c("Condition.1","Timepoint"), returnData=TRUE)
-percentVar <- round(100 * attr(data, "percentVar"))
-pca_plot<- ggplot(data, aes(PC1, PC2, color=Timepoint)) +
-geom_point(size=3) +
-xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(vst)))
-coord_fixed()
-ggsave("PCA_sample_names5.pdf", pca_plot, dpi=300, height=10, width=12)
+# #Plot using rlog transformation:
+# pdf("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/PCA_rld_group.pdf")
+# plotPCA(rld,intgroup=c("Timepoint"))
+# dev.off()
+
+#Plot using rlog transformation, showing sample names:
 
 data <- plotPCA(vst, intgroup=c("Condition.1","Timepoint"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
@@ -824,21 +864,46 @@ pca_plot<- ggplot(data, aes(PC1, PC2, color=Timepoint, shape=Condition.1)) +
 geom_point(size=3) +
 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
 ylab(paste0("PC2: ",percentVar[2],"% variance")) +
-geom_text_repel(aes(label=colnames(rld))) + theme(panel.grid.major = element_blank(),
+geom_text_repel(aes(label=colnames(vst))) + theme(panel.grid.major = element_blank(),
 panel.grid.minor = element_blank(), panel.background = element_blank(),
 panel.border = element_rect(colour = "black", fill = NA, size = 1),
 axis.text = element_text(size = 14), axis.title = element_text(size = 18))
 coord_fixed()
-ggsave("PCA_sample_names6.pdf", pca_plot, dpi=300, height=10, width=12)
+ggsave("PCA_sample_names1.pdf", pca_plot, dpi=300, height=10, width=12)
 
-data <- plotPCA(rld, intgroup=c("Condition"), returnData=TRUE)
+data <- plotPCA(vst4, intgroup=c("Condition.1","Timepoint"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
-pca_plot<- ggplot(data, aes(PC1, PC2, color=Condition)) +
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Timepoint, shape=Condition.1)) +
 geom_point(size=3) +
 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(rld)))
+ylab(paste0("PC2: ",percentVar[2],"% variance")) +
+geom_text_repel(aes(label=colnames(vst4))) + theme(panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(), panel.background = element_blank(),
+panel.border = element_rect(colour = "black", fill = NA, size = 1),
+axis.text = element_text(size = 14), axis.title = element_text(size = 18))
 coord_fixed()
-ggsave("PCA_rld_sample_names.pdf", pca_plot, dpi=300, height=10, width=12)
+ggsave("PCA_sample_names4.pdf", pca_plot, dpi=300, height=10, width=12)
+
+
+
+# data <- plotPCA(vst, intgroup=c("Condition.1","Timepoint"), returnData=TRUE)
+# percentVar <- round(100 * attr(data, "percentVar"))
+# pca_plot<- ggplot(data, aes(PC1, PC2, color=Timepoint)) +
+# geom_point(size=3) +
+# xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+# ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(vst)))
+# coord_fixed()
+# ggsave("PCA_sample_names5.pdf", pca_plot, dpi=300, height=10, width=12)
+
+
+# data <- plotPCA(rld, intgroup=c("Condition"), returnData=TRUE)
+# percentVar <- round(100 * attr(data, "percentVar"))
+# pca_plot<- ggplot(data, aes(PC1, PC2, color=Condition)) +
+# geom_point(size=3) +
+# xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+# ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(rld)))
+# coord_fixed()
+# ggsave("PCA_rld_sample_names.pdf", pca_plot, dpi=300, height=10, width=12)
 
 
 # Gene clustering plots
