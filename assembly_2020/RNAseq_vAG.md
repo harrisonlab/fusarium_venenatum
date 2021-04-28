@@ -98,6 +98,101 @@ mv g.zea* analysis/blast_homology/F.venenatum/WT_minion
 >g12343.t1
 ```
 
+```bash
+
+AA Tri5
+Fgtyr - g3123
+Tri8 - g3124
+(Missing) - g3125
+Tri3 - g3126
+Tri4 - g3127
+Tri6 - g3128
+Tri5 - g3129
+Tri10 - g3130
+Tri9 - (not predicted)
+Tri11 - g3131
+Tri12 - g3132
+Tri13 - g3133
+Tri14 - g3134
+Fgest - g3135
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/extract_from_fasta.py --fasta ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gene.fasta --headers Tri5List.txt > Tri5_AA.fasta
+  
+  for Assembly in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.cdna.fasta); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    Query=Tri5_AA.fasta
+    OutDir=analysis/blast_homology/$Organism/$Strain/Tri5_AA
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_analysis
+    sbatch $ProgDir/blast_pipe.sh $Query dna $Assembly $OutDir
+  done
+mv Tri5* analysis/blast_homology/F.venenatum/WT_minion/Tri5_AA
+
+
+my Tri5 gene cluster
+
+g6425.t1 - Fgtyr
+g6426.t1 - Tri8
+g6427.t1 - 
+g6428.t1 - Tri3
+g6429.t1 - Tri4
+g6430.t1 - Tri6
+g6431.t1 - Tri5
+g6432.t1 - Tri10
+g6434.t1 - Tri11
+g6435.t1 - Tri12
+g6436.t1 - Tri13
+g6437.t1 - Tri14
+g6438.t1 - Fgest??
+```
+
+```bash
+Fusarin AA
+
+g2076
+g2077
+g2078
+g2079
+g2080
+g2081
+g2082
+g2083
+g2084
+g2085
+g2060
+
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/extract_from_fasta.py --fasta ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gene.fasta --headers FusarinList.txt > Fusarin_AA.fasta
+  
+  for Assembly in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.cdna.fasta); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    Query=Fusarin_AA.fasta
+    OutDir=analysis/blast_homology/$Organism/$Strain/Fusarin_AA
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_analysis
+    sbatch $ProgDir/blast_pipe.sh $Query dna $Assembly $OutDir
+  done
+
+  mv Fusarin* analysis/blast_homology/F.venenatum/WT_minion/Fusarin_AA
+
+
+my Fusarin cluster
+
+g12320.t1
+g12337.t1
+g12338.t1
+g12339.t1
+g12340.t1
+g12341.t1
+g12342.t1 - Fusarin
+g12343.t1
+g12344.t1
+g12345.t1
+g12346.t1
+```
 
 Convert Salmon quasi-quanitifcations to gene counts using an awk script:
 
