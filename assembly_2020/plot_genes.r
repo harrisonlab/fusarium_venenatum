@@ -333,3 +333,62 @@ TRI <- read.table("Plot/TRI5_zscore.txt",header=T,sep="\t")
 
 
 
+# Rows with samples
+rawdata <- read.table("TRI5_vst1.txt",header=T,sep="\t")
+# Sample, Time, OD650 columns
+reshaped <- melt(rawdata, id=c("Gene"), variable.name="Timepoint", value.name="vst")
+write.table(reshaped, "TRI5res.txt", sep="\t")
+
+Tri <- read.table("TRI5res2.txt",header=T,sep="\t")
+
+ggplot(Tri, aes(Timepoint,vst, group=Gene, color=Gene))+
+geom_line(alpha=0.01)+
+stat_summary(aes(group=Gene),
+fun=mean, geom="line", size=0.5)+
+facet_grid(~Condition) +
+xlab("Timepoints")+
+ylab("vst")+
+theme_bw()+
+  theme(axis.text= element_text(colour="black", size=7),
+        axis.title = element_text(colour = "black", size=12),
+        aspect.ratio = 1, legend.title = element_blank())
+
+# Rows with samples
+rawdata <- read.table("TRI5_vst1.txt",header=T,sep="\t")
+# Sample, Time, OD650 columns
+reshaped <- melt(rawdata, id=c("Gene"), variable.name="Timepoint", value.name="vst")
+write.table(reshaped, "TRI5res.txt", sep="\t")
+
+Tri <- read.table("TRI5res2.txt",header=T,sep="\t")
+
+ggplot(Tri, aes(Timepoint,vst, group=Gene, color=Gene))+
+geom_line(alpha=0.01)+
+stat_summary(aes(group=Gene),
+fun=mean, geom="line", size=0.5)+
+facet_grid(~Condition) +
+xlab("Timepoints")+
+ylab("vst")+
+theme_bw()+
+  theme(axis.text= element_text(colour="black", size=7),
+        axis.title = element_text(colour = "black", size=12),
+        aspect.ratio = 1, legend.title = element_blank())
+
+# Rows with samples
+rawdata4 <- read.table("vst4/TRI5_vst4.txt",header=T,sep="\t")
+# Sample, Time, OD650 columns
+reshaped <- melt(rawdata4, id=c("Gene"), variable.name="Timepoint", value.name="vst")
+write.table(reshaped, "vst4/TRI5res.txt", sep="\t")
+
+Tri2 <- read.table("vst4/TRI5res_vst4_2.txt",header=T,sep="\t")
+
+ggplot(Tri2, aes(Timepoint,vst, group=Gene, color=Gene))+
+geom_line(alpha=0.01)+
+stat_summary(aes(group=Gene),
+fun=mean, geom="line", size=0.5)+
+facet_grid(~Condition) +
+xlab("Timepoints")+
+ylab("vst")+
+theme_bw()+
+  theme(axis.text= element_text(colour="black", size=7),
+        axis.title = element_text(colour = "black", size=12),
+        aspect.ratio = 1, legend.title = element_blank())
