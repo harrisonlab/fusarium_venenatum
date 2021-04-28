@@ -40,9 +40,19 @@
     NumHits=1
     $ProgDir/blast2gff.pl $Column2 $NumHits $BlastHits > $HitsGff
   done
+
+  for Assembly in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.cdna.fasta); do
+    Strain=$(echo $Assembly| rev | cut -d '/' -f3 | rev)
+    Organism=$(echo $Assembly | rev | cut -d '/' -f4 | rev)
+    echo "$Organism - $Strain"
+    Query=analysis/Fusarium_fujikuroiChr9.fasta
+    OutDir=analysis/blast_homology/$Organism/$Strain
+    ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_analysis
+    sbatch $ProgDir/blast_pipe.sh $Query dna $Assembly $OutDir
+  done
 ```
 ```bash
-# Run manually
+# Run manually (not needed)
 
 SCRIPT_DIR=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_analysis
 $SCRIPT_DIR/blast_self.pl ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/analysis/genbank/g.zea_Tri5.fasta blastp > g.zea_Tri5_self.csv
@@ -69,6 +79,23 @@ g6433.t1        contig_2        terpene contig_2_Cluster_10;Kind=single
 g6434.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
 g6435.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
 g6436.t1;       contig_2        terpene contig_2_Cluster_10;Kind=single
+
+SCRIPT_DIR=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_analysis
+$SCRIPT_DIR/blast_self.pl analysis/Fusarium_fujikuroiChr9.fasta blastn > f.fuji_Fusarin_self.csv
+
+$SCRIPT_DIR/blast_parse.pl f.fuji_Fusarin_self.csv > f.fuji_Fusari_simplified.csv
+
+makeblastdb -in analysis/Fusarium_fujikuroiChr9.fasta -input_type fasta -dbtype nucl -title exons_for_blastall -parse_seqids -out exons_for_blastall
+
+$SCRIPT_DIR/blast2csv.pl analysis/Fusarium_fujikuroiChr9.fasta tblastx ../oldhome/groups/harrisonlab/project_files/fusarium_venenatum/gene_pred/final/F.venenatum/WT/final/final_genes_appended_renamed.gene.fasta 5 > f.fuji_Fusarin_hits.csv
+
+$SCRIPT_DIR/blast2csv.pl analysis/Fusarium_fujikuroiChr9.fasta tblastx gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.cdna.fasta 5 > f.fuji_Fusarin_hits.csv
+
+paste -d '\t' f.fuji_Fusari_simplified.csv <(cut -f 2- f.fuji_Fusarin_hits.csv) > out_homologs.csv
+
+mv g.zea* analysis/blast_homology/F.venenatum/WT_minion
+
+>g12343.t1
 ```
 
 
