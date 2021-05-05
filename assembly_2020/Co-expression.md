@@ -45,3 +45,37 @@ ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analys
 OutDir=analysis/coexpression
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export2cytoscape.r --out_dir $OutDir --module midnightblue
+
+
+
+
+
+OutDir=analysis/WGCNA
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+gene_table=analysis/WGCNA/vst4WGCNA.txt
+column_start=2
+column_end=146
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/WGCNA_script.r --gene_table $gene_table --out_dir $OutDir --column_start $column_start --column_end $column_end
+
+OutDir=analysis/WGCNA
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+max_SFT=40
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/softthreshold_power.r --out_dir $OutDir --max_SFT $max_SFT
+
+
+OutDir=analysis/WGCNA
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+SFT=18
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir $OutDir --sft $SFT --min_module_size 30 --merging_threshold 0.25
+
+
+OutDir=analysis/WGCNA
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export_genes.r --out_dir $OutDir --unmerge Y
+
+grep -E 'g6431.t1' analysis/WGCNA/*/Genes_in_*
+analysis/WGCNA/merged_modules/Genes_in_paleturquoise.txt:"g6431"
+analysis/WGCNA/unmerged_modules/Genes_in_paleturquoise.txt:"g6431"
+
+
+
