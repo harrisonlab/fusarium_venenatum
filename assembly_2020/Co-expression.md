@@ -65,7 +65,7 @@ max_SFT=40
 
 OutDir=analysis/WGCNA
 ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
-SFT=18
+SFT=7
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir $OutDir --sft $SFT --min_module_size 30 --merging_threshold 0.25
 
 
@@ -77,5 +77,9 @@ grep -E 'g6431.t1' analysis/WGCNA/*/Genes_in_*
 analysis/WGCNA/merged_modules/Genes_in_paleturquoise.txt:"g6431"
 analysis/WGCNA/unmerged_modules/Genes_in_paleturquoise.txt:"g6431"
 
+
+OutDir=analysis/WGCNA
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Co-expression_analysis
+/projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/export2cytoscape.r --out_dir $OutDir --module navajowhite2
 
 
