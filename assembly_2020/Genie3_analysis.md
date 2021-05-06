@@ -131,17 +131,14 @@ T15<-T10[,1]
 write.table(T10, "analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_only_headers5.txt", sep="\t")
 T12<-read.table("analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_only_headers5.txt",header=TRUE,sep="\t")
 
+T15<-T12[,1]
 # Regulatos final 
 df <-as.character(unlist(T15))
 regulators <- df
 # Final call. All data vs TFs with some expression
 weightMat <- GENIE3(as.matrix(T8), regulators=regulators)
 
-
-
-
-
-linkList <- getLinkList(weightMat)
+linkList <- getLinkList(weightMat, threshold=0.05)
 
 edge_listsi <- linkList
 # Build graph from dataframe
@@ -154,5 +151,4 @@ g_arasi <- graph.adjacency(Asi,mode = "undirected",weighted = T)
 g.cyto <- igraph.to.graphNEL(g_arasi)
 
 cw = createNetworkFromGraph(graph=g.cyto)
-displayGraph (cw)
 ```
