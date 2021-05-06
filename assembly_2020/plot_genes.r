@@ -435,3 +435,28 @@ theme_bw()+
   theme(axis.text= element_text(colour="black", size=7),
         axis.title = element_text(colour = "black", size=12),
         aspect.ratio = 1, legend.title = element_blank())
+
+
+
+#### coexpression
+
+T1<-read.table("navajowhite2.txt",header=T,sep="\t")
+T2<-read.table("vst1.txt",header=T,sep="\t")
+T3<-merge(T1,T2, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+
+reshaped <- melt(T3, id=c("ID"), variable.name="Timepoint", value.name="vst")
+write.table(reshaped, "Cluster3.txt", sep="\t")
+
+Tri <- read.table("Cluster4.txt",header=T,sep="\t")
+
+ggplot(Tri, aes(Timepoint,vst, group=ID, color=ID))+
+geom_line(alpha=0.01)+
+stat_summary(aes(group=ID),
+fun=mean, geom="line", size=0.5)+
+facet_grid(~Condition) +
+xlab("Timepoints")+
+ylab("vst")+
+theme_bw()+
+  theme(axis.text= element_text(colour="black", size=7),
+        axis.title = element_text(colour = "black", size=12),
+        aspect.ratio = 1, legend.title = element_blank())
