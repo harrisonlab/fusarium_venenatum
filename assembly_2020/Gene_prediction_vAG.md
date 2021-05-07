@@ -498,6 +498,7 @@ for File in $(ls analysis/effectorP/*/*/*_EffectorP.txt); do
 done > tmp.txt
 ```
 
+# Antismash
 
 ```bash
 for AntiSmash in $(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_vAG/*appended.gbk); do
@@ -512,16 +513,43 @@ $ProgDir/antismash2gffv5.py --inp_antismash $AntiSmash --out_prefix $Prefix
 # Identify secondary metabolites within predicted clusters
 printf "Number of secondary metabolite detected:\t"
 cat "$Prefix"_secmet_clusters.gff | wc -l
-GeneGff=gene_pred/codingquarry_cuff_final/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3
+GeneGff=gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3
 bedtools intersect -u -a $GeneGff -b "$Prefix"_secmet_clusters.gff > "$Prefix"_secmet_genes.gff
 cat "$Prefix"_secmet_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > "$Prefix"_antismash_secmet_genes.txt
 bedtools intersect -wo -a $GeneGff -b "$Prefix"_secmet_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -e "s/;Parent=g\w+//g" | perl -p -e "s/;Notes=.*//g" > "$Prefix"_secmet_genes.tsv
 printf "Number of predicted proteins in secondary metabolite clusters:\t"
-cat "$Prefix"_secmet_genes.txt | wc -l
+cat "$Prefix"_antismash_secmet_genes.txt | wc -l
 printf "Number of predicted genes in secondary metabolite clusters:\t"
 cat "$Prefix"_secmet_genes.gff | grep -w 'gene' | wc -l
 done
 ```
+
+
+```bash
+# rerun to validate results
+for AntiSmash in $(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP/medaka_contigs_unmasked/*unmasked.gbk); do
+Organism=$(echo $AntiSmash | rev | cut -f3 -d '/' | rev)
+Strain=$(echo $AntiSmash | rev | cut -f2 -d '/' | rev)
+echo "$Organism - $Strain"
+OutDir=analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP
+Prefix=$OutDir/WT_antismash_results
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/antismash2gffv5.py --inp_antismash $AntiSmash --out_prefix $Prefix
+
+# Identify secondary metabolites within predicted clusters
+printf "Number of secondary metabolite detected:\t"
+cat "$Prefix"_secmet_clusters.gff | wc -l
+GeneGff=gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3
+bedtools intersect -u -a $GeneGff -b "$Prefix"_secmet_clusters.gff > "$Prefix"_secmet_genes.gff
+cat "$Prefix"_secmet_genes.gff | grep -w 'mRNA' | cut -f9 | cut -f2 -d '=' | cut -f1 -d ';' > "$Prefix"_antismash_secmet_genes.txt
+bedtools intersect -wo -a $GeneGff -b "$Prefix"_secmet_clusters.gff | grep 'mRNA' | cut -f9,10,12,18 | sed "s/ID=//g" | perl -p -e "s/;Parent=g\w+//g" | perl -p -e "s/;Notes=.*//g" > "$Prefix"_secmet_genes.tsv
+printf "Number of predicted proteins in secondary metabolite clusters:\t"
+cat "$Prefix"_antismash_secmet_genes.txt | wc -l
+printf "Number of predicted genes in secondary metabolite clusters:\t"
+cat "$Prefix"_secmet_genes.gff | grep -w 'gene' | wc -l
+done
+```
+
 
 SMURF was also run to identify secondary metabolite gene clusters.
 
@@ -555,7 +583,7 @@ Strain=$(echo $Assembly | rev | cut -f4 -d '/' | rev)
 OutDir=analysis/secondary_metabolites/antismash/$Organism/$Strain
 mkdir -p $OutDir
 GeneGff=$(ls gene_pred/final/$Organism/$Strain/final/final_genes_appended_renamed.gff3)
-AntismashClusters=$(ls analysis/secondary_metabolites/antismash/$Organism/$Strain/*_secmet_clusters.gff)
+AntismashClusters=$(ls analysis/secondary_metabolites/antismash/$Organism/WT_minion_vAG/*_secmet_clusters.gff)
 SmurfClusters=$(ls analysis/secondary_metabolites/smurf/$Organism/$Strain/*lusters.gff)
 echo "Total number of Antismash clusters"
 cat $AntismashClusters | wc -l
