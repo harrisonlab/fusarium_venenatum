@@ -1,5 +1,13 @@
 # Genie3 analysis
 
+```r
+# Load libraries
+library(GENIE3)
+library(igraph)
+library(RCy3)
+library(Rgraphviz)
+```
+
 ### Analysis of one modele from WGCNA
 
 ```r
@@ -39,11 +47,6 @@ weightMat[1:4,1:4]
 # Transform results to network
 
 # All genes in the module as candidates
-
-library(GENIE3)
-library(igraph)
-library(RCy3)
-library(Rgraphviz)
 
 weightMat <- GENIE3(as.matrix(T6))
 set.seed(weightMat)
@@ -147,6 +150,64 @@ Gsi <- graph.data.frame(edge_listsi,directed = F)
 Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
 # Build adjacency graph
 g_arasi <- graph.adjacency(Asi,mode = "undirected",weighted = T)
+# Create igraph
+g.cyto <- igraph.to.graphNEL(g_arasi)
+
+cw = createNetworkFromGraph(graph=g.cyto)
+```
+
+
+# Analysis with secmet genes and TFs
+
+```r
+
+# Modele with TRI5 gene cluster
+D1<-read.table("analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP/WT_antismash_results_secmet_genes_with_header.txt",header=T)
+# All TFs
+D2<-read.table("analysis/secondary_metabolites/smurf/F.venenatum/WT_minion/WT_minion_smurf_secmet_genes_withhead.txt",header=T)
+# TFs in the module for regulation
+D3<-merge(D1,D2, by.x="ID",by.y="ID",all.x=TRUE,all.y=TRUE)
+write.table(D3, "analysis/Genie3/Secmet/WT_minion_all_secmet.txt", sep="\t",quote = FALSE)
+
+less analysis/Genie3/Secmet/WT_minion_all_secmet.txt | cut -f1 | sed "s/\..*//" | uniq > analysis/Genie3/Secmet/combined_secmet_gene_names.txt
+
+D4<-read.table("analysis/Genie3/Secmet/combined_secmet_gene_names.txt",header=T)
+# All TFs no duplicate
+D5<-read.table("analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_only_headers4.txt",header=T)
+# Secmet and TFs
+D6<-merge(D4,D5,by.x="ID",by.y="ID",all.x=TRUE,all.y=TRUE)
+
+# All data
+T4<-read.table("analysis/WGCNA/vst1_corrected.txt",header=T,sep="\t")
+
+# Extract expression data of Secmet and TFs
+D7<-merge(D6,T4, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+write.table(D7, "analysis/Genie3/Secmet/SecmetTFs.txt", sep="\t")
+
+# TFs genes only with all expression data
+D8<-merge(D7,D5, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+D9<-D8[,1]
+
+# Load corrected table
+D10<-read.table("analysis/Genie3/Secmet/SecmetTFs.txt",header=TRUE)
+
+# GENIE3
+
+# Added for reproducibility of results
+set.seed(123)
+weightMat <- GENIE3(as.matrix(D10), regulators=D9)
+
+#linkList <- getLinkList(weightMat)
+
+linkList <- getLinkList(weightMat, threshold=0.03)
+
+edge_listsi <- linkList
+# Build graph from dataframe
+Gsi <- graph.data.frame(edge_listsi,directed = T)
+# Convert graph to adjacency matrix
+Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
+# Build adjacency graph
+g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
 # Create igraph
 g.cyto <- igraph.to.graphNEL(g_arasi)
 
