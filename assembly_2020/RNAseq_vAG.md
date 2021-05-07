@@ -133,16 +133,18 @@ mv Tri5* analysis/blast_homology/F.venenatum/WT_minion/Tri5_AA
 
 my Tri5 gene cluster
 
+ID - Description - Antismash description - PFAM description
 g6425.t1 - Fgtyr
 g6426.t1 - Tri8
 g6427.t1 - 
-g6428.t1 - Tri3
-g6429.t1 - Tri4
-g6430.t1 - Tri6
-g6431.t1 - Tri5
-g6432.t1 - Tri10
-g6434.t1 - Tri11
-g6435.t1 - Tri12
+g6428.t1 - Tri3 - Other genes - 15-O-acetyltransferase Tri3
+g6429.t1 - Tri4 - Additional biosynthetic genes - Cytochrome P450
+g6430.t1 - Tri6 - Other genes
+g6431.t1 - Tri5 - Core biosynthetic gene - Trichodiene synthase (TRI5)
+g6432.t1 - Tri10 - Other genes - TF - Fungal specific transcription factor domain 
+g6433.t1 -       - Other genes
+g6434.t1 - Tri11 - Additional biosynthetic genes - Cytochrome P450
+g6435.t1 - Tri12 - Transport-related genes - Fungal trichothecene efflux pump (TRI12)
 g6436.t1 - Tri13
 g6437.t1 - Tri14
 g6438.t1 - Fgest??
