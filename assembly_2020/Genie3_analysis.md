@@ -212,4 +212,7 @@ g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
 g.cyto <- igraph.to.graphNEL(g_arasi)
 
 cw = createNetworkFromGraph(graph=g.cyto)
+
+write.table(linkList, "analysis/Genie3/Secmet/Results_table.txt", sep="\t",quote = FALSE)
 ```
+
