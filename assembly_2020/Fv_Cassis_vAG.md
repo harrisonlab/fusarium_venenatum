@@ -67,15 +67,16 @@ done
 ```bash
 ProjDir=$(ls -d /projects/fusarium_venenatum)
 cd $ProjDir
-for Cluster in $(ls -d analysis/promoters/cassis/all_genes3/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
-ClusterDir=$(ls -d analysis/promoters/cassis/all_genes3/${Cluster})
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+ClusterDir=$(ls -d analysis/promoters/cassis/all_genes/${Cluster})
 echo ""
 for Results in $(ls $ClusterDir/*/*_log.txt); do
 Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
 if $(grep -q 'No cluster prediction' $Results); then
 printf "${Cluster}\t${Anchor}\tNA\tNA\n"
 elif grep 'Computing CLUSTER PREDICTIONS' $Results; then
-Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ')
+Best=$(cat $Results | grep -A2 '(7) Computing CLUSTER PREDICTIONS' | tail -n1 | sed -r "s&^\s+&&g" | cut -f1 -d ' ') #Best motif
+# grep -A2 print 2 lines after pattern
 Fimo=$(ls $ClusterDir/$Anchor/$Anchor/fimo/$Best/fimo.txt)
 Motif=$(cat $Fimo | head -n2 | tail -n1 | cut -f1)
 printf "${Cluster}\t${Anchor}\t${Best}\t${Motif}\n"
@@ -119,7 +120,7 @@ cat analysis/annotation_tables/F.venenatum/WT_minion/WT_minion_noDEGs_gene_table
 
 ProjDir=$(ls -d /projects/fusarium_venenatum)
 cd $ProjDir
-for Cluster in $(ls -d analysis/promoters/cassis/all_genes3/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
+for Cluster in $(ls -d analysis/promoters/cassis/all_genes/contig* | rev | cut -f1 -d '/' | rev | sort -n -k3 -t'_'); do
 ClusterDir=$(ls -d analysis/promoters/cassis/all_genes3/${Cluster})
 for Results in $(ls $ClusterDir/*/*_log.txt); do
 Anchor=$(echo $Results | rev | cut -f2 -d '/' | rev)
@@ -254,7 +255,7 @@ else
 continue
 fi
 done
-done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':(' >> analysis/promoters/cassis/all_genes3/motif_similarity/all_motifs.txt
+done | grep -v 'CLUSTER PREDICTIONS' | grep -v ':(' >> analysis/promoters/cassis/all_genes/motif_similarity/all_motifs.txt
 ```
 
 ```bash
@@ -357,7 +358,7 @@ done
 ```
 
 ```bash
-srun --partition medium --mem 10G --cpus-per-task 10 --pty bash
+srun --partition long --mem 10G --cpus-per-task 10 --pty bash
 conda activate meme_v4
 
 for Query in $(ls analysis/meme/promotor_regions/F.venenatum/WT_minion/tri/*/*_promotors.fa); do
