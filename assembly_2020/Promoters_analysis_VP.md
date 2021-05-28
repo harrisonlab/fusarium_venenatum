@@ -50,3 +50,93 @@ done
 ```
 
 No significant motif founded. I need larger regions
+
+
+
+Extract promotor regions:
+Promotor regions upstream of all genes were extracted:
+
+```bash
+# This will extract promoter regions from the start codon of a gene. If two genes are close together, this promoter might include exons from the other gene.
+for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3); do
+Strain=$(echo $GeneGff | rev | cut -f3 -d '/' | rev)
+Organism=$(echo $GeneGff | rev | cut -f4 -d '/' | rev)
+Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+OutDir=analysis/promoters_VP/promoters_regions/$Organism/$Strain
+mkdir -p $OutDir
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Promoter_analysis
+$ProgDir/extract_promotor.pl --fasta $Assembly --gff $GeneGff --prefix $OutDir/${Strain} --ranges 1:1000 1:2000 1:3000
+done
+```
+
+
+```bash
+# Create fasta files of RxLR upstream regions
+for Upstream in $(ls analysis/promoters_VP/promoters_regions/F.venenatum/WT_minion/*.upstream*000.fasta); do
+Region=$(basename ${Upstream%.fasta} | sed 's/promotor_regions.upstream//g')
+mkdir $OutDir/$Region
+RegionPromotors=$OutDir/$Region/F.venenatum_WT_${Region}_promotors.fa
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/extract_from_fasta.py --fasta $Upstream --headers $OutDir/tri_headers.txt > $RegionPromotors
+done
+```
+
+```bash
+
+for Query in $(ls analysis/promoters_VP/promoters_regions/F.venenatum/WT_minion/*000/*_promotors.fa); do
+Region=$(basename ${Query%.fa} | sed 's/.*upstream//g' | sed "s/_prom.*//g")
+echo $Region
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/meme
+meme $Query -dna -oc $OutDir/meme -nostatus -mod anr -nmotifs 20 -minw 6 -maxw 20 -evt 1.0e+005 -objfun classic -revcomp
+ls $OutDir/meme/meme.txt
+mast $OutDir/meme/meme.xml $Query -oc $OutDir/meme -nostatus
+mv $OutDir/meme/mast.txt $OutDir/meme/${Region}_mast.txt
+mv $OutDir/meme/mast.html $OutDir/meme/${Region}_mast.html
+done
+
+# Same parameters used for the promoters from cassis
+for Query in $(ls analysis/promoters_VP/promoters_regions/F.venenatum/WT_minion/*000/*_promotors.fa); do
+Region=$(basename ${Query%.fa} | sed 's/.*upstream//g' | sed "s/_prom.*//g")
+echo $Region
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/meme_maxw12
+meme $Query -dna -oc $OutDir/meme_maxw12 -nostatus -mod anr -nmotifs 20 -minw 6 -maxw 12 -evt 1.0e+005 -revcomp
+ls $OutDir/meme_maxw12/meme.txt
+mast $OutDir/meme_maxw12/meme.xml $Query -oc $OutDir/meme_maxw12 -nostatus
+mv $OutDir/meme_maxw12/mast.txt $OutDir/meme_maxw12/${Region}_mast.txt
+mv $OutDir/meme_maxw12/mast.html $OutDir/meme_maxw12/${Region}_mast.html
+done
+
+```
+```bash
+
+
+UpstreamFa=$(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.upstream3000.fasta)
+OutDir=analysis/promoters_VP/promoters_regions/F.venenatum/WT_minion/tri_upstream3000
+mkdir -p $OutDir
+cat $UpstreamFa | sed -n "/g6426/,/g6438/p;/g6438/q" | head -n-1 > $OutDir/tri_cluster_upstream3000.fasta
+
+for Query in $(ls analysis/promoters_VP/promoters_regions/F.venenatum/WT_minion/tri_upstream3000/tri_cluster_upstream3000.fasta); do
+Region=$(basename ${Query%.fa} | sed 's/.*upstream//g' | sed "s/_prom.*//g")
+echo $Region
+OutDir=$(dirname $Query)
+mkdir -p $OutDir/meme
+meme $Query -dna -oc $OutDir/meme -nostatus -mod anr -nmotifs 5 -minw 6 -maxw 20 -objfun classic -revcomp
+ls $OutDir/meme/meme.txt
+mast $OutDir/meme/meme.xml $Query -oc $OutDir/meme -nostatus
+mv $OutDir/meme/mast.txt $OutDir/meme/${Region}_mast.txt
+mv $OutDir/meme/mast.html $OutDir/meme/${Region}_mast.html
+done
+
+
+  #Create a random sample of a 100 promoter control sequences
+
+  scripts=/home/sobczm/bin/popgen/clock/motif_discovery
+  # qsub $scripts/sub_fasta_subsample.sh gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_combined.upstream3000.fasta 100
+  qsub $scripts/sub_fasta_subsample.sh gene_pred/final/F.venenatum/WT_ncbi/final/final_genes_combined.upstream3000.fasta 13
+
+  OutDir=analysis/meme/promotor_regions/F.venenatum/WT/tri
+  # qsub $scripts/sub_ame.sh $OutDir/tri_cluster_upstream3000.fasta final_genes_combined.upstream3000_random_100.fasta min_ace YNAGGCC
+  qsub $scripts/sub_ame.sh $OutDir/tri_cluster_upstream3000.fasta final_genes_combined.upstream3000_random_13.fasta Zn_finger GTGA
+  mv *_vs_Zn_finger $OutDir/.
