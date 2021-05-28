@@ -92,9 +92,70 @@ ls $OutDir/glam_Tri6_Tri10/glam2.txt
 # cat tri_meme_out/fimo/gene_containing_motifs_annots.tsv | grep -i 'DEG:' | wc -l
 # cat $AnnotTab | grep -i 'DEG:' | wc -l
 # 183 of 2199 DEGs contain this motif.
+```
 
+Analysis of a subset of genes
+
+```bash
+# Subset 1
+Promoters=$(ls all_promoter_sequences.fasta)
+OutDir=tri5_subsets
+mkdir -p $OutDir/TF_g4107/meme
+
+GeneList="g6426.t1 g6428.t1 g6429.t1 g6430.t1 g6431.t1 g6433.t1 g6435.t1"
+# GeneList=$(for num in $(seq 2032 2095); do printf "g${num}.t1 "; done)
+
+for GeneID in $GeneList; do
+cat $Promoters | sed -n "/^>$GeneID/,/^>/p" | grep -v "^$" | head -n -1
+done > $OutDir/TF_g4107/promoters.fasta
+
+meme $OutDir/TF_g4107/promoters.fasta -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/TF_g4107/meme
+
+# Subset 2
+Promoters=$(ls all_promoter_sequences.fasta)
+OutDir=tri5_subsets
+mkdir -p $OutDir/TF_g4106/meme
+
+GeneList="g6426.t1 g6427.t1 g6428.t1 g6429.t1 g6430.t1 g6431.t1 g6434.t1 g6435.t1 g6436.t1 g6437.t1 g8466.t1"
+# GeneList=$(for num in $(seq 2032 2095); do printf "g${num}.t1 "; done)
+
+for GeneID in $GeneList; do
+cat $Promoters | sed -n "/^>$GeneID/,/^>/p" | grep -v "^$" | head -n -1
+done > $OutDir/TF_g4106/promoters.fasta
+
+meme $OutDir/TF_g4106/promoters.fasta -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/TF_g4106/meme
+
+# Subset 3
+Promoters=$(ls all_promoter_sequences.fasta)
+OutDir=tri5_subsets
+mkdir -p $OutDir/TF_g6432/meme
+
+GeneList="g6426.t1 g6430.t1 g6431.t1 g6433.t g6434.t1 g6435.t1 g6436.t1"
+# GeneList=$(for num in $(seq 2032 2095); do printf "g${num}.t1 "; done)
+
+for GeneID in $GeneList; do
+cat $Promoters | sed -n "/^>$GeneID/,/^>/p" | grep -v "^$" | head -n -1
+done > $OutDir/TF_g6432/promoters.fasta
+
+meme $OutDir/TF_g6432/promoters.fasta -dna -mod anr -nmotifs 5 -minw 6 -maxw 12 -revcomp -evt 1.0e+005 -oc $OutDir/TF_g6432/meme
+# This gave a different motif with the lowest P-val
+
+# Subset 4. Same as before but larger max width
+Promoters=$(ls all_promoter_sequences.fasta)
+OutDir=tri5_subsets
+mkdir -p $OutDir/TF_g6432_maxw12/meme
+
+GeneList="g6426.t1 g6430.t1 g6431.t1 g6433.t g6434.t1 g6435.t1 g6436.t1"
+# GeneList=$(for num in $(seq 2032 2095); do printf "g${num}.t1 "; done)
+
+for GeneID in $GeneList; do
+cat $Promoters | sed -n "/^>$GeneID/,/^>/p" | grep -v "^$" | head -n -1
+done > $OutDir/TF_g6432_maxw12/promoters.fasta
+
+meme $OutDir/TF_g6432_maxw12/promoters.fasta -dna -mod anr -nmotifs 5 -minw 6 -maxw 20 -revcomp -evt 1.0e+005 -oc $OutDir/TF_g6432_maxw12/meme
 
 ```
+
 
 ## Fusarin Cluster
 
