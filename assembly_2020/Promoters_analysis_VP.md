@@ -140,3 +140,64 @@ done
   # qsub $scripts/sub_ame.sh $OutDir/tri_cluster_upstream3000.fasta final_genes_combined.upstream3000_random_100.fasta min_ace YNAGGCC
   qsub $scripts/sub_ame.sh $OutDir/tri_cluster_upstream3000.fasta final_genes_combined.upstream3000_random_13.fasta Zn_finger GTGA
   mv *_vs_Zn_finger $OutDir/.
+
+
+
+
+cat final_genes_appended_renamed.upstream3000.fasta | sed 's/_upstream3000//g' > final_genes_appended_renamed.upstream3000_edited.fasta
+# Create fasta files of RxLR upstream regions
+for Upstream in $(ls *edited.fasta); do
+mkdir upstream3000
+RegionPromotors=upstream3000/F.venenatum_WT_upstream3000_promotors.fa
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/extract_from_fasta.py --fasta $Upstream --headers tri_headers.txt > $RegionPromotors
+done
+```
+
+# Fimo in upstream 3000
+```bash
+for Query in $(ls upstream3000/F.venenatum_WT_upstream3000_promotors.fa); do
+iupac2meme TNAGGCCT > motif1.txt
+mkdir -p upstream3000/motif1
+fimo -thresh 0.00006 -oc upstream/motif1 motif1.txt $Query
+done
+
+for Query in $(ls upstream3000/F.venenatum_WT_upstream3000_promotors.fa); do
+iupac2meme YNAGCCC > motif2.txt
+fimo -thresh 0.0006 -oc upstream3000/motif2 motif2.txt $Query
+done
+
+for Query in $(ls upstream3000/F.venenatum_WT_upstream3000_promotors.fa); do
+iupac2meme GTGA > motif3.txt
+fimo -thresh 0.006 -oc upstream3000/motif3 motif3.txt $Query
+done
+
+for Query in $(ls upstream3000/F.venenatum_WT_upstream3000_promotors.fa); do
+iupac2meme SYGGRG > motif4.txt
+fimo -thresh 0.0006 -oc upstream3000/motif4 motif4.txt $Query
+done
+```
+
+# Fimo in cassis promoters
+```bash
+for Query in $(ls cassis_promoters/tri_promoters.fa); do
+#iupac2meme TNAGGCCT > motif1.txt
+#mkdir -p cassis_promoters/motif1
+fimo -thresh 0.0006 -oc cassis_promoters/motif1 motif1.txt $Query
+done
+
+for Query in $(ls cassis_promoters/tri_promoters.fa); do
+#iupac2meme YNAGCCC > motif2.txt
+fimo -thresh 0.006 -oc cassis_promoters/motif2 motif2.txt $Query
+done
+
+for Query in $(ls cassis_promoters/tri_promoters.fa); do
+#iupac2meme GTGA > motif3.txt
+fimo -thresh 0.006 -oc cassis_promoters/motif3 motif3.txt $Query
+done
+
+for Query in $(ls cassis_promoters/tri_promoters.fa); do
+#iupac2meme SYGGRG > motif4.txt
+fimo -thresh 0.006 -oc cassis_promoters/motif4 motif4.txt $Query
+done
+```
