@@ -256,13 +256,13 @@ library(gplots)
 library(ggrepel)
 
 # import transcript to gene mapping info
-tx2gene <- read.table("RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/trans2gene.txt",header=T,sep="\t")
+tx2gene <- read.table("RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/trans2gene.txt",header=T,sep="\t")
 
 # import quantification files
-txi.reps <- tximport(paste(list.dirs("RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/temp", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
+txi.reps <- tximport(paste(list.dirs("RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/temp", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
 
 # get the sample names from the folders
-mysamples <- list.dirs("RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/temp",full.names=F,recursive=F)
+mysamples <- list.dirs("RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/temp",full.names=F,recursive=F)
 
 # summarise to gene level. This can be done in the tximport step (txOut=F), but is easier to understand in two steps.
 txi.genes <- summarizeToGene(txi.reps,tx2gene)
@@ -271,15 +271,15 @@ txi.genes <- summarizeToGene(txi.reps,tx2gene)
 invisible(sapply(seq(1,3), function(i) {colnames(txi.genes[[i]])<<-mysamples}))
 
 # write table with TPMs
-write.table(txi.genes,"RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/txigenes.txt",sep="\t",na="",quote=F)
-write.table(txi.reps,"RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/txireps.txt",sep="\t",na="",quote=F)
+write.table(txi.genes,"RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/txigenes.txt",sep="\t",na="",quote=F)
+write.table(txi.reps,"RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/txireps.txt",sep="\t",na="",quote=F)
 
 # Read sample metadata
 # Data is unordered as it is read in. This means data must be set into the same
 # order as the samples were read into mysamples before integrating metadata and
 # and read counts
 
-unorderedColData <- read.table("RNAseq_analysis/salmon_vAG/F.venenatum/WT_minion/DeSeq2/Fven_WTminion_RNAseq_design.txt",header=T,sep="\t")
+unorderedColData <- read.table("RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/Fven_WTminion_RNAseq_design.txt",header=T,sep="\t")
 colData <- data.frame(unorderedColData[ order(unorderedColData$Sample.name),])
 
 #Add column with the media names
