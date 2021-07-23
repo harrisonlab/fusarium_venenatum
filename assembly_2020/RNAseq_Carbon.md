@@ -983,3 +983,276 @@ T3<-merge(T1,T2, by.x="ID",by.y="ID",all.x=TRUE,all.y=TRUE) # Print all
 T3<-merge(T1,T2, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE) # Shared only
 write.table(T3,"common.txt",sep="\t",na="",quote=F)
 ```
+
+### Analysis of conditions
+
+```r
+# Load data from SALMON quasi mapping
+
+# import transcript to gene mapping info
+tx2gene <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/trans2gene.txt",header=T,sep="\t")
+
+# import quantification files
+
+txi.reps <- tximport(paste(list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
+
+# get the sample names from the folders
+
+mysamples <- list.dirs("alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2",full.names=F,recursive=F)
+
+# summarise to gene level. This can be done in the tximport step (txOut=F), but is easier to understand in two steps.
+txi.genes <- summarizeToGene(txi.reps,tx2gene)
+
+names(txi.genes)
+
+# set the sample names for txi.genes
+invisible(sapply(seq(1,3), function(i) {colnames(txi.genes[[i]])<<-mysamples}))
+
+# Read sample metadata
+# Data is unordered as it is read in. This means data must be set into the same
+# order as the samples were read into mysamples before integrating metadata and
+# and read counts
+
+unorderedColData <- read.table("alignment/salmon/Fvenenatum_CarbonRNAseq/F.venenatum/WT_minion/DeSeq2/FvenCarbon_RNAseq_design3.txt",header=T,sep="\t")
+colData <- data.frame(unorderedColData[ order(unorderedColData$Sample),])
+
+# Group column
+colData$Group <- paste0(colData$Condition,'_', colData$Timepoint)
+
+# Group column
+colData$Group2 <- paste0(colData$Condition.1,'_', colData$Timepoint)
+
+# Define the DESeq 'GLM' model
+design <- ~ Condition.1
+dds <- DESeqDataSetFromTximport(txi.reps,colData,design)
+
+keep <- rowSums(counts(dds)) >= 50
+dds <- dds[keep,]
+
+# Library normalisation
+dds <- estimateSizeFactors(dds)
+
+# Deseq
+dds<-DESeq(dds)
+
+resultsNames(dds)
+
+[1] "Intercept"                           "Condition.1_Glucose_High_vs_Control"
+[3] "Condition.1_Glucose_Low_vs_Control"  "Condition.1_Sucrose_High_vs_Control"
+[5] "Condition.1_Sucrose_Low_vs_Control" 
+
+# Exploring and exporting results
+
+res <- results(dds)
+res
+summary(res)
+
+alpha <- 0.05
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Glucose_Low","Control"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 2960 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2026, 68%
+# LFC < 0 (down)     : 934, 32%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_Low_vs_Control.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_Low_vs_Control_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_Low_vs_Control_down.txt",sep="\t",na="",quote=F)
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Glucose_High","Control"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 2699 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 1751, 65%
+# LFC < 0 (down)     : 948, 35%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_High_vs_Control.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_High_vs_Control_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_High_vs_Control_down.txt",sep="\t",na="",quote=F)
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Sucrose_High","Control"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 2576 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 1675, 65%
+# LFC < 0 (down)     : 901, 35%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_High_vs_Control.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_High_vs_Control_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_High_vs_Control_down.txt",sep="\t",na="",quote=F)
+
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Sucrose_Low","Control"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 2843 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 1852, 65%
+# LFC < 0 (down)     : 991, 35%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Control.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Control_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Control_down.txt",sep="\t",na="",quote=F)
+
+### Glucose_High as control
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Glucose_Low","Glucose_High"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 4203 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2333, 56%
+# LFC < 0 (down)     : 1870, 44%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_Low_vs_Glucose_High.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_Low_vs_Glucose_High_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Glucose_Low_vs_Glucose_High_down.txt",sep="\t",na="",quote=F)
+
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Sucrose_High","Glucose_High"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 169 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 140, 83%
+# LFC < 0 (down)     : 29, 17%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_High_vs_Glucose_High.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_High_vs_Glucose_High_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_High_vs_Glucose_High_down.txt",sep="\t",na="",quote=F)
+
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Sucrose_Low","Glucose_High"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 4609 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2272, 49%
+# LFC < 0 (down)     : 2337, 51%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Glucose_High.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Glucose_High_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Glucose_High_down.txt",sep="\t",na="",quote=F)
+
+res= results(dds, alpha=alpha,contrast=c("Condition.1","Sucrose_Low","Sucrose_High"))
+sig.res <- subset(res,padj<=alpha)
+sig.res <- sig.res[order(sig.res$padj),]
+sig.res.upregulated <- sig.res[sig.res$log2FoldChange >=1, ]
+sig.res.downregulated <- sig.res[sig.res$log2FoldChange <=-1, ]
+summary(sig.res)
+###
+# out of 4192 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 2150, 51%
+# LFC < 0 (down)     : 2042, 49%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 0, 0%
+# (mean count < 0)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+# ###
+write.table(sig.res,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast/Sucrose_Low_vs_Sucrose_High.txt",sep="\t",na="",quote=F)
+write.table(sig.res.upregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast//Sucrose_Low_vs_Sucrose_High_up.txt",sep="\t",na="",quote=F)
+write.table(sig.res.downregulated,"alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast//Sucrose_Low_vs_Sucrose_High_down.txt",sep="\t",na="",quote=F)
+```
+
+# Generating an TSV file with sequencing information
+
+```bash
+#Antismash output correction
+cat analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP/WT_antismash_results_secmet_genes.tsv | sed 's/;//p' | sed 's/;.*//p' | sed 's/Kin.*//p' > analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP/WT_antismash_results_secmet_genes_corrected.tsv
+
+for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3); do
+Strain=WT_minion
+Organism=F.venenatum
+Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+TFs=$(ls analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_domains.tsv)
+InterPro=$(ls gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv)
+Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP/WT_antismash_results_secmet_genes_corrected.tsv)
+#Smurf=$(ls analysis/secondary_metabolites/smurf/F.venenatum/WT_minion/WT_minion_smurf_secmet_genes.tsv) # I added cassis genes manually
+SwissProt=$(ls gene_pred/swissprot/F.venenatum/WT_minion/swissprot_vJun2020_tophit_parsed.tbl)
+Dir1=$(ls -d alignment/salmon/Fvenenatum_CarbonRNAseq_CORRECTED/F.venenatum/WT_minion/corrected/DeSeq2/contrast)
+DEG_Files=$(ls \
+$Dir1/Glucose_High_vs_Control.txt \
+$Dir1/Glucose_Low_vs_Control.txt \
+$Dir1/Sucrose_High_vs_Control.txt \
+$Dir1/Sucrose_Low_vs_Control.txt \
+$Dir1/Glucose_Low_vs_Glucose_High.txt \
+$Dir1/Sucrose_High_vs_Glucose_High.txt \
+$Dir1/Sucrose_Low_vs_Glucose_High.txt \
+$Dir1/Sucrose_Low_vs_Sucrose_High.txt \
+| sed -e "s/$/ /g" | tr -d "\n")
+OutDir=analysis/annotation_tables_VP/$Organism/$Strain
+mkdir -p $OutDir
+GeneFasta=$(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta)
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Annotation_tables
+$ProgDir/build_annot_RNAseq.py --gff_format gff3 --gene_gff $GeneGff --gene_fasta $GeneFasta --TFs $TFs --InterPro $InterPro --DEG_files $DEG_Files --Antismash $Antismash --Swissprot $SwissProt > $OutDir/"$Strain"_withDEGs_gene_table.tsv
+done
+```
