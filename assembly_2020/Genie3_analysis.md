@@ -216,3 +216,106 @@ cw = createNetworkFromGraph(graph=g.cyto)
 write.table(linkList, "analysis/Genie3/Secmet/Results_table.txt", sep="\t",quote = FALSE)
 ```
 
+
+# Analysis iUK RNA data
+
+```r
+R4<-read.table("analysis/Genie3/Secmet/combined_secmet_gene_names.txt",header=T)
+# All TFs no duplicate
+R5<-read.table("analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_only_headers4.txt",header=T)
+# Secmet and TFs
+R6<-merge(R4,R5,by.x="ID",by.y="ID",all.x=TRUE,all.y=TRUE)
+
+# All data
+R1<-read.table("analysis/Genie3/iUK_RNA/vst1_edited.txt",header=T,sep="\t")
+
+# Extract expression data of Secmet and TFs
+R2<-merge(R6,R1, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+write.table(R2, "analysis/Genie3/iUK_RNA/SecmetTFs.txt", sep="\t")
+
+# TFs genes only with all expression data
+R8<-merge(R2,R5, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+R9<-R8[,1]
+
+# Load corrected table
+R10<-read.table("analysis/Genie3/iUK_RNA/SecmetTFs.txt",header=TRUE)
+
+# GENIE3
+
+# Added for reproducibility of results
+set.seed(123)
+weightMat <- GENIE3(as.matrix(R10), regulators=regulators)
+
+#linkList <- getLinkList(weightMat)
+
+linkList <- getLinkList(weightMat, threshold=0.02)
+write.table(linkList, "linklist_iUK.txt", sep="\t")
+
+edge_listsi <- linkList
+# Build graph from dataframe
+Gsi <- graph.data.frame(edge_listsi,directed = T)
+# Convert graph to adjacency matrix
+Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
+# Build adjacency graph
+g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
+# Create igraph
+g.cyto <- igraph.to.graphNEL(g_arasi)
+
+cw = createNetworkFromGraph(graph=g.cyto)
+```
+
+# Analysis iUK RNA data (myro only)
+
+```r
+# Load corrected table
+R10<-read.table("analysis/Genie3/iUK_RNA/SecmetTFs_myro.txt",header=TRUE)
+
+# GENIE3
+
+# Added for reproducibility of results
+set.seed(123)
+weightMat <- GENIE3(as.matrix(R10), regulators=R9)
+
+#linkList <- getLinkList(weightMat)
+
+linkList <- getLinkList(weightMat, threshold=0.03)
+
+edge_listsi <- linkList
+# Build graph from dataframe
+Gsi <- graph.data.frame(edge_listsi,directed = T)
+# Convert graph to adjacency matrix
+Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
+# Build adjacency graph
+g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
+# Create igraph
+g.cyto <- igraph.to.graphNEL(g_arasi)
+
+cw = createNetworkFromGraph(graph=g.cyto)
+```
+```r
+# Load corrected table
+R10<-read.table("analysis/Genie3/iUK_RNA/SecmetTFs_myro_control.txt",header=TRUE)
+
+# GENIE3
+
+# Added for reproducibility of results
+set.seed(123)
+weightMat <- GENIE3(as.matrix(R10), regulators=R9)
+
+#linkList <- getLinkList(weightMat)
+
+linkList <- getLinkList(weightMat, threshold=0.03)
+
+edge_listsi <- linkList
+# Build graph from dataframe
+Gsi <- graph.data.frame(edge_listsi,directed = T)
+# Convert graph to adjacency matrix
+Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
+# Build adjacency graph
+g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
+# Create igraph
+g.cyto <- igraph.to.graphNEL(g_arasi)
+
+cw = createNetworkFromGraph(graph=g.cyto)
+
+write.table(linkList, "analysis/Genie3/Secmet/Results_table.txt", sep="\t",quote = FALSE)
