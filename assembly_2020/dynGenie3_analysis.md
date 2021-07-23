@@ -232,3 +232,64 @@ head(link.list)
 link.list <- get.link.list(res9$weight.matrix, threshold=0.03)
 
 write.table(link.list, "dyGENIE3_RF_01_1000trees.txt", sep="\t")
+
+
+
+
+setwd("/projects/fusarium_venenatum/analysis/dynGENIE3/Condition2")
+
+library(GENIE3)
+library(igraph)
+library(RCy3)
+library(Rgraphviz)
+
+library ("reshape2")
+library ("doRNG")
+library ("doParallel")
+
+source ("dynGENIE3.R")
+
+TS1 <- read.expr.matrix("D1.txt",form="rows.are.samples")
+TS2 <- read.expr.matrix("D2.txt",form="rows.are.samples")
+TS3 <- read.expr.matrix("D3.txt",form="rows.are.samples")
+TS4 <- read.expr.matrix("D4.txt",form="rows.are.samples")
+TS5 <- read.expr.matrix("D5.txt",form="rows.are.samples")
+time.points <- list(TS1[1,], TS2[1,], TS3[1,], TS4[1,], TS5[1,])
+
+TS.data <- list(TS1[2:nrow(TS1),], TS2[2:nrow(TS2),], TS3[2:nrow(TS3),], TS4[2:nrow(TS4),], TS5[2:nrow(TS5),])
+
+T12<-read.table("../../transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_only_headers5.txt",header=TRUE,sep="\t")
+T15<-T12[,1]
+# Regulatos final 
+df <-as.character(unlist(T15))
+regulators <- df
+
+set.seed(123)
+# Use the Extra-Trees as tree-based method
+tree.method <- "RF"
+# Number of randomly chosen candidate regulators at each node of a tree
+K <- "all"
+# Number of trees per ensemble
+ntrees <- 100
+# Run the method with these settings
+restri <- dynGENIE3(TS.data,time.points, regulators=regulators, tree.method=tree.method, K=K, ntrees=ntrees)
+
+link.list <- get.link.list(restri$weight.matrix)
+head(link.list)
+
+link.list <- get.link.list(restri$weight.matrix, threshold=0.05)
+write.table(link.list, "dyGENIE3_RF_condition2_005.txt", sep="\t")
+
+T8<-read.table("dyGENIE3_RF_condition2_005.txt",header=T)
+
+edge_listsi <- T8
+# Build graph from dataframe
+Gsi <- graph.data.frame(edge_listsi,directed = T)
+# Convert graph to adjacency matrix
+Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
+# Build adjacency graph
+g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
+# Create igraph
+g.cyto <- igraph.to.graphNEL(g_arasi)
+
+cw = createNetworkFromGraph(graph=g.cyto)
