@@ -68,3 +68,24 @@ done
 
 # output in prot/
 ```
+
+
+```bash
+# Extract g10479 gene from fasta
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/extract_from_fasta.py --fasta final_genes_appended_renamed.gene.fasta --headers g10479  > g10479.fasta
+```
+
+```bash
+# Blast them on miseq genes
+for Assembly in $(ls ../gene_pred/codingquarry/F.venenatum/WT/final/final_genes_appended_renamed.gene.fasta); do
+Strain=$(echo $Assembly| rev | cut -d '/' -f4 | rev)
+Organism=$(echo $Assembly | rev | cut -d '/' -f5 | rev)
+echo "$Organism - $Strain"
+Query=g10479.fasta
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_analysis
+sbatch $ProgDir/blast_pipe.sh $Query dna $Assembly
+done
+
+# output in dna/
+```
