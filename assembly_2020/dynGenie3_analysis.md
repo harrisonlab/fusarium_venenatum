@@ -293,3 +293,65 @@ g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
 g.cyto <- igraph.to.graphNEL(g_arasi)
 
 cw = createNetworkFromGraph(graph=g.cyto)
+```
+
+
+# dynGenie3. Final analysis
+
+```bash
+# Dataset -> Carbon_data_vst_F.csv
+# data separated by condition in /projects/fusarium_venenatum/GOMEZ/analysis/dynGenie3/all_data
+
+# Replicas collapsed 
+cd /projects/fusarium_venenatum/GOMEZ/analysis/dynGenie3/average_data
+
+# TFs gene id with no duplicates
+less analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_headers.txt | sed "s/\..*//" | uniq -u > analysis/dynGenie3/average_data/WT_minion_TF_gene_only_headers_uniq.txt
+```
+
+```R
+library(GENIE3)
+library(igraph)
+library(RCy3)
+library(Rgraphviz)
+library ("reshape2")
+library ("doRNG")
+library ("doParallel")
+source ("dynGENIE3.R")
+
+D1<-read.table("C1_av.txt",header=T)
+D2<-read.table("C2_av.txt",header=T)
+D3<-read.table("C3_av.txt",header=T)
+D4<-read.table("C4_av.txt",header=T)
+ 
+TS1 <- read.expr.matrix("C1_av.txt",form="rows.are.genes")
+TS2 <- read.expr.matrix("C2_av.txt",form="rows.are.genes")
+TS3 <- read.expr.matrix("C3_av.txt",form="rows.are.genes")
+TS4 <- read.expr.matrix("C4_av.txt",form="rows.are.genes")
+
+time.points <- list(TS1[1,], TS2[1,], TS3[1,], TS4[1,])
+TS.data <- list(TS1[2:nrow(TS1),], TS2[2:nrow(TS2),], TS3[2:nrow(TS3),], TS4[2:nrow(TS4),])
+
+# Add regulators
+reg<-read.table("WT_minion_TF_gene_only_headers_uniq.txt",header=TRUE,sep="\t")
+# TFs only present in datase
+raw<-read.table("Carbon_data_vst_F.txt",header=T,sep="\t")
+
+TF<-merge(raw,reg, by.x="ID",by.y="ID",all.y=FALSE)
+regulators<-TF[,1]
+
+# According to "Unsupervised gene network inference with decision trees and Random forests", the best method is RF but it takes time and there is no a big difference. 
+# Number of trees between 100-500 give optimal results. 
+# Number of random candidate regulators is dependent of the dataset. In highly noise dataset, decrease K should be better. ". The optimal value of K is problemdependent, but K = m and K = m, where m is the number of input variables, are usually good default values"
+
+RUN this!!!
+set.seed(123)
+# Use the Extra-Trees as tree-based method
+tree.method <- "RF"
+# Number of randomly chosen candidate regulators at each node of a tree
+K <- "all"
+# Number of trees per ensemble
+ntrees <- 500
+# Run the method with these settings
+resall <- dynGENIE3(TS.data,time.points, regulators=regulators, tree.method=tree.method, K=K, ntrees=ntrees)
+```
