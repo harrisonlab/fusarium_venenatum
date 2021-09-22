@@ -285,12 +285,36 @@ colData <- data.frame(unorderedColData[ order(unorderedColData$Sample.name),])
 #Add column with the media names
 colData$Media <- rep(c("02780","02793","F55","10170","MWT","MOL","MKO","TJ"),3)
 
-# Group column
-#colData$Group <- paste0(colData$Condition, colData$Sample)
-
 # Define the DESeq 'GLM' model
 design <- ~ Media
 dds <- DESeqDataSetFromTximport(txi.genes,colData,design)
+
+# Group column
+#colData$Group <- paste0(colData$Condition, colData$Sample)
+
+# create DESeq object from count and column data
+# dds <- 	DESeqDataSetFromMatrix(txi.genes,colData,~1) 
+# dds <- DESeqDataSetFromTximport(txi.genes,colData,~1)	  
+
+
+# add grouping factor to identify technical replicates	    
+dds$groupby <- paste(dds$Media,dds$Sample,sep="_")
+
+# sum replicates (must use same library or library size correction will go wonky)	    
+dds <- collapseReplicates(dds,groupby=dds$groupby)
+
+# normalise counts for different library size (do after collapsing replicates)
+sizeFactors(dds) <- sizeFactors(estimateSizeFactors(dds)) 
+
+# define the DESeq 'GLM' model	    
+# design=~Media
+
+# add design to DESeq object	    
+# design(dds) <- design # could just replace the ~1 in the first step with the design, if you really wanted to...
+
+# Run the DESeq statistical model	    
+dds <- DESeq(dds,parallel=T)
+
 
 #Pre-filtering
 # This was done to extract consistently expressed genes
@@ -302,7 +326,7 @@ dds <- DESeqDataSetFromTximport(txi.genes,colData,design)
 #dds$Condition<-factor(dds$Condition, levels=c("RH1","RH2","RH3","RH4","RH5","RH6","RH7","RH8"))
 
 # Deseq
-dds<-DESeq(dds)
+# dds<-DESeq(dds)
 
 resultsNames(dds)
 ###
@@ -517,6 +541,10 @@ heatmap( sampleDistMatrix, trace="none", col=colours, margins=c(12,12),srtCol=45
 #  srtCol=45)
 dev.off()
 
+write.csv(assay(vst), file="vst.csv")
+vst2 <- varianceStabilizingTransformation(dds,blind=F,fitType="local")
+write.csv(assay(vst2), file="vst2.csv")
+
 # Sample distances measured with rlog transformation:
 rld <- rlog(dds)
 sampleDists <- dist(t(assay(rld)))
@@ -558,7 +586,7 @@ dev.off()
 pdf("PCA_vst_vAG.pdf")
 data <- plotPCA(vst, intgroup=c("Media"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
-pca_plot<- ggplot(data, aes(PC1, PC2, color=Media, shape=group)) +
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Media, shape=Media)) +
 geom_point(size=3) +
 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
 ylab(paste0("PC2: ",percentVar[2],"% variance")) +
@@ -574,9 +602,18 @@ percentVar <- round(100 * attr(data, "percentVar"))
 pca_plot<- ggplot(data, aes(PC1, PC2, color=Media)) +
 geom_point(size=3) +
 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(vst)))
+ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(vst))) + theme_light()
 coord_fixed()
 ggsave("PCA_vst_first.pdf", pca_plot, dpi=300, height=10, width=12)
+
+data <- plotPCA(vst2, intgroup=c("Media","Condition"), returnData=TRUE)
+percentVar <- round(100 * attr(data, "percentVar"))
+pca_plot<- ggplot(data, aes(PC1, PC2, color=Media)) +
+geom_point(size=3) +
+xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+ylab(paste0("PC2: ",percentVar[2],"% variance")) + geom_text_repel(aes(label=colnames(vst))) + theme_light()
+coord_fixed()
+ggsave("PCA_vst_second.pdf", pca_plot, dpi=300, height=10, width=12)
 
 data <- plotPCA(vst, intgroup="Experiment", returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
@@ -642,6 +679,34 @@ for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_gen
         | sed -e "s/$/ /g" | tr -d "\n")
   ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Annotation_tables
   $ProgDir/build_annot_RNAseq.py  --gff_format gff3 --gene_gff $GeneGff --gene_fasta $GeneFasta --DEG_files $DEG_Files --TFs $TFs --InterPro $InterPro --Antismash $Antismash --Swissprot $SwissProt > $OutDir/"$Strain"_gene_table_v2.tsv
+done
+
+# This is the last one, with antismaash updated
+for GeneGff in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gff3); do
+Strain=WT_minion
+Organism=F.venenatum
+Assembly=$(ls repeat_masked/F.venenatum/WT_minion/SMARTdenovo/medaka/*_contigs_softmasked_repeatmasker_TPSI_appended.fa)
+TFs=$(ls analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_domains.tsv )
+InterPro=$(ls gene_pred/interproscan/F.venenatum/WT_minion/WT_minion_interproscan.tsv)
+#Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT/geneclusters.txt)
+Antismash=$(ls analysis/secondary_metabolites/antismash/F.venenatum/WT_minion_VP/WT_antismash_results_secmet_genes_corrected.tsv )
+SwissProt=$(ls gene_pred/swissprot/F.venenatum/WT_minion/swissprot_vJun2020_tophit_parsed.tbl)
+OutDir=analysis/annotation_tables_iUK
+mkdir -p $OutDir
+GeneFasta=$(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.pep.fasta)
+Dir1=$(ls -d RNAseq_analysis_iUK/salmon_vAG/F.venenatum/WT_minion/DeSeq2/Contrasts)
+DEG_Files=$(ls \
+$Dir1/RH2_vs_RH1.txt \
+$Dir1/RH3_vs_RH1.txt \
+$Dir1/RH4_vs_RH1.txt \
+$Dir1/RH5_vs_RH1.txt \
+$Dir1/RH6_vs_RH1.txt \
+$Dir1/RH7_vs_RH1.txt \
+$Dir1/RH8_vs_RH1.txt \
+$Dir1/RH7_vs_RH5.txt \
+| sed -e "s/$/ /g" | tr -d "\n")
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Annotation_tables
+$ProgDir/build_annot_RNAseq.py  --gff_format gff3 --gene_gff $GeneGff --gene_fasta $GeneFasta --DEG_files $DEG_Files --TFs $TFs --InterPro $InterPro --Antismash $Antismash --Swissprot $SwissProt > $OutDir/"$Strain"_gene_table_iUK.tsv
 done
 ```
 ```bash
