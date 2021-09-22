@@ -324,10 +324,10 @@ D2<-read.table("C2_av.txt",header=T)
 D3<-read.table("C3_av.txt",header=T)
 D4<-read.table("C4_av.txt",header=T)
  
-TS1 <- read.expr.matrix("C1_av.txt",form="rows.are.genes")
-TS2 <- read.expr.matrix("C2_av.txt",form="rows.are.genes")
-TS3 <- read.expr.matrix("C3_av.txt",form="rows.are.genes")
-TS4 <- read.expr.matrix("C4_av.txt",form="rows.are.genes")
+TS1 <- read.expr.matrix("C1_av.txt",form="rows.are.genes",stringsAsFactors = TRUE)
+TS2 <- read.expr.matrix("C2_av.txt",form="rows.are.genes",stringsAsFactors = TRUE)
+TS3 <- read.expr.matrix("C3_av.txt",form="rows.are.genes",stringsAsFactors = TRUE)
+TS4 <- read.expr.matrix("C4_av.txt",form="rows.are.genes",stringsAsFactors = TRUE)
 
 time.points <- list(TS1[1,], TS2[1,], TS3[1,], TS4[1,])
 TS.data <- list(TS1[2:nrow(TS1),], TS2[2:nrow(TS2),], TS3[2:nrow(TS3),], TS4[2:nrow(TS4),])
@@ -347,7 +347,7 @@ regulators<-TF[,1]
 RUN this!!!
 set.seed(123)
 # Use the Extra-Trees as tree-based method
-tree.method <- "RF"
+tree.method <- "ET"
 # Number of randomly chosen candidate regulators at each node of a tree
 K <- "all"
 # Number of trees per ensemble
