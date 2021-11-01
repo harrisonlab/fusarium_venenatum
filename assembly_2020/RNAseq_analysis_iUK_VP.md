@@ -38,7 +38,7 @@ library(ggrepel)
 tx2gene <- read.table("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2/trans2gene.txt",header=T,sep="\t")
 
 # import quantification files
-txi.reps <- tximport(paste(list.dirs("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2/temp_test", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
+txi.reps <- tximport(paste(list.dirs("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2", full.names=T,recursive=F),"/quant.sf",sep=""),type="salmon",tx2gene=tx2gene,txOut=T)
 
 # get the sample names from the folders
 mysamples <- list.dirs("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2/temp_test",full.names=F,recursive=F)
@@ -65,7 +65,7 @@ colData <- data.frame(unorderedColData[ order(unorderedColData$Sample.name),])
 colData$Media <- rep(c("02780","02793","F55","10170","MWT","MOL","MKO","TJ"),3)
 
 # Define the DESeq 'GLM' model
-design <- ~ Media
+design <- ~Media
 dds <- DESeqDataSetFromTximport(txi.reps,colData,design)
 
 # Group column
@@ -83,18 +83,18 @@ dds$groupby <- paste(dds$Media,dds$Sample,sep="_")
 dds <- collapseReplicates(dds,groupby=dds$groupby)
 
 # normalise counts for different library size (do after collapsing replicates)
-sizeFactors(dds) <- sizeFactors(estimateSizeFactors(dds)) 
+#sizeFactors(dds) <- sizeFactors(estimateSizeFactors(dds)) 
 
 # define the DESeq 'GLM' model	    
-# design=~Media
+#design<-Media
 
 # add design to DESeq object	    
-# design(dds) <- design # could just replace the ~1 in the first step with the design, if you really wanted to...
+#design(dds) <- design # could just replace the ~1 in the first step with the design, if you really wanted to...
 
 # Run the DESeq statistical model	    
 dds <- DESeq(dds,parallel=T)
 
-
+dds2 <- collapseReplicates(dds,groupby=dds$Media)
 #Pre-filtering
 # This was done to extract consistently expressed genes
 #keep <- rowSums(counts(dds)) >= 50
@@ -260,16 +260,37 @@ plotPCA(rld,intgroup=c("Media"))
 dev.off()
 
 # Extract genes of interest for heatmap
-genes <- c("g6426.t1", "g6427.t1","g6428.t1","g6429.t1", "g6430.t1","g6431.t1", "g6432.t1","g6433.t1", "g6434.t1","g6435.t1", "g6436.t1","g6437.t1")
-mat <- assay(vst2)[genes, ]
+
+my_palette <- colorRampPalette(c("blue", "white", "red"))(n = 299)
+
+vstRep2<-varianceStabilizingTransformation(dds2,blind=F,fitType="local")
+genes <- c("g6427.t1","g6428.t1","g6429.t1", "g6430.t1","g6431.t1", "g6432.t1","g6433.t1", "g6434.t1","g6435.t1", "g6436.t1")
+mat <- assay(vstRep2)[genes, ]
 mat <- mat - rowMeans(mat)
-anno <- as.data.frame(colData(vst2)[c("Media")])
-pheatmap(mat,color=greenred(75),annotation_col = df)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+Z<-pheatmap(mat,color=my_palette,annotation_col = anno)
 
-pheatmap(assay(rld)[genes,], cluster_rows=FALSE, show_rownames=FALSE, cluster_cols=FALSE, annotation_col=df)
+vstRep1<-varianceStabilizingTransformation(dds2,blind=TRUE)
+genes <- c("g6427.t1","g6428.t1","g6429.t1", "g6430.t1","g6431.t1", "g6432.t1","g6433.t1", "g6434.t1","g6435.t1", "g6436.t1")
+mat <- assay(vstRep1)[genes, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep1)[c("Media")])
+Z<-pheatmap(mat,color=my_palette,annotation_col = anno)
 
-heatmap.2(mat, annotation_col = anno, trace="none", key=TRUE, Colv=F, dendrogram="row", cexRow=2, cexCol=1, lwid=c(2, 6), lhei = c(2,12), density.info = "density", margins = c(1, 10))
-dev.off()
+
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+genes <- c("g6427.t1","g6428.t1","g6429.t1", "g6430.t1","g6431.t1", "g6432.t1","g6433.t1", "g6434.t1","g6435.t1", "g6436.t1")
+mat <- assay(vstRep2)[genes, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+Z<-pheatmap(mat,color=my_palette,annotation_col = anno)
+
+vstRep1<-varianceStabilizingTransformation(dds2,blind=TRUE,fitType="parametric")
+genes <- c("g6427.t1","g6428.t1","g6429.t1", "g6430.t1","g6431.t1", "g6432.t1","g6433.t1", "g6434.t1","g6435.t1", "g6436.t1")
+mat <- assay(vstRep1)[genes, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep1)[c("Media")])
+Z<-pheatmap(mat,color=my_palette,annotation_col = anno)
 ```
 
 ## Analysis of DeSeq2 output
@@ -360,3 +381,226 @@ theme(axis.text= element_text(colour="black", size=7),
 axis.title = element_text(colour = "black", size=12),
 aspect.ratio = 1, legend.title = element_blank())
 ```
+
+
+### Coexpression analysis 
+
+
+```R
+# Analysis done on local machine
+
+setwd("/projects/fusarium_venenatum/GOMEZ")
+
+# Load libraries
+library(GENIE3)
+library(igraph)
+library(RCy3)
+library(Rgraphviz)
+library(reshape2)
+library(doRNG)
+library(doParallel)
+source ("analysis/coexpression/iUK/dynGENIE3/dynGENIE3.R")
+library(CEMiTool)
+library(dplyr)
+```
+
+
+### CEMItools
+
+
+```R
+# First I will run CEMiTolls with the vst and colData
+
+# colData
+unorderedColData <- read.table("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2/Fven_WTminion_RNAseq_design.txt",header=T,sep="\t")
+colData <- data.frame(unorderedColData[ order(unorderedColData$Sample.name),])
+colData$Media <- rep(c("02780","02793","F55","10170","MWT","MOL","MKO","TJ"),3)
+
+# Edit column names
+colData$SampleName <- paste0(colData$Media,sep="_", colData$Sample)
+colnames(colData) <- c("ID", "Condition", "Sample", "Class","SampleName")
+
+colData2<-head(colData,24)
+colData3 = subset(colData2, select = -c(ID,Condition,Sample))
+
+# Datasets
+t<-read.table("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2/iUK_data_vst_T.txt",header=TRUE)
+colnames(t) <- c("02780_A","02780_B","02780_C","02793_A","02793_B","02793_C","F55_A","F55_B","F55_C","10170_A","10170_B","10170_C","MWT_A","MWT_B","MWT_C","MOL_A","MOL_B","MOL_C","MKO_A","MKO_B","MKO_C","TJ_A","TJ_B","TJ_C")
+#t2 <- t %>% mutate_all(as.numeric)
+head(t[,1:4])
+cem <- cemitool(t, colData3)
+#"Could not specify the parameter Beta. No modules found.Unable to find parameter beta. Please check diagnostic plots with function diagnostic_report()."
+
+# Run diagnostics to check if there are errors in the data and potential beta values. NOTE: force rewrite report
+diagnostic <- diagnostic_report(cem,force=TRUE)
+# Re-run with the best beta value. 
+cem <- cemitool(t, colData3, set_beta=16) 
+
+# Results
+nmodules(cem) # 6 modules identified
+generate_report(cem)
+write_files(cem)
+save_plots(cem, "all")
+```
+
+```bash
+mv Plots/ analysis/coexpression/iUK/CEMiTools/vst_T_simple
+mv Reports/ analysis/coexpression/iUK/CEMiTools/vst_T_simple
+mv Tables analysis/coexpression/iUK/CEMiTools/vst_T_simple
+```
+
+```r
+f<-read.table("alignment/salmon/iUK/F.venenatum/WT_minion/DeSeq2/iUK_data_vst_F.txt",header=TRUE)
+colnames(f) <- c("02780_A","02780_B","02780_C","02793_A","02793_B","02793_C","F55_A","F55_B","F55_C","10170_A","10170_B","10170_C","MWT_A","MWT_B","MWT_C","MOL_A","MOL_B","MOL_C","MKO_A","MKO_B","MKO_C","TJ_A","TJ_B","TJ_C")
+#f2 <- f %>% mutate_all(as.numeric)
+cem <- cemitool(f, colData3)
+
+#"Could not specify the parameter Beta. No modules found.Unable to find parameter beta. Please check diagnostic plots with function diagnostic_report()."
+
+# Run diagnostics to check if there are errors in the data and potential beta values. NOTE: force rewrite report
+diagnostic <- diagnostic_report(cem,force=TRUE)
+# Re-run with the best beta value. 
+cem <- cemitool(f, colData3, set_beta=16)
+
+# Results
+nmodules(cem) # 5 modules identified
+generate_report(cem)
+write_files(cem)
+save_plots(cem, "all")
+```
+
+```bash
+mv Plots/ analysis/coexpression/iUK/CEMiTools/vst_F_simple/
+mv Reports/ analysis/coexpression/iUK/CEMiTools/vst_F_simple/
+mv Tables analysis/coexpression/iUK/CEMiTools/vst_F_simple/
+```
+
+### Genie3
+
+
+```r
+# Secmet antismash
+D1<-read.table("analysis/secondary_metabolites/antismash/WT_minion_VP/WT_antismash_results_secmet_genes_with_header.txt",header=T)
+less analysis/secondary_metabolites/antismash/WT_minion_VP/WT_antismash_results_secmet_genes_with_header.txt | cut -f1 | sed "s/\;//" | uniq > analysis/coexpression/iUK/Genie3/WT_minion_uniq_secmet.txt
+# All TFs no duplicate
+D2<-read.table("analysis/transcription_factors/F.venenatum/WT_minion/WT_minion_TF_gene_headers.txt",header=F)
+colnames(D2)[1] <- "ID"
+# Secmet and TFs
+D3<-merge(D1,D2,by.x="ID",by.y="ID",all.x=TRUE,all.y=TRUE)
+write.table(D3, "analysis/coexpression/iUK/Genie3/genes4genie3.txt", sep="\t",quote = FALSE)
+
+# Edit: less analysis/coexpression/iUK/Genie3/genes4genie3.txt | cut -f2 | sed "s/\;//" | uniq | sed "s/Contig/ID/" > analysis/coexpression/iUK/Genie3/genes4genie3_corrected.txt
+D9<-read.table("analysis/coexpression/iUK/Genie3/genes4genie3_corrected.txt",header=TRUE)
+
+# Expression data
+write.table(t, "analysis/coexpression/iUK/Genie3/vst_T.txt", sep="\t")
+write.table(f, "analysis/coexpression/iUK/Genie3/vst_F.txt", sep="\t")
+# Add ID column manually
+D4<-read.table("analysis/coexpression/iUK/Genie3/vst_T.txt",header=T)
+D5<-read.table("analysis/coexpression/iUK/Genie3/vst_F.txt",header=T)
+
+# Extract expression data of Secmet and TFs
+D6<-merge(D4,D9, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+write.table(D6, "analysis/coexpression/iUK/Genie3/vstT4genie3.txt", sep="\t")
+
+D6<-merge(D5,D9, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+write.table(D6, "analysis/coexpression/iUK/Genie3/vstF4genie3.txt", sep="\t")
+
+# TFs genes only with all expression data
+D7<-merge(D4,D2, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+regulators<-D7[,1]
+
+D7<-merge(D5,D2, by.x="ID",by.y="ID",all.x=FALSE,all.y=FALSE)
+regulators<-D7[,1]
+
+# Remove ID and duplicates manually
+D8<-read.table("analysis/coexpression/iUK/Genie3/vstT4genie3.txt",header=TRUE)
+
+D8<-read.table("analysis/coexpression/iUK/Genie3/vstF4genie3.txt",header=TRUE)
+
+# GENIE3
+
+# Added for reproducibility of results
+set.seed(123)
+
+#names(D6)[1]<-""
+weightMat <- GENIE3(as.matrix(D8), regulators=regulators)
+
+#linkList <- getLinkList(weightMat)
+
+# List for CEMiTools
+linkList <- getLinkList(weightMat, threshold=0.01)
+write.table(linkList, "analysis/coexpression/iUK/Genie3/linklist_iUK_F.txt", sep="\t")
+
+# To visalize a network
+linkList <- getLinkList(weightMat, threshold=0.025)
+
+edge_listsi <- linkList
+# Build graph from dataframe
+Gsi <- graph.data.frame(edge_listsi,directed = T)
+# Convert graph to adjacency matrix
+Asi <- get.adjacency(Gsi,sparse = F,attr = "weight",type = "both")
+# Build adjacency graph
+g_arasi <- graph.adjacency(Asi,mode = "directed",weighted = T)
+# Create igraph
+g.cyto <- igraph.to.graphNEL(g_arasi)
+
+cw = createNetworkFromGraph(graph=g.cyto)
+
+# Very different results compared to the first run
+```
+
+
+
+
+
+
+
+
+
+
+
+TS1 <- as.data.frame.matrix("vst1_corrected.txt")
+reg<-read.table("Carbon_data_vst_F.txt",header=TRUE)
+reg<-read.table("vst1_corrected.txt",header=TRUE)
+View(reg)
+cem <- cemitool(reg)
+
+
+vstT<-read.table("Carbon_data_vst_T.csv",header=TRUE,sep="\t")
+cem <- cemitool(vstT, colData)
+
+nmodules(cem)
+generate_report(cem)
+write_files(cem)
+save_plots(cem, "all")
+
+raw$Group <- paste0(raw$Class,'_', raw$Timepoint)
+
+
+colData<-read.table("colData.txt",header=T,sep="\t")
+
+
+vst_F does not work!!!
+
+vst_T worked
+
+I tried group and condition. both gave a thershold in 12 and not unique module in sucrose high
+
+
+
+cem <- cemitool(vstT, colData,filter_pval=0.2) # it takes more time. One module more. No tri5
+
+
+este no funciono en iUK. debo repetirlo cuando pruebe el que si funciono
+
+
+reg<-read.table("vst_true4cemi.txt",header=TRUE)
+reg2 <- reg %>% mutate_all(as.numeric)
+
+reg3<-read.table("vst_false4cemi.txt",header=TRUE)
+reg4 <- reg3 %>% mutate_all(as.numeric)
+
+coldata<-read.table("colData.txt",header=T,sep="\t")
+
+cem <- cemitool(reg, coldata)
