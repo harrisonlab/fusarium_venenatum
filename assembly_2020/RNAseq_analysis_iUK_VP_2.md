@@ -90,6 +90,7 @@ dds <- collapseReplicates(dds,groupby=dds$groupby)
 dds <- DESeq(dds,parallel=T)
 
 dds2 <- collapseReplicates(dds,groupby=dds$Media)
+
 #Pre-filtering
 # This was done to extract consistently expressed genes
 #keep <- rowSums(counts(dds)) >= 50
@@ -349,14 +350,23 @@ Z<-pheatmap(mat,color=my_palette,annotation_col = anno)
 
 
 library(wesanderson)
-
+gaps_row = c(5, 10, 15))
 vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
-genes <- c("g12337","g12338", "g12339","g12340", "g12341","g12342", "g12343","g12344", "g12345", "g12346")
+genes <- c("g6427","g6428","g6429", "g6430","g6431", "g6432","g6433", "g6434","g6435", "g6436","g12337","g12338", "g12339","g12340", "g12341","g12342", "g12343","g12344", "g12345", "g12346","g5192","g9957","g11857"."g12859","g13028","g1506", "g1953","g2994", "g4990","g4991", "g799","g9402")
 mat <- assay(vstRep2)[genes, ]
 mat <- mat - rowMeans(mat)
 anno <- as.data.frame(colData(vstRep2)[c("Media")])
-pal <- wes_palette("Zissou1", 100, type = "continuous")
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno,cutree_rows = 3, cluster_rows=FALSE, gaps_row = c(10, 20))
+
+
+genes <- c("g799","g814","g1562","g1632","g1857","g1865","g1953","g2265","g2299","g2300","g2354","g2681","g2801","g3246","g3872","g4247","g4809","g5018","g5184","g5195","g5582","g6034","g6132","g6204","g6432","g6690","g6957","g7081","g7267","g7287","g8930","g9328","g9957","g11306","g11421","g11816","g11852","g11941","g11975","g12063","g12200","g13024","g13200","g13443","g13763","g13768","g13774")
+mat <- assay(vstRep2)[genes, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
 Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
 
 vstRep1<-varianceStabilizingTransformation(dds2,blind=TRUE,fitType="local")
 genes <- c("g12859","g13028","g1506", "g1953","g2994", "g4990","g4991", "g799","g9402")
@@ -700,9 +710,210 @@ SFT=4
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir analysis/coexpression/iUK/WGCNA/b9 --sft 9 --min_module_size 30 --merging_threshold 0.25
 
 /projects/software/R-3.6.1/bin/Rscript --vanilla $ProgDir/create_network.r --out_dir analysis/coexpression/iUK/WGCNA/b9 --sft 16 --min_module_size 30 --merging_threshold 0.25
-
 ```
 
+I will run WGCNA on my local machine step by step
+
+```r
+library(WGCNA)
+
+outdir <-setwd("./")
+
+options(stringsAsFactors = FALSE)
+# Input data
+data=read.csv("iUK_data_vst_F.txt", sep="\t")
+dim(data)
+names(data)
+# Transpose
+datExpr0 = as.data.frame(t(data[, c(2:25)]))
+names(datExpr0) = data$ID
+rownames(datExpr0) = names(data)[c(2:25)]
+# Check missing values
+gsg <- goodSamplesGenes(datExpr0, verbose = 3)
+gsg$allOK
+
+# Remove any genes and samples that do not pass the cut
+
+if (!gsg$allOK){
+    # Print items removed to file
+    if (sum(!gsg$goodGenes) > 0){
+        genes_to_remove <- (paste("Removing genes:", paste(names(datExpr0)[
+        !gsg$goodGenes], collapse = "\n")))
+        gfile <- paste(outdir, "removed_genes.txt", sep = "/")
+        write(genes_to_remove, file = gfile)
+    }
+    if (sum(!gsg$goodSamples) > 0){
+        samples_to_remove <- (paste("Removing samples:",
+        paste(rownames(datexpr0)[!gsg$goodSamples], collapse = "\n")))
+        sfile <- paste(outdir, "removed_samples.txt", sep = "/")
+        write(samples_to_remove, file = sfile)
+    }
+    # Remove items that fail QC
+    datExpr0 <- datExpr0[gsg$goodSamples, gsg$goodGenes]
+}
+
+# Cluster to check outliers
+
+sampletree <- hclust(dist(datExpr0), method = "average")
+file <- paste(outdir, "sample_clustering.pdf", sep = "/")
+pdf(file, width = 12, height = 9)
+par(cex = 0.6)
+par(mar = c(0, 4, 2, 0))
+plot(sampletree, main = "Sample clustering to detect outliers", sub = "",
+xlab = "", cex.lab = 1.5, cex.axis = 1.5, cex.main = 2)
+
+# Remove outlier samples, the height may need changing so be sure to check
+abline(h = 30000, col = "red")
+dev.off()
+
+# Determine clusters under the line.
+clust <- cutreeStatic(sampletree, cutHeight = 300000, minSize = 10)
+table(clust)
+
+# Clust 1 contains the samples we want to keep
+keepsamples_clust1 <- (clust == 1)
+datExpr1 <- datExpr0[keepsamples_clust1, ]
+ngenes <- ncol(datExpr1)
+nsamples <- nrow(datExpr1)
+
+
+# Save a table with the expression data of all the samples
+Rfile <- paste(outdir, "Cleaned_data.RData", sep = "/")
+save(datExpr0, file = Rfile)
+
+# Testing soft-thresholding power values
+
+#powers <- c(c(1:40)
+# Got the next message
+#Warning message:
+#executing %dopar% sequentially: no parallel backend registered
+
+# Manual added seq option. No messages now
+powers <- c(c(1:40),seq(from = 12, to=20, by=2))
+sft <- pickSoftThreshold(datExpr0, powerVector = powers, verbose = 5)
+
+# Draw a plot to allow manual picking of sft value
+
+cex1 <- 0.9
+file <- paste(outdir, "sft_testing.pdf", sep = "/")
+pdf(file, height = 9, width = 12)
+plot(sft$fitIndices[, 1], -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
+xlab = "Soft Threshold (power)",
+ylab = "Scale Free Topology Model Fit, signed R^2", type = "n",
+main = paste("Scale independence"))
+text(sft$fitIndices[, 1], -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
+labels = powers, cex = cex1, col = "red")
+abline(h = 0.90, col = "red")
+plot(sft$fitIndices[, 1], sft$fitIndices[, 5], xlab = "Soft Threshold (power)",
+ylab = "Mean Connectivity", type = "n", main = paste("Mean connectivity"))
+text(sft$fitIndices[, 1], sft$fitIndices[, 5], labels = powers, cex = cex1,
+col = "red")
+dev.off()
+
+#https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/faq.html point 6 explain an alternative method to pick the softthreshold
+# These plot might suggest 4 or 9 SFT values. I have 24 samples so I will use 8
+
+adjacency <- adjacency(datExpr0, power = 8)
+
+# Topological Overlap Matrix (TOM)
+
+tom <- TOMsimilarity(adjacency)
+disstom <- 1 - tom
+
+# Clustering using TOM
+
+genetree <- hclust(as.dist(disstom), method = "average")
+
+file <- paste(outdir, "clustering_tree.pdf", sep = "/")
+pdf(file, height = 9, width = 12)
+sizeGrWindow(12, 9)
+plot(genetree, xlab = "", sub = "", main = "Gene clustering on TOM-based
+dissimilarity", labels = FALSE, hang = 0.04)
+dev.off()
+
+# Cut clustering tree into several modules
+
+dynamicmods <- cutreeDynamic(dendro = genetree, distM = disstom, deepSplit = 2,
+pamRespectsDendro = FALSE, minClusterSize = 30)
+table(dynamicmods)
+
+
+# Plot modules on clustering tree, allows sanity check of min_mod_size value
+
+file <- paste(outdir, "clustering_tree_with_modules.pdf", sep = "/")
+pdf(file, height = 9, width = 12)
+dynamiccolours <- labels2colors(dynamicmods)
+table(dynamiccolours)
+plotDendroAndColors(genetree, dynamiccolours, "Dynamic Tree Cut",
+dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05,
+main = "Gene dendrogram and module colours")
+dev.off()
+
+
+# Merging modules with similar expression patterns
+
+melist <- moduleEigengenes(datExpr0, colors = dynamiccolours)
+mes <- melist$eigengenes
+mediss <- 1 - cor(mes)
+metree <- hclust(as.dist(mediss), method = "average")
+file <- paste(outdir, "clustering_tree_with_merged_modules.pdf", sep = "/")
+pdf(file, height = 9, width = 12)
+plot(metree, main = "Clustering of module eigengenes", xlab = "", sub = "")
+abline(h = 0.25, col = "red")
+dev.off()
+merge <- mergeCloseModules(datExpr0, dynamiccolours, cutHeight = 0.25,
+verbose = 3)
+mergedcolours <- merge$colors
+mergedmes <- merge$newMEs
+dev.off()
+
+# Plot a comparison of merged and unmerged modules
+file <- paste(outdir, "clustering_tree_compare_modules.pdf", sep = "/")
+pdf(file, height = 9, width = 12)
+plotDendroAndColors(genetree, cbind(dynamiccolours, mergedcolours),
+c("Dynamic Tree Cut", "Merged dynamic"), dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+dev.off()
+
+# Save output for further analyses
+
+modulecolours <- mergedcolours
+colourorder <- c("grey", standardColors(50))
+modulelabels <- match(modulecolours, colourorder) - 1
+mes <- mergedmes
+Rfile <- paste(outdir, "modules.RData", sep = "/")
+save(mes, modulelabels, modulecolours, dynamiccolours, genetree, tom, file = Rfile)
+
+
+# Load list of transcript IDs and write out merged modules
+
+transcripts <- names(datExpr0)
+for (module in unique(modulecolours)){
+    modgenes <- (modulecolours == module)
+    modtranscripts <- transcripts[modgenes]
+    filename <- paste("Genes_in_", module, ".txt", sep = "")
+    mergedir <- paste(outdir, "merged_modules", sep = "/")
+    file <- paste(mergedir, filename, sep = "/")
+    dir.create(mergedir)
+    write.table(as.data.frame(modtranscripts), file = file, row.names = FALSE,
+    col.names = FALSE)
+}
+
+
+# Write out unmerged modules
+
+for (module in unique(dynamiccolours)){
+        modgenes <- (dynamiccolours == module)
+        modtranscripts <- transcripts[modgenes]
+        filename <- paste("Genes_in_", module, ".txt", sep = "")
+        unmergedir <- paste(outdir, "unmerged_modules", sep = "/")
+        file <- paste(unmergedir, filename, sep = "/")
+        dir.create(unmergedir)
+        write.table(as.data.frame(modtranscripts), file = file,
+        row.names = FALSE, col.names = FALSE)
+    }
+
+```
 
 
 
