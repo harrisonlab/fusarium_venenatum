@@ -913,17 +913,152 @@ for (module in unique(dynamiccolours)){
         row.names = FALSE, col.names = FALSE)
     }
 
+# Associate modules to treatments
+
+
+library(WGCNA)
+
+options(stringsAsFactors = FALSE)
+
+# Load the expression and trait data saved in the first part
+lnames = load(file = "Cleaned_data.RData")
+#The variable lnames contains the names of loaded variables.
+lnames
+# Load network data saved in the second part.
+lnames = load(file = "modules.RData")
+lnames
+
+# Create a file that associate samples to treatments. colData file can be useful
+colData$SampleName <- paste0(colData$Media,sep="_", colData$Sample)
+colnames(colData) <- c("ID", "Condition", "Sample", "Class","Group","SampleName")
+
+colData2<-head(colData,24)
+colData3 = subset(colData2, select = c(Sample.name,Condition,Media,SampleName))
+
+# colData<-read.csv("colData.txt", sep="\t")
+# dim(colData)
+# names(colData)
+
+# colData2<-read.csv("colData2.txt", sep="\t")
+# dim(colData2)
+# names(colData2)
+
+# Create a matrix with 1 or 0 defining Media type of each sample
+colData3<-read.csv("colData3.txt", sep="\t")
+dim(colData3)
+names(colData3)
+
+# remove columns that hold information we do not need.
+allTraits = colData2[, -c(2)]
+dim(allTraits)
+names(allTraits)
+
+# Form a data frame analogous to expression data that will hold the clinical traits.
+expData = rownames(datExpr0)
+traitRows = match(expData, allTraits$Substrate)
+datTraits = allTraits[traitRows, -1]
+rownames(datTraits) = allTraits[traitRows, 1]
+collectGarbage()
+
+
+
+
+# Define numbers of genes and samples
+nGenes = ncol(datExpr0)
+nSamples = nrow(datExpr0)
+
+# Recalculate MEs with color labels
+MEs0 = moduleEigengenes(datExpr0, modulecolours)$eigengenes
+MEs = orderMEs(MEs0)
+
+moduleTraitCor = cor(MEs, datTraits, use = "p")
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples)
+
+
+
+
+sizeGrWindow(12,9)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
+signif(moduleTraitPvalue, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor)
+# Edit to resize
+par(mar = c(8, 16, 3, 5));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor,
+xLabels = names(datTraits),
+yLabels = names(MEs),
+ySymbols = names(MEs),
+colorLabels = FALSE,
+colors = wes_palette("Zissou1", 20, type = "continuous"),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+cex.text = 0.5,
+zlim = c(-1,1),
+main = paste("Module-trait relationships"))
+
+
+
+write.table(colData,"colData.txt",sep="\t",na="",quote=F)
+
+
+
+
+# Plot modules to check results
+
+green<-read.table("analysis/coexpression/iUK/WGCNA_local/merged_modules/Genes_in_green.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[green, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+darkorange<-read.table("analysis/coexpression/iUK/WGCNA_local/merged_modules/Genes_in_darkorange.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[darkorange, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+midnightblue<-read.table("analysis/coexpression/iUK/WGCNA_local/merged_modules/Genes_in_midnightblue.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[midnightblue, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+plum1<-read.table("analysis/coexpression/iUK/WGCNA_local/merged_modules/Genes_in_plum1.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[plum1, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+darkorange2<-read.table("analysis/coexpression/iUK/WGCNA_local/merged_modules/Genes_in_darkorange2.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[darkorange2, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+tur<-read.table("analysis/coexpression/iUK/WGCNA_local/unmerged_modules/Genes_in_turquoise.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[tur, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+blue<-read.table("analysis/coexpression/iUK/WGCNA_local/unmerged_modules/Genes_in_blue.txt",header=FALSE)[,1]
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
+mat <- assay(vstRep2)[blue, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
 ```
-
-
-
-
-
-library(qusage)
-library(GSVA)
-library(org.Hs.eg.db)
-library(magrittr)
-
-vst_df <- assay(vst1) %>%
-  as.data.frame() %>% # Make into a data frame
-  tibble::rownames_to_column("ensembl_id")
