@@ -1109,6 +1109,15 @@ tools/splitfile_500.py --inp_fasta gene_pred/codingquarry/F.venenatum/WT_minion/
 for file in $(ls $SplitDir/*_split_*); do
 sbatch -p himem tools/run_interproscan.sh $file
 done
+
+for Proteins in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gene.fasta); do
+Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
+Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
+echo "$Organism - $Strain"
+echo $Strain
+InterProRaw=CropDiversity/interproscan/F.venenatum/WT_minion/raw
+tools/append_interpro.sh $Proteins $InterProRaw
+done
 ```
 
 
