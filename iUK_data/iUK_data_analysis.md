@@ -1088,6 +1088,38 @@ names(datExpr0)
 
 names(datExpr0)[modulecolours=="green"]
 
+annot = read.csv(file = "GeneAnnotation.csv");
+dim(annot)
+names(annot)
+probes = names(datExpr)
+probes2annot = match(probes, annot$substanceBXH)
+# The following is the number or probes without annotation:
+sum(is.na(probes2annot)
+
+# Create the starting data frame
+geneInfo0 = data.frame(substanceBXH = probes,
+geneSymbol = annot$gene_symbol[probes2annot],
+LocusLinkID = annot$LocusLinkID[probes2annot],
+moduleColor = moduleColors,
+geneTraitSignificance,
+GSPvalue)
+# Order modules by their significance for weight
+modOrder = order(-abs(cor(MEs, weight, use = "p")));
+# Add module membership information in the chosen order
+for (mod in 1:ncol(geneModuleMembership))
+{
+oldNames = names(geneInfo0)
+geneInfo0 = data.frame(geneInfo0, geneModuleMembership[, modOrder[mod]],
+MMPvalue[, modOrder[mod]]);
+names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
+paste("p.MM.", modNames[modOrder[mod]], sep=""))
+}
+# Order the genes in the geneInfo variable first by module color, then by geneTraitSignificance
+geneOrder = order(geneInfo0$moduleColor, -abs(geneInfo0$GS.weight));
+geneInfo = geneInfo0[geneOrder, ]
+#This data frame can be written into a text-format spreadsheet, for example by
+write.csv(geneInfo, file = "geneInfo.csv")
+
 ```
 
 ## Feature annotation
@@ -1118,6 +1150,27 @@ echo $Strain
 InterProRaw=CropDiversity/interproscan/F.venenatum/WT_minion/raw
 tools/append_interpro.sh $Proteins $InterProRaw
 done
+
+
+
+# This command will split your gene fasta file and run multiple interproscan jobs.
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+for Genes in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gene.fasta); do
+echo $Genes
+$ProgDir/interproscan.sh $Genes
+done 2>&1 | tee -a interproscan_submisison.log
+```
+
+
+srun --partition himem --mem 10G --cpus-per-task 10 --pty bash
+
+python3 download_organism.py --url http://www.kegg.jp/kegg/catalog/org_list.html --out KEGG.org
+python3 download_proteins.py --org KEGG.org --concurrent 2
+
+python3 download_ko.py --org KEGG.org --out KEGG-KO --concurrent 10
+
+
+interproscan.sh -appl CDD,COILS,Gene3D,HAMAP,MobiDBLite,PANTHER,Pfam,PIRSF,PRINTS,SFLD,SMART,SUPERFAMILY,TIGRFAM -goterms -iprlookup -pa -i 
 ```
 
 
