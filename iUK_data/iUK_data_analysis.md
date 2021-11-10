@@ -1054,7 +1054,7 @@ Z<-pheatmap(mat,color=pal,annotation_col = anno)
 
 
 # Define variable weight containing the weight column of datTrait
-weight = as.data.frame(datTraits$MKO);
+weight = as.data.frame(datTraits$MYRO)
 names(weight) = "weight"
 # names (colors) of the modules
 modNames = substring(names(MEs), 3)
@@ -1082,28 +1082,31 @@ cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
 
 #Summary output of network analysis results
 
-# Need annotations for geneID
-
 names(datExpr0)
 
 names(datExpr0)[modulecolours=="green"]
 
-annot = read.csv(file = "GeneAnnotation.csv");
+annot = read.csv(file = "WT_minion_annotations_geneID_short.csv")
 dim(annot)
 names(annot)
-probes = names(datExpr)
-probes2annot = match(probes, annot$substanceBXH)
+probes = names(datExpr0)
+probes2annot = match(probes, annot$transcript_id)
 # The following is the number or probes without annotation:
-sum(is.na(probes2annot)
+sum(is.na(probes2annot))
 
-# Create the starting data frame
-geneInfo0 = data.frame(substanceBXH = probes,
-geneSymbol = annot$gene_symbol[probes2annot],
-LocusLinkID = annot$LocusLinkID[probes2annot],
-moduleColor = moduleColors,
+# Create the starting data frame with all the annotations, GS.weight and p.GS.weight
+geneInfo0 = data.frame(transcript_id = probes,
+swissprot_org = annot$swissprot_org[probes2annot],
+swissprot_gene = annot$swissprot_gene[probes2annot],
+swissprot_function = annot$swissprot_function[probes2annot],
+interproscan = annot$interproscan[probes2annot],
+TFs = annot$TFs[probes2annot],
+Antismash_type = annot$Antismash_type[probes2annot],
+Antismash_cluster = annot$Antismash_cluster[probes2annot],
+moduleColor = modulecolours,
 geneTraitSignificance,
 GSPvalue)
-# Order modules by their significance for weight
+# Order modules by their significance for weight (from smallest to largets p-val). I uses MYRO weight
 modOrder = order(-abs(cor(MEs, weight, use = "p")));
 # Add module membership information in the chosen order
 for (mod in 1:ncol(geneModuleMembership))
@@ -1115,50 +1118,51 @@ names(geneInfo0) = c(oldNames, paste("MM.", modNames[modOrder[mod]], sep=""),
 paste("p.MM.", modNames[modOrder[mod]], sep=""))
 }
 # Order the genes in the geneInfo variable first by module color, then by geneTraitSignificance
-geneOrder = order(geneInfo0$moduleColor, -abs(geneInfo0$GS.weight));
+geneOrder = order(geneInfo0$moduleColor, -abs(geneInfo0$GS.weight))
 geneInfo = geneInfo0[geneOrder, ]
 #This data frame can be written into a text-format spreadsheet, for example by
 write.csv(geneInfo, file = "geneInfo.csv")
-
 ```
 
-## Feature annotation
+## Output lists of genes 
 
-This was run in the CropDiversity HPC. I needed an annotation file for coexpression.
+```r
+library(topGO)
+library(GO.db)
+library(biomaRt)
+library(Rgraphviz)
 
-```bash
-conda create -n annotation
-conda activate annotation
-conda install interproscan
-pip3 install biopython
+# Extract genes from specific modules and treatmets
 
-# The scripts needed from bioinformatics_tools are copied into tools
-SplitDir=CropDiversity/interproscan/F.venenatum/WT_minion
-mkdir -p $SplitDir
-tools/splitfile_500.py --inp_fasta gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gene.fasta --out_dir $SplitDir --out_base WT_minion_geneID_split
+# Match probes in the data set to the probe IDs in the annotation file
+probes = names(datExpr)
+probes2annot = match(probes, annot$substanceBXH)
+# Get the corresponding Locuis Link IDs
+allLLIDs = annot$transcript_id[probes2annot]
+# $ Choose interesting modules
+intModules = c("green")
+for (module in intModules)
+{
+# Select module probes
+modGenes = (modulecolours==module)
+# Get their entrez ID codes
+modLLIDs = allLLIDs[modGenes];
+# Write them into a file
+fileName = paste("MYRO", module, ".txt", sep="");
+write.table(as.data.frame(modLLIDs), file = fileName,
+row.names = FALSE, col.names = FALSE)
+}
+# As background in the enrichment analysis, we will use all probes in the analysis.
+fileName = paste("MYRO-all.txt", sep="");
+write.table(as.data.frame(allLLIDs), file = fileName,
+row.names = FALSE, col.names = FALSE)
 
 
-for file in $(ls $SplitDir/*_split_*); do
-sbatch -p himem tools/run_interproscan.sh $file
-done
 
-for Proteins in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gene.fasta); do
-Strain=$(echo $Proteins | rev | cut -d '/' -f3 | rev)
-Organism=$(echo $Proteins | rev | cut -d '/' -f4 | rev)
-echo "$Organism - $Strain"
-echo $Strain
-InterProRaw=CropDiversity/interproscan/F.venenatum/WT_minion/raw
-tools/append_interpro.sh $Proteins $InterProRaw
-done
+# create GO db for genes to be used using biomaRt - please note that this takes a while
+db= useMart('ENSEMBL_MART_ENSEMBL',dataset='hsapiens_gene_ensembl', host="www.ensembl.org")
+go_ids= getBM(attributes=c('go_id', 'external_gene_name', 'namespace_1003'), filters='external_gene_name', values=bg_genes, mart=db)
 
-
-
-# This command will split your gene fasta file and run multiple interproscan jobs.
-ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
-for Genes in $(ls gene_pred/codingquarry/F.venenatum/WT_minion/final/final_genes_appended_renamed.gene.fasta); do
-echo $Genes
-$ProgDir/interproscan.sh $Genes
-done 2>&1 | tee -a interproscan_submisison.log
 ```
 
 
