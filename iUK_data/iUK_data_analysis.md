@@ -35,6 +35,7 @@ library(data.table)
 library(RColorBrewer)
 library(gplots)
 library(ggrepel)
+library(wesanderson)
 
 #===============================================================================
 # DeSeq analysis
@@ -1106,6 +1107,7 @@ Antismash_cluster = annot$Antismash_cluster[probes2annot],
 moduleColor = modulecolours,
 geneTraitSignificance,
 GSPvalue)
+
 # Order modules by their significance for weight (from smallest to largets p-val). I uses MYRO weight
 modOrder = order(-abs(cor(MEs, weight, use = "p")));
 # Add module membership information in the chosen order
@@ -1156,12 +1158,86 @@ row.names = FALSE, col.names = FALSE)
 fileName = paste("MYRO-all.txt", sep="");
 write.table(as.data.frame(allLLIDs), file = fileName,
 row.names = FALSE, col.names = FALSE)
+```
+
+```bash
+OutDir=./
+InterProTSV=WT_minion_interproscan.tsv
+ProgDir=/home/gomeza/git_repos/scripts/bioinformatics_tools/Feature_annotation
+$ProgDir/GO_table.py --interpro $InterProTSV > $OutDir/experiment_all_gene_GO_annots.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | sed 's/.t.*//g' > $OutDir/temp1.tsv
+cat $OutDir/experiment_all_gene_GO_annots.tsv | cut -f2 > $OutDir/temp2.tsv
+paste $OutDir/temp1.tsv $OutDir/temp2.tsv > $OutDir/experiment_all_gene_GO_annots_geneid.tsv
+cp $OutDir/experiment_all_gene_GO_annots_geneid.tsv /to/WD
+rm $OutDir/temp1.tsv
+rm $OutDir/temp2.tsv
+```
+
+```r
+# Input 1
+green4GO <- data.frame()
+green4GO <- read.table("green4GO.txt", header = FALSE, sep = "\t", stringsAsFactors = TRUE)
+gene_enrichment3 <- t(green4GO[,2])
+names(gene_enrichment3) <- green4GO[,1]
+
+green4GO <- data.frame()
+green4GO <- read.table("green4GO_v2.txt", header = FALSE, sep = "\t", stringsAsFactors = TRUE)
+gene_enrichment3 <- t(green4GO[,2])
+names(gene_enrichment3) <- green4GO[,1]
+
+# Input 2
+GO_relationships <-  readMappings(file = "experiment_all_gene_GO_annots_geneid.tsv")
+
+GOdata <- new("topGOdata", ontology = "MF", allGenes = gene_enrichment3, geneSel = function(p) p < 0.05, description = "Green_module", annot = annFUN.gene2GO, gene2GO = GO_relationships)
+GOdata
+
+sg <- sigGenes(GOdata)
+str(sg)
+numSigGenes(GOdata)
+
+#resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
+resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
+resultFisher
+allGO = usedGO(object = GOdata)
+allRes <- GenTable(GOdata, classicFisher = resultFisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = length(allGO))
+allRes
+write.table(allRes, file = "MF_GO_enrichment.tsv", sep = "\t")
+showSigOfNodes(GOdata, score(resultFisher), firstSigNodes = 10, useInfo ='all')
+out_prefix <- paste(o, "/", "TopGO_MF", sep="")
+printGraph(GOdata, resultFisher, firstSigNodes = 10, fn.prefix = out_prefix, useInfo = "all", pdfSW = TRUE)
+length(usedGO(GOdata))
+
+
+GOdata <- new("topGOdata", ontology = "BP", allGenes = gene_enrichment3, geneSel = function(p) p < 0.05, description = "Test", annot = annFUN.gene2GO, gene2GO = GO_relationships)
+GOdata
+sg <- sigGenes(GOdata)
+str(sg)
+numSigGenes(GOdata)
+#resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
+resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
+resultFisher
+allGO = usedGO(object = GOdata)
+allRes <- GenTable(GOdata, classicFisher = resultFisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = length(allGO))
+allRes
+write.table(allRes, file = "BP_GO_enrichment.tsv", sep = "\t")
+showSigOfNodes(GOdata, score(resultFisher), firstSigNodes = 10, useInfo ='all')
+out_prefix <- paste(o, "/", "TopGO_BP", sep="")
+printGraph(GOdata, resultFisher, firstSigNodes = 10, fn.prefix = out_prefix, useInfo = "all", pdfSW = TRUE)
+length(usedGO(GOdata))
 
 
 
-# create GO db for genes to be used using biomaRt - please note that this takes a while
-db= useMart('ENSEMBL_MART_ENSEMBL',dataset='hsapiens_gene_ensembl', host="www.ensembl.org")
-go_ids= getBM(attributes=c('go_id', 'external_gene_name', 'namespace_1003'), filters='external_gene_name', values=bg_genes, mart=db)
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="local")
+genes <- c("g756","g542","g1470","g1425","g1511","g3628","g7398","g8690","g9158","g9846","g10241","g9998","g11413","g11504","g11943")
+mat <- assay(vstRep2)[genes, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
+
+
+
+
 
 ```
 
