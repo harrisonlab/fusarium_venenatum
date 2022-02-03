@@ -352,14 +352,21 @@ Z<-pheatmap(mat,color=my_palette,annotation_col = anno)
 # Final figures 
 
 library(wesanderson)
-gaps_row = c(5, 10, 15))
+gaps_row = c(5, 10, 13)
 vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="parametric")
-genes <- c("g6427","g6428","g6429", "g6430","g6431", "g6432","g6433", "g6434","g6435", "g6436","g12337","g12338", "g12339","g12340", "g12341","g12342", "g12343","g12344", "g12345", "g12346","g5192","g9957","g11857"."g12859","g13028","g1506", "g1953","g2994", "g4990","g4991", "g799","g9402")
-mat <- assay(vstRep2)[genes, ]
+genes <- c("g6426","g6427","g6428","g6429", "g6430","g6431", "g6432","g6433", "g6434","g6435", "g6436","g6437","g12337","g12338", "g12339","g12340", "g12341","g12342", "g12343","g12344", "g12345", "g12346", "g5192", "g9957", "g11857","g12859","g1506", "g1953", "g4990","g4991")
+labels <- c("Trichothecene C-3 esterase TRI8",".","Trichothecene 15-O-acetyltransferase TRI3","Cytochrome P450 monooxygenase TRI4","Trichothecene biosynthesis transcription regulator TRI6","Trichodiene synthase TRI5","Trichothecene biosynthesis transcription regulator TRI10","Fusarium species TRI9",
+"Cytochrome P450 TRI11","Trichothecene efflux pump TRI12","Cytochrome P450 monooxygenase TRI13","Core trichothecene cluster (CTC) TRI14","Methyltransferase FUS9","Cytochrome P450 monooxygenase FUS8","Putative aldehyde dehydrogenase FUS7","Efflux pump FUS6",".","Esterase FUS5","Secreted aspartic protease FUS4","Glutathione S-transferase-like protein FUS3","20-hydroxy-prefusarin hydrolase FUS2","Fusarin C synthetase","Nitrogen regulatory protein areA","Nitrogen assimilation transcription factor nit-4","Nitrogen metabolite repression protein nmr","DNA-binding protein creA","Probable ubiquitin carboxyl-terminal hydrolase creB","L-arabinose-responsive transcription regulator ARA1","Probable catabolite repression protein creC","HECT-type ubiquitin ligase-interacting protein creD")
+mat <- assay(vstRep2)[genes,]
 mat <- mat - rowMeans(mat)
 anno <- as.data.frame(colData(vstRep2)[c("Media")])
 pal <- wes_palette("Zissou1", 10, type = "continuous")
-Z<-pheatmap(mat,color=pal,annotation_col = anno,cutree_rows = 3, cluster_rows=FALSE, gaps_row = c(10, 20))
+# labels <- read.table("labels.txt",header=F,sep="\t")
+
+Z<-pheatmap(mat,color=pal,annotation_col = anno,#labels_row =labels,
+cutree_rows = 3, cluster_rows=FALSE, gaps_row = c(12, 22))
+Z2<-pheatmap(mat,color=pal,annotation_col = anno,labels_row =labels,
+cutree_rows = 3, cluster_rows=FALSE, gaps_row = c(12, 22))
 
 genes <- c("g799","g814","g1562","g1632","g1857","g1865","g1953","g2265","g2299","g2300","g2354","g2681","g2801","g3246","g3872","g4247","g4809","g5018","g5184","g5195","g5582","g6034","g6132","g6204","g6432","g6690","g6957","g7081","g7267","g7287","g8930","g9328","g9957","g11306","g11421","g11816","g11852","g11941","g11975","g12063","g12200","g13024","g13200","g13443","g13763","g13768","g13774")
 mat <- assay(vstRep2)[genes, ]
@@ -946,13 +953,15 @@ colData3<-read.csv("colData3.txt", sep="\t")
 dim(colData3)
 names(colData3)
 
+colData5<-read.csv("colData5.txt", sep="\t")
+
 # Test matrix
 # colData4<-read.csv("colData4.txt", sep="\t")
 # dim(colData4)
 # names(colData4)
 
 # remove columns that hold information we do not need.
-allTraits = colData3[, -c(2)]
+allTraits = colData5[, -c(2)]
 dim(allTraits)
 names(allTraits)
 
@@ -992,7 +1001,7 @@ textMatrix = textMatrix,
 setStdMargins = FALSE,
 cex.text = 0.5,
 zlim = c(-1,1),
-main = paste("Module-treatment relationships"))
+main = paste("Module-Condition relationships"))
 
 
 # Plot modules to check results
@@ -1081,6 +1090,34 @@ main = paste("Module membership vs. gene significance\n"),
 cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
 
 
+# Define variable weight containing the weight column of datTrait
+weight = as.data.frame(datTraits$Maltose)
+names(weight) = "weight"
+# names (colors) of the modules
+modNames = substring(names(MEs), 3)
+geneModuleMembership = as.data.frame(cor(datExpr0, MEs, use = "p"))
+MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples))
+names(geneModuleMembership) = paste("MM", modNames, sep="")
+names(MMPvalue) = paste("p.MM", modNames, sep="")
+geneTraitSignificance = as.data.frame(cor(datExpr0, weight, use = "p"))
+GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSamples))
+names(geneTraitSignificance) = paste("GS.", names(weight), sep="")
+names(GSPvalue) = paste("p.GS.", names(weight), sep="")
+
+module = "midnightblue"
+column = match(module, modNames)
+moduleGenes = modulecolours==module
+sizeGrWindow(7, 7)
+par(mfrow = c(1,1))
+verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
+abs(geneTraitSignificance[moduleGenes, 1]),
+xlab = paste("Module Membership in", module, "module"),
+ylab = "GS for MYRO (tri5 KO)",
+main = paste("Module membership vs. gene significance\n"),
+cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
+
+
+
 #Summary output of network analysis results
 
 names(datExpr0)
@@ -1109,7 +1146,7 @@ geneTraitSignificance,
 GSPvalue)
 
 # Order modules by their significance for weight (from smallest to largets p-val). I uses MYRO weight
-modOrder = order(-abs(cor(MEs, weight, use = "p")));
+modOrder = order(-abs(cor(MEs, weight, use = "p")))
 # Add module membership information in the chosen order
 for (mod in 1:ncol(geneModuleMembership))
 {
@@ -1185,6 +1222,11 @@ green4GO <- read.table("green4GO_v2.txt", header = FALSE, sep = "\t", stringsAsF
 gene_enrichment3 <- t(green4GO[,2])
 names(gene_enrichment3) <- green4GO[,1]
 
+green4GO <- data.frame()
+green4GO <- read.table("GO/MYRO_green.txt", header = FALSE, sep = "\t", stringsAsFactors = TRUE)
+gene_enrichment3 <- t(green4GO[,2])
+names(gene_enrichment3) <- green4GO[,1]
+
 # Input 2
 GO_relationships <-  readMappings(file = "experiment_all_gene_GO_annots_geneid.tsv")
 
@@ -1195,8 +1237,8 @@ sg <- sigGenes(GOdata)
 str(sg)
 numSigGenes(GOdata)
 
-#resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
-resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
+resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
+#resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
 resultFisher
 allGO = usedGO(object = GOdata)
 allRes <- GenTable(GOdata, classicFisher = resultFisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = length(allGO))
@@ -1213,8 +1255,8 @@ GOdata
 sg <- sigGenes(GOdata)
 str(sg)
 numSigGenes(GOdata)
-#resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
-resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
+resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
+#resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
 resultFisher
 allGO = usedGO(object = GOdata)
 allRes <- GenTable(GOdata, classicFisher = resultFisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = length(allGO))
@@ -1226,6 +1268,32 @@ printGraph(GOdata, resultFisher, firstSigNodes = 10, fn.prefix = out_prefix, use
 length(usedGO(GOdata))
 
 
+GOdata <- new("topGOdata", ontology = "CC", allGenes = gene_enrichment3, geneSel = function(p) p < 0.05, description = "Test", annot = annFUN.gene2GO, gene2GO = GO_relationships)
+GOdata
+sg <- sigGenes(GOdata)
+str(sg)
+numSigGenes(GOdata)
+#resultFisher <- runTest(GOdata, algorithm="classic", statistic="fisher")
+resultFisher <- runTest(GOdata, algorithm="weight01", statistic="fisher")
+resultFisher
+allGO = usedGO(object = GOdata)
+allRes <- GenTable(GOdata, classicFisher = resultFisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = length(allGO))
+allRes
+write.table(allRes, file = "CC_GO_enrichment.tsv", sep = "\t")
+showSigOfNodes(GOdata, score(resultFisher), firstSigNodes = 10, useInfo ='all')
+out_prefix <- paste(o, "/", "TopGO_CC", sep="")
+printGraph(GOdata, resultFisher, firstSigNodes = 10, fn.prefix = out_prefix, useInfo = "all", pdfSW = TRUE)
+length(usedGO(GOdata))
+
+
+
+
+
+
+
+
+
+
 
 vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="local")
 genes <- c("g756","g542","g1470","g1425","g1511","g3628","g7398","g8690","g9158","g9846","g10241","g9998","g11413","g11504","g11943")
@@ -1235,7 +1303,13 @@ anno <- as.data.frame(colData(vstRep2)[c("Media")])
 pal <- wes_palette("Zissou1", 10, type = "continuous")
 Z<-pheatmap(mat,color=pal,annotation_col = anno)
 
-
+vstRep2<-varianceStabilizingTransformation(dds2,blind=FALSE,fitType="local")
+genes <- c("g8655","g13677","g6369","g3076","g12409","g9698","g5680","g6883","g4360","g10768")
+mat <- assay(vstRep2)[genes, ]
+mat <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vstRep2)[c("Media")])
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+Z<-pheatmap(mat,color=pal,annotation_col = anno)
 
 
 
@@ -1251,6 +1325,15 @@ python3 download_ko.py --org KEGG.org --out KEGG-KO --concurrent 10
 
 
 interproscan.sh -appl CDD,COILS,Gene3D,HAMAP,MobiDBLite,PANTHER,Pfam,PIRSF,PRINTS,SFLD,SMART,SUPERFAMILY,TIGRFAM -goterms -iprlookup -pa -i 
+
+
+
+
+cat ../interpros/all_pep.fasta | grep -A 5000 -f green4pep.txt | grep -v -- "^--$" > KEGG/green_pep.fasta
+
+
+less ../GeneID/green4GO.txt | cut -f1 | sed -n 's/$/.t1/'
+cat ../interpros/all_pep.fasta | grep -A 5000 -f green4pep.txt | grep -v -- "^--$" > green_pep.fasta
 ```
 
 
