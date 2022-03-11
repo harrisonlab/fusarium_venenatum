@@ -8,7 +8,7 @@ cd analysis/dynGENIE3
 ```R
 setwd("/projects/fusarium_venenatum/analysis/dynGENIE3")
 
-library(GENIE3)
+library(GENIE3)f
 library(igraph)
 library(RCy3)
 library(Rgraphviz)
@@ -355,3 +355,20 @@ ntrees <- 500
 # Run the method with these settings
 resall <- dynGENIE3(TS.data,time.points, regulators=regulators, tree.method=tree.method, K=K, ntrees=ntrees)
 ```
+
+
+
+
+
+```R
+setwd("~/cluster_gruffalo/fusarium_venenatum_WD/analysis/dynGENIE3/CarbonRNAseq/v2.0")
+# Load libraries and packages
+library(GENIE3)
+library(igraph)
+library(RCy3)
+library(Rgraphviz)
+library(reshape2)
+library(doRNG)
+library(doParallel)
+source ("dynGENIE3.R")
+
